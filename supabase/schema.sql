@@ -26,6 +26,8 @@ create table if not exists profiles (
   sono_estresse int,
   nutri text,
   desistiu text,
+  atividade text default 'leve',        -- sedentaria | leve | moderada | alta (fora do treino)
+  plano text not null default 'basico' check (plano in ('basico','personalizado')),
   anamnese_em timestamptz,
   ativa boolean not null default true,
   pontos int not null default 0,
@@ -116,6 +118,20 @@ create table if not exists series (
   reps int,
   feita boolean default true
 );
+
+-- CARDIO MANUAL (corrida, caminhada, bike...) ----------------------------
+create table if not exists cardio (
+  id uuid primary key default gen_random_uuid(),
+  aluna_id uuid not null references profiles(id) on delete cascade,
+  data date not null default current_date,
+  tipo text not null,          -- corrida | caminhada | bike | eliptico | outro
+  minutos int not null,
+  km numeric,
+  kcal int,
+  created_at timestamptz default now()
+);
+alter table cardio enable row level security;
+create policy "cardio: aluna" on cardio for all using (aluna_id=auth.uid() or is_admin()) with check (aluna_id=auth.uid() or is_admin());
 
 -- PONTOS / EVOLUÇÃO / RECADOS -------------------------------------------
 create table if not exists pontos_log (

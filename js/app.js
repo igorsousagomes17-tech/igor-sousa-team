@@ -41,8 +41,8 @@ routes.login = () => {
   render(`<div class="view noTabs"><div class="topbar"><button class="back" data-go="entrada">‹ Voltar</button></div>
   <div class="logo big" style="font-size:34px;margin-top:24px">IGOR<br>SOUSA <b>TEAM</b></div>
   <form id="f" style="display:flex;flex-direction:column;gap:14px">
-    ${DEMO ? '<div class="card" style="padding:10px 14px"><p class="muted small"><b style="color:var(--fg)">Modo demonstração.</b> Já preenchi um acesso de aluna. Pra ver o painel do Igor, troca o e-mail por igor@demo.com.</p></div>' : ''}
-    <div class="field"><label class="l" for="em">E-mail</label><input class="input" id="em" type="email" autocomplete="username" inputmode="email" required value="${DEMO ? 'ana@demo.com' : ''}"></div>
+    ${DEMO ? '<div class="card" style="padding:10px 14px"><p class="muted small"><b style="color:var(--fg)">Modo demonstração.</b> Já preenchi o seu acesso (painel do Igor). Pra ver como aluna, troca o e-mail por ana@demo.com.</p></div>' : ''}
+    <div class="field"><label class="l" for="em">E-mail</label><input class="input" id="em" type="email" autocomplete="username" inputmode="email" required value="${DEMO ? 'igor@demo.com' : ''}"></div>
     <div class="field"><label class="l" for="pw">Senha</label><input class="input" id="pw" type="password" autocomplete="current-password" required value="${DEMO ? 'demo1234' : ''}"></div>
     <p class="err" id="err" hidden></p>
     <button class="btn" id="bt">Entrar</button>
@@ -257,7 +257,7 @@ routes.perfil = async () => {
   const resp = sessoes.filter(s => s.resposta_igor);
   render(`<div class="view fx"><div class="topbar"><h2>Perfil</h2>${p.role === 'admin' ? '<button class="pill on" data-go="admin">Painel do Igor</button>' : ''}</div>
   <div class="card row" style="gap:12px"><div style="width:52px;height:52px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-family:var(--display);font-size:22px;font-weight:800;color:var(--accent-ink)">${esc((p.nome || '?')[0].toUpperCase())}</div><div><b style="font-size:16px">${esc(p.nome)}</b><p class="muted">No time desde ${new Date(p.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })} · ${p.pontos} pts</p></div></div>
-  <div class="card"><div class="row between"><b style="font-size:14px">Minha anamnese</b><button class="back" style="color:var(--accent)" id="ed">editar</button></div><p class="muted">${esc([p.objetivo, p.dias_semana ? p.dias_semana + 'x/semana' : null, p.tempo_treino_min ? p.tempo_treino_min + ' min' : null, p.local_treino, (p.foco || []).length ? 'foco: ' + p.foco.join(', ') : null, p.limitacoes ? 'atenção: ' + p.limitacoes : null].filter(Boolean).join(' · ') || 'preencha pro Igor montar seu treino')}</p></div>
+  <div class="card"><div class="row between"><b style="font-size:14px">Minha anamnese</b><button class="back" style="color:var(--accent)" id="ed">editar</button></div><p class="muted">${esc([p.objetivo, p.dias_semana ? p.dias_semana + 'x/semana' : null, p.tempo_treino_min ? p.tempo_treino_min + ' min' : null, p.local_treino, (p.foco || []).length ? 'foco: ' + p.foco.join(', ') : null, p.limitacoes ? 'atenção: ' + p.limitacoes : null].filter(Boolean).join(' · ') || 'preencha pro Igor montar seu treino')}</p>${(() => { const t = tmb(p); return t ? `<p class="muted mt">Gasto estimado: <b style="color:var(--fg)">${t.gasto} kcal/dia</b> (basal ${t.tmb}) · estimativa, atualiza quando você registra o peso</p>` : ''; })()}</div>
   <div class="card"><div class="row between"><b style="font-size:14px">Respostas do Igor</b>${resp.length ? `<span class="pill on">${resp.length}</span>` : ''}</div>${resp.length ? resp.slice(0, 3).map(s => `<p class="muted mt">"${esc(s.resposta_igor)}" · ${fmtData(s.finalizada_em)}</p>`).join('') : '<p class="muted">Quando você mandar feedback no fim do treino, ele responde aqui.</p>'}</div>
   <div class="card"><div class="row between"><b style="font-size:14px">Indique uma amiga</b><b style="color:var(--accent)">+300 pts</b></div><p class="muted">Seu código: <b style="color:var(--fg)">${esc(p.cod_indicacao || '')}</b>. Ela coloca no cadastro e vocês duas ganham.</p></div>
   <div class="card"><div class="row between"><b style="font-size:14px">Lembretes</b><button class="pill" id="notif">ativar</button></div><p class="muted">Aviso leve se ficar 3 dias sem treinar. No iPhone, adiciona o app à tela inicial primeiro.</p></div>
@@ -268,6 +268,14 @@ routes.perfil = async () => {
   $('#pw').onclick = () => { overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Nova senha</h2><input class="input" id="n1" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Salvar</button></div></div></div>`); $('#c').onclick = closeOverlay; $('#s').onclick = async () => { try { await db.trocarSenha($('#n1').value); closeOverlay(); toast('Senha trocada ✓'); } catch (e) { toast(e.message, true); } }; };
   $('#ed').onclick = () => anamneseForm(p, () => go('perfil'));
 };
+// Taxa metabólica basal (Mifflin-St Jeor) e gasto diário estimado
+export function tmb(p) {
+  if (!p.peso_kg || !p.altura_m || !p.nascimento) return null;
+  const idade = Math.floor((Date.now() - new Date(p.nascimento)) / 31557600000);
+  const base = 10 * p.peso_kg + 6.25 * (p.altura_m * 100) - 5 * idade + (p.sexo === 'M' ? 5 : -161);
+  const fator = { sedentaria: 1.2, leve: 1.375, moderada: 1.55, alta: 1.725 }[p.atividade || 'leve'];
+  return { tmb: Math.round(base), gasto: Math.round(base * fator), idade };
+}
 // ANAMNESE: uma pergunta por tela ------------------------------------------------
 const PARTES = ['Glúteo', 'Pernas', 'Abdômen', 'Costas', 'Braços', 'Peito', 'Ombro'];
 const Q = [
@@ -282,12 +290,14 @@ const Q = [
   { k: 'saude', t: 'Alguma dessas se aplica a você?', sub: 'Isso muda como o Igor monta seu treino.', tipo: 'multi', op: ['Pressão alta', 'Diabetes', 'Problema cardíaco', 'Asma', 'Cirurgia nos últimos 12 meses', 'Tomo medicação contínua', 'Nenhuma'], req: true, excl: 'Nenhuma' },
   { k: 'gestacao', t: 'Está grávida ou teve filho nos últimos 12 meses?', tipo: 'um', op: [['Não', 'nao'], ['Grávida', 'gravida'], ['Pós-parto', 'pos_parto']], req: true },
   { k: 'sono_estresse', t: 'Como anda seu sono e seu estresse?', sub: '1 = péssimo · 5 = ótimo', tipo: 'um', op: [['😩 1', 1], ['😕 2', 2], ['😐 3', 3], ['🙂 4', 4], ['😄 5', 5]], num: true },
+  { k: 'atividade', t: 'Fora do treino, como é seu dia a dia?', sub: 'Pra calcular quanto você gasta por dia.', tipo: 'um', op: [['Sentada a maior parte (escritório, estudo)', 'sedentaria'], ['Anda bastante, fica em pé', 'leve'], ['Trabalho ativo, carrego peso', 'moderada'], ['Muito ativo o dia inteiro', 'alta']], req: true },
+  { k: 'nascimento', t: 'Sua data de nascimento', sub: 'A idade entra na conta da sua taxa metabólica.', tipo: 'data', req: true },
   { k: 'nutri', t: 'Faz acompanhamento com nutricionista?', tipo: 'um', op: ['Sim', 'Não', 'Quero fazer'] },
   { k: 'medidas', t: 'Seu peso e altura', tipo: 'medidas', req: true },
   { k: 'desistiu', t: 'O que já te fez desistir de treinar antes?', sub: 'Pra o Igor te ajudar a não repetir.', tipo: 'um', op: ['Falta de tempo', 'Falta de resultado', 'Dor ou lesão', 'Sem companhia ou motivação', 'Nunca desisti'] }
 ];
 function anamneseForm(p, done, titulo = 'Me conta de você') {
-  const r = { objetivo: p.objetivo, dias_semana: p.dias_semana, tempo_treino_min: p.tempo_treino_min, local_treino: p.local_treino, experiencia: p.experiencia, foco: p.foco || [], incomoda: p.incomoda, limitacoes: p.limitacoes, saude: p.saude || [], gestacao: p.gestacao || 'nao', sono_estresse: p.sono_estresse, nutri: p.nutri, peso_kg: p.peso_kg, altura_m: p.altura_m, desistiu: p.desistiu };
+  const r = { atividade: p.atividade, nascimento: p.nascimento, objetivo: p.objetivo, dias_semana: p.dias_semana, tempo_treino_min: p.tempo_treino_min, local_treino: p.local_treino, experiencia: p.experiencia, foco: p.foco || [], incomoda: p.incomoda, limitacoes: p.limitacoes, saude: p.saude || [], gestacao: p.gestacao || 'nao', sono_estresse: p.sono_estresse, nutri: p.nutri, peso_kg: p.peso_kg, altura_m: p.altura_m, desistiu: p.desistiu };
   let i = 0;
   const val = o => Array.isArray(o) ? o[1] : o, lab = o => Array.isArray(o) ? o[0] : o;
   function tela() {
@@ -295,6 +305,7 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
     let corpo = '';
     if (q.tipo === 'um' || q.tipo === 'multi') corpo = `<div class="row wrap" id="ops" style="gap:8px">${q.op.map(o => `<button type="button" class="pill ${q.tipo === 'multi' ? (sel || []).includes(val(o)) : String(sel) === String(val(o)) ? 'on' : ''}" data-v="${esc(val(o))}" style="font-size:14px;padding:11px 14px;min-height:44px">${esc(lab(o))}</button>`).join('')}</div>`;
     if (q.tipo === 'texto') corpo = `<input class="input" id="tx" value="${esc(sel || '')}" placeholder="${esc(q.ph || '')}">`;
+    if (q.tipo === 'data') corpo = `<input class="input" id="tx" type="date" value="${esc(sel || '')}" max="${new Date().toISOString().slice(0, 10)}">`;
     if (q.tipo === 'medidas') corpo = `<div class="grid2"><div class="field"><label class="l" for="pk">Peso (kg)</label><input class="input" id="pk" inputmode="decimal" value="${r.peso_kg ?? ''}" placeholder="ex. 64"></div><div class="field"><label class="l" for="al">Altura (m)</label><input class="input" id="al" inputmode="decimal" value="${r.altura_m ?? ''}" placeholder="ex. 1,65"></div></div>`;
     overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:14px;margin-top:20px;min-height:70vh">
       <div class="row between"><h3>${esc(titulo)}</h3><span class="muted small">${i + 1} de ${Q.length}</span></div><div class="bar"><i style="width:${(i) / Q.length * 100}%"></i></div>
@@ -307,7 +318,7 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
     if ($('#cancel')) $('#cancel').onclick = closeOverlay;
     $('#next').onclick = avancar;
     function avancar() {
-      if (q.tipo === 'texto') r[q.k] = $('#tx').value.trim() || null;
+      if (q.tipo === 'texto' || q.tipo === 'data') r[q.k] = $('#tx').value.trim() || null;
       if (q.tipo === 'medidas') { r.peso_kg = +$('#pk').value.replace(',', '.') || null; r.altura_m = +$('#al').value.replace(',', '.') || null; }
       const ok = q.tipo === 'medidas' ? (r.peso_kg && r.altura_m) : q.tipo === 'multi' ? (r[q.k] || []).length : r[q.k] != null && r[q.k] !== '';
       if (q.req && !ok) { $('#e').hidden = false; return; }
