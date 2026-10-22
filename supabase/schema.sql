@@ -17,6 +17,16 @@ create table if not exists profiles (
   limitacoes text,
   peso_kg numeric,
   altura_m numeric,
+  tempo_treino_min int,
+  experiencia text,
+  foco text[],
+  incomoda text,
+  saude text[],
+  gestacao text default 'nao',
+  sono_estresse int,
+  nutri text,
+  desistiu text,
+  anamnese_em timestamptz,
   ativa boolean not null default true,
   pontos int not null default 0,
   cod_indicacao text unique default encode(gen_random_bytes(4),'hex'),
@@ -125,7 +135,9 @@ create table if not exists evolucao (
   peso_kg numeric,
   cintura_cm numeric,
   quadril_cm numeric,
-  foto_path text,           -- storage: evolucao/<aluna_id>/<file>
+  foto_path text,           -- frente: storage evolucao/<aluna_id>/<data>-frente.jpg
+  foto_lado text,
+  foto_costas text,
   unique (aluna_id, data)
 );
 

@@ -83,12 +83,18 @@ export async function finalizarSessao(sessaoId, patch) {
   const { data, error } = await sb.from('sessoes').update({ ...patch, finalizada_em: new Date().toISOString() }).eq('id', sessaoId).select().single();
   if (error) throw error; return data;
 }
-export async function ultimaCarga(alunaId, exercicioNome) {
-  const { data } = await sb.from('series').select('kg,reps,sessao_id,sessoes!inner(aluna_id,finalizada_em)')
-    .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null)
-    .order('sessoes(finalizada_em)', { ascending: false }).limit(1);
-  return data?.[0] || null;
+// Histórico de carga por NOME do exercício: vale entre treinos e meses diferentes.
+export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
+  const { data } = await sb.from('series').select('kg,reps,n,sessoes!inner(aluna_id,finalizada_em)')
+    .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
+    .order('sessoes(finalizada_em)', { ascending: false }).limit(limit * 6);
+  if (!data?.length) return [];
+  // agrupa por sessão: maior carga da sessão
+  const por = {};
+  data.forEach(r => { const k = r.sessoes.finalizada_em; if (!por[k] || +r.kg > +por[k].kg) por[k] = { kg: r.kg, reps: r.reps, data: k }; });
+  return Object.values(por).sort((a, b) => b.data.localeCompare(a.data)).slice(0, limit);
 }
+export async function ultimaCarga(alunaId, exercicioNome) { return (await historicoCarga(alunaId, exercicioNome, 1))[0] || null; }
 export async function minhasSessoes(alunaId, limit = 60) {
   const { data } = await sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor')
     .eq('aluna_id', alunaId).not('finalizada_em', 'is', null).order('finalizada_em', { ascending: false }).limit(limit);
@@ -109,14 +115,17 @@ export async function evolucao(alunaId) {
   const { data } = await sb.from('evolucao').select('*').eq('aluna_id', alunaId).order('data');
   return data || [];
 }
-export async function salvarEvolucao(alunaId, row, file) {
-  let foto_path = null;
-  if (file) {
-    foto_path = `${alunaId}/${Date.now()}.jpg`;
-    const { error } = await sb.storage.from('evolucao').upload(foto_path, file, { contentType: 'image/jpeg', upsert: true });
+export async function salvarEvolucao(alunaId, row, fotos = {}) {
+  // fotos: { frente: File, lado: File, costas: File }
+  const paths = {};
+  for (const [k, file] of Object.entries(fotos)) {
+    if (!file) continue;
+    const path = `${alunaId}/${row.data}-${k}.jpg`;
+    const { error } = await sb.storage.from('evolucao').upload(path, file, { contentType: 'image/jpeg', upsert: true });
     if (error) throw error;
+    paths[k === 'frente' ? 'foto_path' : 'foto_' + k] = path;
   }
-  const { data, error } = await sb.from('evolucao').upsert({ aluna_id: alunaId, ...row, ...(foto_path ? { foto_path } : {}) }, { onConflict: 'aluna_id,data' }).select().single();
+  const { data, error } = await sb.from('evolucao').upsert({ aluna_id: alunaId, ...row, ...paths }, { onConflict: 'aluna_id,data' }).select().single();
   if (error) throw error; return data;
 }
 export async function fotoUrl(path) {

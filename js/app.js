@@ -1,5 +1,6 @@
 const C0 = window.ISTEAM_CONFIG;
-const db = C0.DEMO || new URLSearchParams(location.search).has('demo') ? await import('./db-mock.js') : await import('./db.js');
+const DEMO = !!(C0.DEMO || new URLSearchParams(location.search).has('demo'));
+const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
 import { $, $$, esc, toast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem } from './ui.js';
 import { adminView } from './admin.js';
 
@@ -40,8 +41,9 @@ routes.login = () => {
   render(`<div class="view noTabs"><div class="topbar"><button class="back" data-go="entrada">‹ Voltar</button></div>
   <div class="logo big" style="font-size:34px;margin-top:24px">IGOR<br>SOUSA <b>TEAM</b></div>
   <form id="f" style="display:flex;flex-direction:column;gap:14px">
-    <div class="field"><label class="l" for="em">E-mail</label><input class="input" id="em" type="email" autocomplete="username" inputmode="email" required></div>
-    <div class="field"><label class="l" for="pw">Senha</label><input class="input" id="pw" type="password" autocomplete="current-password" required></div>
+    ${DEMO ? '<div class="card" style="padding:10px 14px"><p class="muted small"><b style="color:var(--fg)">Modo demonstração.</b> Já preenchi um acesso de aluna. Pra ver o painel do Igor, troca o e-mail por igor@demo.com.</p></div>' : ''}
+    <div class="field"><label class="l" for="em">E-mail</label><input class="input" id="em" type="email" autocomplete="username" inputmode="email" required value="${DEMO ? 'ana@demo.com' : ''}"></div>
+    <div class="field"><label class="l" for="pw">Senha</label><input class="input" id="pw" type="password" autocomplete="current-password" required value="${DEMO ? 'demo1234' : ''}"></div>
     <p class="err" id="err" hidden></p>
     <button class="btn" id="bt">Entrar</button>
     <p class="muted center"><a href="#" id="esq">Esqueceu a senha?</a> · <a href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener">Assinar</a></p>
@@ -136,13 +138,14 @@ function renderSessao() {
   <div class="row" style="margin:10px 0"><button class="btn ghost sm" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}">▶ Ver execução</button>${e.alternativa ? `<button class="btn ghost sm" id="swap">⇄ Trocar</button>` : ''}</div>
   <div class="set"><span class="h">Sér</span><span class="h">kg</span><span class="h">reps</span><span></span></div>
   ${sets.map((st, k) => `<div class="set" data-k="${k}"><span>${k + 1}</span><input inputmode="decimal" value="${st.kg}" data-f="kg" placeholder="kg"><input inputmode="numeric" value="${st.reps}" data-f="reps" placeholder="reps"><button class="rest" data-k="${k}">${e.descanso_s}s</button></div>`).join('')}
-  ${e.ultima ? `<p class="muted small mt">Da última vez você fez ${e.ultima.kg} kg × ${e.ultima.reps}. Bora subir?</p>` : ''}
+  ${e.ultima ? `<p class="muted small mt">Da última vez você fez <b style="color:var(--fg)">${e.ultima.kg} kg × ${e.ultima.reps}</b>. Bora subir? <a href="#" id="hist">ver histórico</a></p>` : ''}
   <div class="card row between" style="margin-top:12px"><div><b style="font-size:14px">Concluído?</b><p class="muted">Marca que eu já puxo o próximo.</p></div><button class="sw" id="sw" aria-label="Concluir exercício"></button></div></div>
   ${s.i > 0 ? `<button class="btn ghost sm" id="prev" style="align-self:flex-start">‹ Exercício anterior</button>` : ''}
   <button class="btn ghost" id="fim">Finalizar treino</button></div>`);
   clearInterval(clockIv); clockIv = setInterval(() => { const c = $('#clock'); if (c) c.textContent = fmtMin(Math.floor((Date.now() - s.inicio) / 1000)); }, 1000);
   $$('.set input').forEach(inp => inp.oninput = () => { const k = +inp.closest('.set').dataset.k; sets[k][inp.dataset.f] = inp.value; });
   $$('.set .rest').forEach(b => b.onclick = async () => { b.closest('.set').classList.add('done'); const k = +b.dataset.k; const prox = k + 1 < sets.length ? `Próxima: série ${k + 2} · ${e.nome}` : (s.exercicios[s.i + 1] ? `Próximo: ${s.exercicios[s.i + 1].nome}` : 'Última série!'); await restTimer(e.descanso_s, prox); });
+  if ($('#hist')) $('#hist').onclick = async ev => { ev.preventDefault(); const h = await db.historicoCarga(S.perfil.id, e.nome, 6); overlay(`<div class="modal" id="hm"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:8px"><h2>${esc(e.nome)}</h2><p class="muted small">Sua melhor carga em cada treino, de qualquer mês.</p>${h.map(x => `<div class="row between" style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="muted">${fmtData(x.data)}</span><b>${x.kg} kg × ${x.reps ?? '–'}</b></div>`).join('')}<button class="btn ghost sm" id="hc" style="margin-top:6px">Fechar</button></div></div>`); $('#hc').onclick = closeOverlay; $('#hm').addEventListener('click', x => { if (x.target.id === 'hm') closeOverlay(); }); };
   if ($('#swap')) $('#swap').onclick = () => { toast(`Opção: ${e.alternativa}`); e.nome = e.alternativa; e.alternativa = null; renderSessao(); };
   $('#sw').onclick = function () { this.classList.add('on'); setTimeout(() => concluir(), 320); };
   if ($('#prev')) $('#prev').onclick = () => { s.i--; renderSessao(); };
@@ -221,12 +224,25 @@ routes.evolucao = async () => {
   <div class="card"><h3>Cintura</h3><div class="big" style="margin-top:4px">${last?.cintura_cm ?? '–'}<small>cm</small></div><p class="muted">${first?.cintura_cm && last?.cintura_cm && first !== last ? `${(last.cintura_cm - first.cintura_cm).toFixed(0)} cm desde ${fmtData(first.data)}` : ''}</p></div></div>
   <div class="card"><h3>Treinos por mês</h3><div class="row" style="align-items:flex-end;gap:10px;height:90px;margin-top:8px">${ks.length ? ks.map(k => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><div style="width:100%;height:${meses[k] / mx * 70}px;background:var(--accent);border-radius:6px"></div><span class="muted small">${new Date(k + '-15').toLocaleDateString('pt-BR', { month: 'short' })} ${meses[k]}</span></div>`).join('') : '<p class="muted">Seu primeiro treino aparece aqui.</p>'}</div></div></div>`, 'evolucao');
   $('#add').onclick = () => {
-    overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Registro do mês</h2>
+    const slot = (k, lab) => `<label class="photo" for="f-${k}" style="aspect-ratio:3/4;cursor:pointer;position:relative"><img src="icons/guia-${k}.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.9"><span style="position:absolute;bottom:6px;left:0;right:0;font-weight:600;color:var(--fg)">${lab}</span><input id="f-${k}" type="file" accept="image/*" capture="environment" hidden></label>`;
+    overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px;margin-top:20px"><h2>Registro do mês</h2>
+      <p class="muted small">Três fotos, sempre do mesmo jeito: roupa de treino, mesmo lugar, luz de frente, celular na altura do umbigo. Só você e o Igor veem.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">${slot('frente', 'Frente')}${slot('lado', 'Lado')}${slot('costas', 'Costas')}</div>
       <div class="grid2"><div class="field"><label class="l" for="pk">Peso (kg)</label><input class="input" id="pk" inputmode="decimal" value="${last?.peso_kg ?? ''}"></div><div class="field"><label class="l" for="ci">Cintura (cm)</label><input class="input" id="ci" inputmode="decimal" value="${last?.cintura_cm ?? ''}"></div></div>
-      <div class="field"><label class="l" for="ft">Foto (só você e o Igor veem)</label><input class="input" id="ft" type="file" accept="image/*" capture="environment"></div>
       <div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Salvar</button></div></div></div>`);
+    ['frente', 'lado', 'costas'].forEach(k => $(`#f-${k}`).onchange = e => { const f = e.target.files[0]; if (f) { const lb = $(`label[for="f-${k}"]`); lb.style.backgroundImage = `url(${URL.createObjectURL(f)})`; lb.querySelector('img').style.opacity = 0; } });
     $('#c').onclick = closeOverlay;
-    $('#s').onclick = async () => { $('#s').disabled = true; try { const f = $('#ft').files[0]; const file = f ? await comprimir(f) : null; await db.salvarEvolucao(p.id, { data: new Date().toISOString().slice(0, 10), peso_kg: +$('#pk').value.replace(',', '.') || null, cintura_cm: +$('#ci').value.replace(',', '.') || null }, file); if (file) await db.registrarPontos(p.id, 'evolucao', 80, new Date().toISOString().slice(0, 7)).catch(() => {}); closeOverlay(); toast('Registrado!'); go('evolucao'); } catch (er) { toast('Não deu: ' + er.message, true); $('#s').disabled = false; } };
+    $('#s').onclick = async () => {
+      $('#s').disabled = true;
+      try {
+        const fotos = {}; for (const k of ['frente', 'lado', 'costas']) { const f = $(`#f-${k}`).files[0]; if (f) fotos[k] = await comprimir(f); }
+        const n = Object.keys(fotos).length;
+        if (n > 0 && n < 3) { toast('Pra valer os pontos, manda as 3: frente, lado e costas.', true); $('#s').disabled = false; return; }
+        await db.salvarEvolucao(p.id, { data: new Date().toISOString().slice(0, 10), peso_kg: +$('#pk').value.replace(',', '.') || null, cintura_cm: +$('#ci').value.replace(',', '.') || null }, fotos);
+        if (n === 3) await db.registrarPontos(p.id, 'evolucao', 80, new Date().toISOString().slice(0, 7)).catch(() => {});
+        closeOverlay(); toast(n === 3 ? 'Registrado! +80 pts' : 'Medidas registradas'); go('evolucao');
+      } catch (er) { toast('Não deu: ' + er.message, true); $('#s').disabled = false; }
+    };
   };
 };
 async function comprimir(file) {
@@ -241,7 +257,7 @@ routes.perfil = async () => {
   const resp = sessoes.filter(s => s.resposta_igor);
   render(`<div class="view fx"><div class="topbar"><h2>Perfil</h2>${p.role === 'admin' ? '<button class="pill on" data-go="admin">Painel do Igor</button>' : ''}</div>
   <div class="card row" style="gap:12px"><div style="width:52px;height:52px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-family:var(--display);font-size:22px;font-weight:800;color:var(--accent-ink)">${esc((p.nome || '?')[0].toUpperCase())}</div><div><b style="font-size:16px">${esc(p.nome)}</b><p class="muted">No time desde ${new Date(p.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })} · ${p.pontos} pts</p></div></div>
-  <div class="card"><div class="row between"><b style="font-size:14px">Minha anamnese</b><button class="back" style="color:var(--accent)" id="ed">editar</button></div><p class="muted">${esc([p.objetivo, p.dias_semana ? p.dias_semana + 'x/semana' : null, p.local_treino, p.limitacoes ? 'atenção: ' + p.limitacoes : null].filter(Boolean).join(' · ') || 'preencha pro Igor montar seu treino')}</p></div>
+  <div class="card"><div class="row between"><b style="font-size:14px">Minha anamnese</b><button class="back" style="color:var(--accent)" id="ed">editar</button></div><p class="muted">${esc([p.objetivo, p.dias_semana ? p.dias_semana + 'x/semana' : null, p.tempo_treino_min ? p.tempo_treino_min + ' min' : null, p.local_treino, (p.foco || []).length ? 'foco: ' + p.foco.join(', ') : null, p.limitacoes ? 'atenção: ' + p.limitacoes : null].filter(Boolean).join(' · ') || 'preencha pro Igor montar seu treino')}</p></div>
   <div class="card"><div class="row between"><b style="font-size:14px">Respostas do Igor</b>${resp.length ? `<span class="pill on">${resp.length}</span>` : ''}</div>${resp.length ? resp.slice(0, 3).map(s => `<p class="muted mt">"${esc(s.resposta_igor)}" · ${fmtData(s.finalizada_em)}</p>`).join('') : '<p class="muted">Quando você mandar feedback no fim do treino, ele responde aqui.</p>'}</div>
   <div class="card"><div class="row between"><b style="font-size:14px">Indique uma amiga</b><b style="color:var(--accent)">+300 pts</b></div><p class="muted">Seu código: <b style="color:var(--fg)">${esc(p.cod_indicacao || '')}</b>. Ela coloca no cadastro e vocês duas ganham.</p></div>
   <div class="card"><div class="row between"><b style="font-size:14px">Lembretes</b><button class="pill" id="notif">ativar</button></div><p class="muted">Aviso leve se ficar 3 dias sem treinar. No iPhone, adiciona o app à tela inicial primeiro.</p></div>
@@ -252,19 +268,57 @@ routes.perfil = async () => {
   $('#pw').onclick = () => { overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Nova senha</h2><input class="input" id="n1" type="password" placeholder="mínimo 6 caracteres" autocomplete="new-password"><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Salvar</button></div></div></div>`); $('#c').onclick = closeOverlay; $('#s').onclick = async () => { try { await db.trocarSenha($('#n1').value); closeOverlay(); toast('Senha trocada ✓'); } catch (e) { toast(e.message, true); } }; };
   $('#ed').onclick = () => anamneseForm(p, () => go('perfil'));
 };
-function anamneseForm(p, done, titulo = 'Minha anamnese') {
-  const opt = (arr, v) => arr.map(a => `<button type="button" class="pill ${a === v ? 'on' : ''}" data-v="${a}">${a}</button>`).join('');
-  overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px;margin-top:20px"><h2>${titulo}</h2>
-    <div><label class="l">Objetivo</label><div class="row wrap" id="ob" style="gap:6px">${opt(['Emagrecer', 'Ganhar massa', 'Os dois', 'Correr melhor'], p.objetivo)}</div></div>
-    <div><label class="l">Dias por semana</label><div class="row" id="ds" style="gap:6px">${opt(['3', '4', '5', '6'], String(p.dias_semana || 4))}</div></div>
-    <div><label class="l">Onde treina</label><div class="row" id="lc" style="gap:6px">${opt(['academia', 'casa'], p.local_treino || 'academia')}</div></div>
-    <div class="field"><label class="l" for="lm">Dor, lesão ou limitação?</label><input class="input" id="lm" value="${esc(p.limitacoes || '')}" placeholder="ex. lombar, joelho direito..."></div>
-    <div class="grid2"><div class="field"><label class="l" for="pk">Peso (kg)</label><input class="input" id="pk" inputmode="decimal" value="${p.peso_kg ?? ''}"></div><div class="field"><label class="l" for="al">Altura (m)</label><input class="input" id="al" inputmode="decimal" value="${p.altura_m ?? ''}"></div></div>
-    <div class="field"><label class="l" for="wa">WhatsApp</label><input class="input" id="wa" inputmode="tel" value="${esc(p.whatsapp || '')}"></div>
-    <div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Salvar</button></div></div></div>`);
-  $$('#ob,#ds,#lc').forEach(g => g.onclick = e => { const b = e.target.closest('button'); if (!b) return; $$('button', g).forEach(x => x.classList.remove('on')); b.classList.add('on'); });
-  $('#c').onclick = closeOverlay;
-  $('#s').onclick = async () => { try { await db.salvarPerfil({ objetivo: $('#ob .on')?.dataset.v, dias_semana: +$('#ds .on')?.dataset.v || 4, local_treino: $('#lc .on')?.dataset.v, limitacoes: $('#lm').value || null, peso_kg: +$('#pk').value.replace(',', '.') || null, altura_m: +$('#al').value.replace(',', '.') || null, whatsapp: $('#wa').value || null }); closeOverlay(); toast('Salvo ✓'); done(); } catch (e) { toast(e.message, true); } };
+// ANAMNESE: uma pergunta por tela ------------------------------------------------
+const PARTES = ['Glúteo', 'Pernas', 'Abdômen', 'Costas', 'Braços', 'Peito', 'Ombro'];
+const Q = [
+  { k: 'objetivo', t: 'Qual seu objetivo principal?', tipo: 'um', op: ['Emagrecer', 'Ganhar massa', 'Os dois', 'Correr melhor', 'Saúde e disposição'], req: true },
+  { k: 'dias_semana', t: 'Quantos dias por semana você consegue treinar de verdade?', tipo: 'um', op: [2, 3, 4, 5, 6], req: true, num: true },
+  { k: 'tempo_treino_min', t: 'Quanto tempo você tem por treino?', tipo: 'um', op: [['até 30 min', 30], ['40 min', 40], ['50 a 60 min', 60]], req: true, num: true },
+  { k: 'local_treino', t: 'Onde vai treinar?', tipo: 'um', op: [['Academia', 'academia'], ['Casa', 'casa'], ['Os dois', 'ambos']], req: true },
+  { k: 'experiencia', t: 'Há quanto tempo treina musculação?', tipo: 'um', op: ['Nunca treinei', 'Menos de 6 meses', '6 meses a 2 anos', 'Mais de 2 anos'], req: true },
+  { k: 'foco', t: 'Que partes do corpo você quer focar mais?', sub: 'Pode marcar mais de uma.', tipo: 'multi', op: PARTES, req: true },
+  { k: 'incomoda', t: 'Qual parte mais te incomoda hoje?', tipo: 'um', op: [...PARTES, 'Nenhuma'] },
+  { k: 'limitacoes', t: 'Sente dor, tem lesão ou alguma limitação?', sub: 'Se não tiver, pode pular.', tipo: 'texto', ph: 'ex. lombar, joelho direito, ombro...' },
+  { k: 'saude', t: 'Alguma dessas se aplica a você?', sub: 'Isso muda como o Igor monta seu treino.', tipo: 'multi', op: ['Pressão alta', 'Diabetes', 'Problema cardíaco', 'Asma', 'Cirurgia nos últimos 12 meses', 'Tomo medicação contínua', 'Nenhuma'], req: true, excl: 'Nenhuma' },
+  { k: 'gestacao', t: 'Está grávida ou teve filho nos últimos 12 meses?', tipo: 'um', op: [['Não', 'nao'], ['Grávida', 'gravida'], ['Pós-parto', 'pos_parto']], req: true },
+  { k: 'sono_estresse', t: 'Como anda seu sono e seu estresse?', sub: '1 = péssimo · 5 = ótimo', tipo: 'um', op: [['😩 1', 1], ['😕 2', 2], ['😐 3', 3], ['🙂 4', 4], ['😄 5', 5]], num: true },
+  { k: 'nutri', t: 'Faz acompanhamento com nutricionista?', tipo: 'um', op: ['Sim', 'Não', 'Quero fazer'] },
+  { k: 'medidas', t: 'Seu peso e altura', tipo: 'medidas', req: true },
+  { k: 'desistiu', t: 'O que já te fez desistir de treinar antes?', sub: 'Pra o Igor te ajudar a não repetir.', tipo: 'um', op: ['Falta de tempo', 'Falta de resultado', 'Dor ou lesão', 'Sem companhia ou motivação', 'Nunca desisti'] }
+];
+function anamneseForm(p, done, titulo = 'Me conta de você') {
+  const r = { objetivo: p.objetivo, dias_semana: p.dias_semana, tempo_treino_min: p.tempo_treino_min, local_treino: p.local_treino, experiencia: p.experiencia, foco: p.foco || [], incomoda: p.incomoda, limitacoes: p.limitacoes, saude: p.saude || [], gestacao: p.gestacao || 'nao', sono_estresse: p.sono_estresse, nutri: p.nutri, peso_kg: p.peso_kg, altura_m: p.altura_m, desistiu: p.desistiu };
+  let i = 0;
+  const val = o => Array.isArray(o) ? o[1] : o, lab = o => Array.isArray(o) ? o[0] : o;
+  function tela() {
+    const q = Q[i]; const sel = r[q.k];
+    let corpo = '';
+    if (q.tipo === 'um' || q.tipo === 'multi') corpo = `<div class="row wrap" id="ops" style="gap:8px">${q.op.map(o => `<button type="button" class="pill ${q.tipo === 'multi' ? (sel || []).includes(val(o)) : String(sel) === String(val(o)) ? 'on' : ''}" data-v="${esc(val(o))}" style="font-size:14px;padding:11px 14px;min-height:44px">${esc(lab(o))}</button>`).join('')}</div>`;
+    if (q.tipo === 'texto') corpo = `<input class="input" id="tx" value="${esc(sel || '')}" placeholder="${esc(q.ph || '')}">`;
+    if (q.tipo === 'medidas') corpo = `<div class="grid2"><div class="field"><label class="l" for="pk">Peso (kg)</label><input class="input" id="pk" inputmode="decimal" value="${r.peso_kg ?? ''}" placeholder="ex. 64"></div><div class="field"><label class="l" for="al">Altura (m)</label><input class="input" id="al" inputmode="decimal" value="${r.altura_m ?? ''}" placeholder="ex. 1,65"></div></div>`;
+    overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:14px;margin-top:20px;min-height:70vh">
+      <div class="row between"><h3>${esc(titulo)}</h3><span class="muted small">${i + 1} de ${Q.length}</span></div><div class="bar"><i style="width:${(i) / Q.length * 100}%"></i></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:10px"><h2 style="font-size:24px">${esc(q.t)}</h2>${q.sub ? `<p class="muted">${esc(q.sub)}</p>` : ''}${corpo}<p class="err" id="e" hidden>Essa é importante pro Igor montar seu treino.</p></div>
+      <div class="row">${i > 0 ? '<button class="btn ghost sm" id="prev" style="flex:1">Voltar</button>' : '<button class="btn ghost sm" id="cancel" style="flex:1">Depois</button>'}<button class="btn sm" id="next" style="flex:2">${i === Q.length - 1 ? 'Enviar pro Igor' : 'Próxima'}</button></div></div></div>`);
+    if ($('#ops')) $('#ops').onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = q.num ? +b.dataset.v : b.dataset.v;
+      if (q.tipo === 'multi') { let arr = r[q.k] || []; if (q.excl && v === q.excl) arr = [v]; else { arr = arr.filter(x => x !== q.excl); arr = arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]; } r[q.k] = arr; $$('#ops button').forEach(x => x.classList.toggle('on', arr.includes(q.num ? +x.dataset.v : x.dataset.v))); }
+      else { r[q.k] = v; $$('#ops button').forEach(x => x.classList.toggle('on', x === b)); setTimeout(avancar, 180); } };
+    if ($('#prev')) $('#prev').onclick = () => { i--; tela(); };
+    if ($('#cancel')) $('#cancel').onclick = closeOverlay;
+    $('#next').onclick = avancar;
+    function avancar() {
+      if (q.tipo === 'texto') r[q.k] = $('#tx').value.trim() || null;
+      if (q.tipo === 'medidas') { r.peso_kg = +$('#pk').value.replace(',', '.') || null; r.altura_m = +$('#al').value.replace(',', '.') || null; }
+      const ok = q.tipo === 'medidas' ? (r.peso_kg && r.altura_m) : q.tipo === 'multi' ? (r[q.k] || []).length : r[q.k] != null && r[q.k] !== '';
+      if (q.req && !ok) { $('#e').hidden = false; return; }
+      if (i < Q.length - 1) { i++; tela(); } else salvar();
+    }
+  }
+  async function salvar() {
+    try { await db.salvarPerfil({ ...r, anamnese_em: new Date().toISOString() }); closeOverlay(); toast('Enviado! O Igor monta seu treino a partir disso ✓'); done(); }
+    catch (e) { toast('Não consegui salvar: ' + e.message, true); }
+  }
+  tela();
 }
 
 routes.admin = () => adminView(S, { render, go, anamneseForm, db });
