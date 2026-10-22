@@ -17,18 +17,6 @@ create table if not exists profiles (
   limitacoes text,
   peso_kg numeric,
   altura_m numeric,
-  tempo_treino_min int,
-  experiencia text,
-  foco text[],
-  incomoda text,
-  saude text[],
-  gestacao text default 'nao',
-  sono_estresse int,
-  nutri text,
-  desistiu text,
-  atividade text default 'leve',        -- sedentaria | leve | moderada | alta (fora do treino)
-  plano text not null default 'basico' check (plano in ('basico','personalizado')),
-  anamnese_em timestamptz,
   ativa boolean not null default true,
   pontos int not null default 0,
   cod_indicacao text unique default encode(gen_random_bytes(4),'hex'),
@@ -119,18 +107,6 @@ create table if not exists series (
   feita boolean default true
 );
 
--- CARDIO MANUAL (corrida, caminhada, bike...) ----------------------------
-create table if not exists cardio (
-  id uuid primary key default gen_random_uuid(),
-  aluna_id uuid not null references profiles(id) on delete cascade,
-  data date not null default current_date,
-  tipo text not null,          -- corrida | caminhada | bike | eliptico | outro
-  minutos int not null,
-  km numeric,
-  kcal int,
-  created_at timestamptz default now()
-);
-
 -- PONTOS / EVOLUÇÃO / RECADOS -------------------------------------------
 create table if not exists pontos_log (
   id uuid primary key default gen_random_uuid(),
@@ -149,9 +125,7 @@ create table if not exists evolucao (
   peso_kg numeric,
   cintura_cm numeric,
   quadril_cm numeric,
-  foto_path text,           -- frente: storage evolucao/<aluna_id>/<data>-frente.jpg
-  foto_lado text,
-  foto_costas text,
+  foto_path text,           -- storage: evolucao/<aluna_id>/<file>
   unique (aluna_id, data)
 );
 
@@ -227,10 +201,6 @@ create or replace function is_admin() returns boolean language sql stable as $$
   select exists(select 1 from profiles where id=auth.uid() and role='admin')
 $$;
 
--- cardio
-alter table cardio enable row level security;
-create policy "cardio: aluna" on cardio for all using (aluna_id=auth.uid() or is_admin()) with check (aluna_id=auth.uid() or is_admin());
-
 -- profiles
 create policy "perfil: ler o próprio ou admin" on profiles for select using (id=auth.uid() or is_admin());
 create policy "perfil: editar o próprio" on profiles for update using (id=auth.uid() or is_admin()) with check (id=auth.uid() or is_admin());
@@ -265,8 +235,8 @@ create policy "desafios: todas leem" on desafios for select using (auth.uid() is
 create policy "desafios: admin" on desafios for all using (is_admin()) with check (is_admin());
 
 -- STORAGE: bucket privado "evolucao" (criar no painel) com policy por pasta = aluna_id
-insert into storage.buckets (id,name,public) values ('evolucao','evolucao',false) on conflict do nothing;
-create policy "evolucao: dona" on storage.objects for all using (bucket_id='evolucao' and (split_part(name,'/',1)=auth.uid()::text or is_admin()));
+-- insert into storage.buckets (id,name,public) values ('evolucao','evolucao',false) on conflict do nothing;
+-- create policy "evolucao: dona" on storage.objects for all using (bucket_id='evolucao' and (split_part(name,'/',1)=auth.uid()::text or is_admin()));
 
 -- SEED: programas extras
 insert into programas (slug,titulo,subtitulo,capa_url,ordem) values

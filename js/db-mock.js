@@ -13,7 +13,7 @@ const PLANO = { id: 'p1', mes: new Date(new Date().setDate(1)).toISOString().sli
   { id: 't3', letra: 'C', nome: 'Inferior · posterior e glúteo', duracao_min: 40, ordem: 2, exercicios: [ex(1, 'Mobilidade de tornozelo', 1, '1 min', 0), ex(2, 'Mesa flexora', 4, '12', 60), ex(3, 'Elevação pélvica', 4, '10', 60), ex(4, 'Abdução na máquina', 3, '20', 45), ex(5, 'Passada', 3, '12 cada', 60)] },
   { id: 't4', letra: 'D', nome: 'Superior · peito, braço e core', duracao_min: 40, ordem: 3, exercicios: [ex(1, 'Supino na máquina', 4, '10', 60), ex(2, 'Rosca direta', 3, '12', 45), ex(3, 'Tríceps na paralela', 3, '12', 45), ex(4, 'Abdominal infra', 3, '15', 30), ex(5, 'Prancha lateral', 3, '20s cada', 30)] }] };
 
-const perfilDemo = { id: 'demo', role: 'aluna', nome: 'Ana Paula (demo)', whatsapp: '62999990000', objetivo: 'Emagrecer', dias_semana: 4, local_treino: 'academia', limitacoes: 'atenção lombar', peso_kg: 64.2, altura_m: 1.65, nascimento: '1997-05-14', sexo: 'F', atividade: 'leve', plano: 'basico', ativa: true, pontos: 1240, cod_indicacao: 'ANA4F2', created_at: iso(daysAgo(95)) };
+const perfilDemo = { id: 'demo', role: 'aluna', nome: 'Ana Paula (demo)', whatsapp: '62999990000', objetivo: 'Emagrecer', dias_semana: 4, local_treino: 'academia', limitacoes: 'atenção lombar', peso_kg: 64.2, altura_m: 1.65, ativa: true, pontos: 1240, cod_indicacao: 'ANA4F2', created_at: iso(daysAgo(95)) };
 let state = LS.get('state') || { logado: false, perfil: perfilDemo, sessoes: [
   ...[1, 2, 4, 6, 8, 9, 11, 13, 15, 16, 18, 20, 22, 23, 25, 27, 29, 31, 34, 36, 38, 40, 43, 45, 47, 50, 52, 55, 58, 61, 64, 67].map((n, i) => ({ id: 's' + i, titulo: 'Treino ' + 'ABCD'[i % 4], finalizada_em: iso(daysAgo(n)), duracao_s: 2100 + (i % 5) * 120, exercicios_feitos: 7, exercicios_total: 7, esforco: 6 + (i % 3), nota: 8 + (i % 2), comentario: i === 1 ? 'senti a lombar no búlgaro' : null, resposta_igor: i === 1 ? 'Vi que sentiu a lombar no búlgaro. Na próxima faz com a perna de trás mais baixa, te mando o vídeo.' : null }))],
   pontos: [{ motivo: 'treino', pontos: 50, created_at: iso(daysAgo(1)) }, { motivo: 'story', pontos: 30, created_at: iso(daysAgo(1)) }, { motivo: 'semana', pontos: 100, created_at: iso(daysAgo(3)) }, { motivo: 'evolucao', pontos: 80, created_at: iso(daysAgo(20)) }],
@@ -39,17 +39,12 @@ export async function desafioAtual() { return { titulo: 'Desafio do mês', meta_
 export async function iniciarSessao(_, { treino_id, programa_treino_id, titulo, total }) { const s = { id: 's' + id(), titulo, exercicios_total: total, finalizada_em: null }; state.sessoes.unshift(s); save(); return s; }
 export async function salvarSeries(sessaoId, rows) { state.series.push(...rows.map(r => ({ ...r, sessao_id: sessaoId }))); save(); }
 export async function finalizarSessao(sessaoId, patch) { const s = state.sessoes.find(x => x.id === sessaoId); Object.assign(s, patch, { finalizada_em: iso(new Date()) }); state.perfil.pontos += 50; state.pontos.unshift({ motivo: 'treino', pontos: 50, created_at: iso(new Date()) }); save(); return s; }
-export async function historicoCarga(_, nome, limit = 5) {
-  const mine = state.series.filter(x => x.exercicio_nome === nome && x.kg).map(x => ({ kg: x.kg, reps: x.reps, data: iso(new Date()) }));
-  const demo = nome === 'Agachamento no Smith' ? [{ kg: 28, reps: 10, data: iso(daysAgo(4)) }, { kg: 26, reps: 10, data: iso(daysAgo(11)) }, { kg: 26, reps: 10, data: iso(daysAgo(18)) }, { kg: 24, reps: 12, data: iso(daysAgo(32)) }] : nome === 'Puxada alta' ? [{ kg: 35, reps: 10, data: iso(daysAgo(2)) }, { kg: 35, reps: 10, data: iso(daysAgo(9)) }, { kg: 32, reps: 12, data: iso(daysAgo(30)) }] : [];
-  return [...mine.reverse(), ...demo].slice(0, limit);
-}
-export async function ultimaCarga(_, nome) { return (await historicoCarga(_, nome, 1))[0] || null; }
+export async function ultimaCarga(_, nome) { const r = [...state.series].reverse().find(x => x.exercicio_nome === nome && x.kg); return r || (nome === 'Agachamento no Smith' ? { kg: 28, reps: 10 } : null); }
 export async function minhasSessoes() { return state.sessoes.filter(s => s.finalizada_em); }
 export async function registrarPontos(_, motivo, pontos, ref) { if (state.pontos.find(p => p.motivo === motivo && p.ref === ref)) return false; state.pontos.unshift({ motivo, pontos, ref, created_at: iso(new Date()) }); state.perfil.pontos += pontos; save(); return true; }
 export async function meusPontos() { return state.pontos; }
 export async function evolucao() { return state.evolucao; }
-export async function salvarEvolucao(_, row, fotos = {}) { const r = { ...row }; if (fotos.frente) r.foto_path = URL.createObjectURL(fotos.frente); if (fotos.lado) r.foto_lado = URL.createObjectURL(fotos.lado); if (fotos.costas) r.foto_costas = URL.createObjectURL(fotos.costas); state.evolucao = state.evolucao.filter(e => e.data !== row.data).concat(r).sort((a, b) => a.data.localeCompare(b.data)); save(); return r; }
+export async function salvarEvolucao(_, row, file) { const r = { ...row }; if (file) r.foto_path = URL.createObjectURL(file); state.evolucao = state.evolucao.filter(e => e.data !== row.data).concat(r).sort((a, b) => a.data.localeCompare(b.data)); save(); return r; }
 export async function fotoUrl(p) { return p && p.startsWith('blob:') ? p : null; }
 export const admin = {
   async alunas() { return [['Marcela D.', 0, 16, 2100], ['Ludimila M.', 1, 15, 1900], ['Ana Paula', 1, 14, 1240], ['Lorena S.', 4, 6, 420], ['Patrícia M.', 6, 3, 310], ['Fabiana R.', 9, 1, 150], ['Nova aluna', 999, 0, 0]].map(([nome, d, m, pts], i) => ({ id: 'a' + i, nome, whatsapp: '62999990000', ativa: i !== 6 || true, pontos: pts, dias_semana: 4, ultimo_treino: d === 999 ? null : iso(daysAgo(d)), dias_sem_treinar: d, treinos_mes: m })); },
