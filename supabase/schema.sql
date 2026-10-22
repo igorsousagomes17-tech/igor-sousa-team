@@ -130,8 +130,6 @@ create table if not exists cardio (
   kcal int,
   created_at timestamptz default now()
 );
-alter table cardio enable row level security;
-create policy "cardio: aluna" on cardio for all using (aluna_id=auth.uid() or is_admin()) with check (aluna_id=auth.uid() or is_admin());
 
 -- PONTOS / EVOLUÇÃO / RECADOS -------------------------------------------
 create table if not exists pontos_log (
@@ -229,6 +227,10 @@ create or replace function is_admin() returns boolean language sql stable as $$
   select exists(select 1 from profiles where id=auth.uid() and role='admin')
 $$;
 
+-- cardio
+alter table cardio enable row level security;
+create policy "cardio: aluna" on cardio for all using (aluna_id=auth.uid() or is_admin()) with check (aluna_id=auth.uid() or is_admin());
+
 -- profiles
 create policy "perfil: ler o próprio ou admin" on profiles for select using (id=auth.uid() or is_admin());
 create policy "perfil: editar o próprio" on profiles for update using (id=auth.uid() or is_admin()) with check (id=auth.uid() or is_admin());
@@ -263,8 +265,8 @@ create policy "desafios: todas leem" on desafios for select using (auth.uid() is
 create policy "desafios: admin" on desafios for all using (is_admin()) with check (is_admin());
 
 -- STORAGE: bucket privado "evolucao" (criar no painel) com policy por pasta = aluna_id
--- insert into storage.buckets (id,name,public) values ('evolucao','evolucao',false) on conflict do nothing;
--- create policy "evolucao: dona" on storage.objects for all using (bucket_id='evolucao' and (split_part(name,'/',1)=auth.uid()::text or is_admin()));
+insert into storage.buckets (id,name,public) values ('evolucao','evolucao',false) on conflict do nothing;
+create policy "evolucao: dona" on storage.objects for all using (bucket_id='evolucao' and (split_part(name,'/',1)=auth.uid()::text or is_admin()));
 
 -- SEED: programas extras
 insert into programas (slug,titulo,subtitulo,capa_url,ordem) values
