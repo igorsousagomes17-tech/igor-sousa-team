@@ -21,3 +21,7 @@ Pendente:
 - [ ] Link real da Kiwify e WhatsApp do Igor em js/config.js (Igor precisa passar).
 - [ ] Fotos dos prêmios do trimestre; vídeos dos exercícios (Igor gravando).
 - [x] Aviso no fim do descanso com app em segundo plano/tela apagada (service worker, Android; permissão pedida no 1º descanso). iPhone: só com Web Push do servidor (fase 2) — por ora a tela fica acesa no treino.
+
+## 2026-10-22 (ideias do protótipo FITCONSULT do Gemini, pedidas pelo Igor)
+- [x] Aba "Vídeos": biblioteca com busca de todos os exercícios (treino do mês + programas extras), marca "em gravação" quando ainda não tem vídeo.
+- [x] Lista do treino mostra "Última: X kg × reps" de cada exercício (cache no celular + atualização do banco).

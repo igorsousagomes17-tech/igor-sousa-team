@@ -86,6 +86,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso') {
 
 export function tabs(active) {
   const t = [['home', 'Início', 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'], ['treino', 'Treino', 'M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12'],
+    ['videos', 'Vídeos', 'M4 5h16v14H4zM10 9l5 3-5 3z'],
     ['pontos', 'Pontos', 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z'], ['evolucao', 'Evolução', 'M4 19V5M4 19h16M7 15l4-5 3 3 5-7'],
     ['perfil', 'Perfil', 'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM4 21a8 8 0 0 1 16 0']];
   return `<nav class="tabs">${t.map(([id, l, d]) => `<button class="tab ${active === id ? 'on' : ''}" data-go="${id}"><svg viewBox="0 0 24 24"><path d="${d}"/></svg>${l}</button>`).join('')}</nav>`;

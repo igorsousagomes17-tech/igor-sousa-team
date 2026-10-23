@@ -126,8 +126,12 @@ routes.treino = async (letra) => {
   <div class="row wrap" style="gap:6px">${plano.treinos.map(x => `<button class="pill ${x.letra === t.letra ? 'on' : ''}" data-go="treino" data-arg="${esc(x.letra)}">Treino ${esc(x.letra)}</button>`).join('')}</div>
   <div><h1>Treino ${esc(t.letra)}</h1><p class="muted">${esc(t.nome)} · ${t.exercicios.length} exercícios · ~${t.duracao_min || 40} min</p></div>
   ${plano.obs ? `<div class="card" style="padding:10px 14px"><p class="muted"><b style="color:var(--fg)">Do Igor:</b> ${esc(plano.obs)}</p></div>` : ''}
-  <div>${t.exercicios.map(e => `<div class="ex"><div class="n">${e.ordem}</div><div class="t"><b>${esc(e.nome)}</b><span>${e.series > 1 ? e.series + ' × ' : ''}${esc(e.reps)}${e.descanso_s ? ' · descanso ' + e.descanso_s + 's' : ''}${e.biset_com ? ' · <b style="color:var(--accent);display:inline;font-size:12px">bi-set com o exercício ' + e.biset_com + '</b>' : ''}</span></div><button class="play" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}" aria-label="Ver vídeo"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></button></div>`).join('')}</div>
+  <div>${t.exercicios.map(e => `<div class="ex"><div class="n">${e.ordem}</div><div class="t"><b>${esc(e.nome)}</b><span>${e.series > 1 ? e.series + ' × ' : ''}${esc(e.reps)}${e.descanso_s ? ' · descanso ' + e.descanso_s + 's' : ''}${e.biset_com ? ' · <b style="color:var(--accent);display:inline;font-size:12px">bi-set com o exercício ' + e.biset_com + '</b>' : ''}</span><span class="ult" data-n="${esc(e.nome)}"></span></div><button class="play" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}" aria-label="Ver vídeo"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></button></div>`).join('')}</div>
   ${S.sessao ? `<button class="btn" data-go="sessao">▶ Continuar ${esc(S.sessao.titulo)} (${feitosCount(S.sessao)}/${S.sessao.exs.length})</button><button class="btn ghost" id="ini">Começar o Treino ${esc(t.letra)} do zero</button>` : `<button class="btn" id="ini">▶ Iniciar treino</button>`}<button class="btn ghost" id="pdf">📄 Baixar treino em PDF</button><p class="muted center small">Esse treino fica salvo no celular: abre mesmo sem sinal. Só o vídeo usa internet.</p></div>`, 'treino');
+  // Última carga de cada exercício: mostra o que tem no celular na hora e atualiza com o banco em segundo plano.
+  const mostraUlt = (nome, u) => { const el = $$('.ult').find(x => x.dataset.n === nome); if (el && u?.kg) el.innerHTML = `Última: <b>${String(u.kg).replace('.', ',')} kg</b>${u.reps ? ' × ' + u.reps : ''}`; };
+  const cache = db.LS.get('cargas', {}); t.exercicios.forEach(e => mostraUlt(e.nome, cache[e.nome]));
+  t.exercicios.forEach(e => { if (!tempo(e.reps)) db.ultimaCarga(S.perfil.id, e.nome).then(u => mostraUlt(e.nome, u)).catch(() => {}); });
   $('#ini').onclick = () => iniciarSessao({ titulo: `Treino ${t.letra}`, treino_id: t.id, exercicios: t.exercicios, duracao_min: t.duracao_min });
   $('#pdf').onclick = async () => {
     const b = $('#pdf'); b.disabled = true; b.textContent = 'Gerando PDF...';
@@ -135,6 +139,28 @@ routes.treino = async (letra) => {
     catch (e) { toast(e.message || 'Não deu pra gerar o PDF', true); }
     b.disabled = false; b.textContent = '📄 Baixar treino em PDF';
   };
+};
+
+// BIBLIOTECA DE VÍDEOS: todos os exercícios do treino do mês + programas extras, com busca ---------------
+routes.videos = async () => {
+  const [plano, programas] = await Promise.all([S.plano || db.planoAtual(S.perfil.id), S.programas || db.programas()]);
+  const mapa = new Map();
+  const add = (e, onde) => { if (!e?.nome || /hiit|cardio/i.test(e.nome)) return; const k = e.nome.trim().toLowerCase(); const a = mapa.get(k) || { nome: e.nome, video_url: null, dica: null, onde: new Set() }; a.video_url = a.video_url || e.video_url || null; a.dica = a.dica || e.dica || null; a.onde.add(onde); mapa.set(k, a); };
+  (plano?.treinos || []).forEach(t => t.exercicios.forEach(e => add(e, 'Treino ' + t.letra)));
+  (programas || []).forEach(pr => (pr.programa_treinos || []).forEach(t => (t.exercicios || []).forEach(e => add(e, pr.titulo))));
+  const lista = [...mapa.values()].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+  const comVideo = lista.filter(x => x.video_url).length;
+  render(`<div class="view fx"><div class="topbar"><h2>Vídeos</h2><span class="pill">${lista.length} exercícios</span></div>
+  <p class="muted">Como fazer cada exercício, com o Igor. Dá pra assistir antes de ir pra academia.${!comVideo ? ' Os vídeos estão sendo gravados e vão aparecendo aqui.' : comVideo < lista.length ? ` <b style="color:var(--fg)">${comVideo} já gravados</b>, o resto chegando.` : ''}</p>
+  <input class="input" id="busca" type="search" placeholder="Buscar exercício (ex.: búlgaro)" autocomplete="off">
+  <div id="lv"></div></div>`, 'videos');
+  const norm = x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const desenha = (q = '') => {
+    const f = lista.filter(x => norm(x.nome).includes(norm(q)));
+    $('#lv').innerHTML = f.length ? f.map(x => `<button class="ex vid" data-vid="${esc(x.nome)}" data-url="${esc(x.video_url || '')}" data-dica="${esc(x.dica || '')}" style="width:100%;background:none;border:0;border-bottom:1px solid var(--line);color:var(--fg);text-align:left"><div class="play" style="flex-shrink:0;${x.video_url ? '' : 'background:#2a2a2e;color:var(--muted)'}"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div><div class="t"><b>${esc(x.nome)}</b><span>${esc([...x.onde].join(' · '))}${x.video_url ? '' : ' · <i style="color:var(--accent)">em gravação</i>'}</span></div></button>`).join('')
+      : `<div class="card" style="margin-top:8px"><p class="muted">Não achei "${esc(q)}". Tenta outro nome ou chama o Igor no WhatsApp.</p></div>`;
+  };
+  desenha(); $('#busca').oninput = e => desenha(e.target.value);
 };
 
 // PROGRAMAS EXTRAS -------------------------------------------------------------
@@ -487,7 +513,7 @@ async function boot() {
   if (!S.perfil.objetivo) { anamneseForm(S.perfil, () => go('home'), 'Me conta de você'); }
   const h = location.hash.slice(1);
   if (S.sessao && h === 'sessao') return go('sessao');
-  go(['treino', 'pontos', 'evolucao', 'perfil', 'lib'].includes(h) ? h : 'home');
+  go(['treino', 'videos', 'pontos', 'evolucao', 'perfil', 'lib'].includes(h) ? h : 'home');
 }
 // 1º acesso: a senha inicial é o WhatsApp; ela cria uma só dela antes de entrar.
 function criarSenha() {
