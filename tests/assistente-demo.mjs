@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import path from 'path'; const APP=process.env.APP||path.resolve(path.dirname(new URL(import.meta.url).pathname),'..');
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}); const p=await b.newPage({viewport:{width:375,height:812},deviceScaleFactor:2,serviceWorkers:'block'});
+const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}); const p=await b.newPage({locale:'pt-BR',viewport:{width:375,height:812},deviceScaleFactor:2,serviceWorkers:'block'});
 await p.route('**/*', r=>{ const u=new URL(r.request().url()); if(u.hostname==='app.local'){ const f=u.pathname==='/'?'/index.html':u.pathname; return r.fulfill({path:APP+f}); } return r.abort(); });
 const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>{errs.push('DIALOG');d.dismiss();});
 await p.goto('http://app.local/?demo'); await p.waitForTimeout(500); await p.click('text=ENTRAR'); await p.fill('#em','ana@demo.com'); await p.press('#pw','Enter'); await p.waitForTimeout(1200);

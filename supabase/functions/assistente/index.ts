@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
   if (!user) return json({ erro: 'nao_autenticado' }, 401);
   if (!chave) return json({ erro: 'ia_desligada', resposta: 'O tira-dúvidas ainda tá sendo ligado pelo Igor. Enquanto isso, manda sua dúvida no recado do fim do treino ou no WhatsApp dele.' }, 503);
 
-  let body: { texto?: string; contexto?: string } = {};
+  let body: { texto?: string; contexto?: string; idioma?: string } = {};
   try { body = await req.json(); } catch { /* vazio */ }
   const texto = String(body.texto || '').trim().slice(0, 1500);
   if (!texto) return json({ erro: 'vazio' }, 400);
@@ -348,6 +348,10 @@ EVOLUÇÃO (mais recente primeiro):
 ${(evol.data || []).map((e: any) => `- ${e.data}: ${e.peso_kg ?? '-'} kg, cintura ${e.cintura_cm ?? '-'} cm`).join('\n') || '- sem registro'}
 Data de hoje: ${hojeBR}.${body.contexto ? `\nCONTEXTO DA TELA: ${String(body.contexto).slice(0, 300)}` : ''}`;
 
+  // Idioma do app da aluna (pt, en, es, zh, hi, fr): fora do português, a resposta vem sempre na língua dela.
+  const IDIOMAS: Record<string, string> = { en: 'English', es: 'Spanish (español)', zh: 'Simplified Chinese (简体中文)', hi: 'Hindi (हिन्दी, Devanagari script)', fr: 'French (français)' };
+  const lingua = IDIOMAS[String(body.idioma || 'pt').toLowerCase().slice(0, 2)];
+  const instrucaoIdioma = lingua ? `\n\nIDIOMA: a aluna usa o app em ${lingua}. Responda SEMPRE em ${lingua}, no mesmo tom informal, curto e motivador do Igor, com o vocabulário de academia natural nessa língua (ex.: séries, repetições, descanso, bi-set). Os nomes dos exercícios e as dicas vêm do Igor em português: mantenha o nome do exercício como está (pode explicar entre parênteses) e traduza a explicação. Mesmo que os dados acima estejam em português, nunca responda em português.` : '';
   const mensagens = [...(hist.data || [])].reverse().map((m: any) => ({ role: m.papel, content: m.texto }));
   while (mensagens.length && mensagens[0].role !== 'user') mensagens.shift();
   mensagens.push({ role: 'user', content: texto });
@@ -355,7 +359,7 @@ Data de hoje: ${hojeBR}.${body.contexto ? `\nCONTEXTO DA TELA: ${String(body.con
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': chave, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: modelo, max_tokens: 700, system: PROMPT_IGOR + '\n\n' + SOBRE_O_APP + '\n' + dados, messages: mensagens }),
+    body: JSON.stringify({ model: modelo, max_tokens: 700, system: PROMPT_IGOR + '\n\n' + SOBRE_O_APP + '\n' + dados + instrucaoIdioma, messages: mensagens }),
   });
   if (!r.ok) { console.error('anthropic', r.status, (await r.text()).slice(0, 300)); return json({ erro: 'ia_falhou', resposta: 'Não consegui responder agora. Tenta de novo em um minutinho.' }, 502); }
   const out = await r.json();

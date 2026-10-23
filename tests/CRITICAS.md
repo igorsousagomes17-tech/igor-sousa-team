@@ -69,3 +69,20 @@ Pendente:
 - [x] Função do servidor `assistente` (supabase/functions/assistente): prompt do Igor (docs/assistente-prompt.md) + dados só da aluna logada (perfil, treino do mês, últimos treinos, cargas, evolução). Tabela assistente_msgs (migração 005, já rodada).
 - [x] Segurança: v_alunas_status agora com security_invoker (aluna não vê lista das outras; anônimo bloqueado). Migração 004 rodada.
 - [ ] Igor precisa criar a chave da API da Anthropic e colar em Supabase › Edge Functions › Secrets como ANTHROPIC_API_KEY (sem ela a IA responde "ainda tá sendo ligado").
+
+## 2026-10-23 (idiomas)
+Feito:
+- [x] App da aluna em 6 idiomas: português (padrão), inglês, espanhol, chinês simplificado, hindi e francês (js/i18n.js). Idioma: o que ela escolheu no app (localStorage 'idioma') → idioma do celular → português. `<html lang>` acompanha.
+- [x] `t('texto em português', {vars})` com a chave = o próprio português (código continua legível), plural por idioma (`tp`), datas/números com Intl no locale (en-AU/en-IE/es-MX respeitam a região do celular), decimal com vírgula ou ponto conforme a língua.
+- [x] Traduzido: entrada, login, 1º acesso/senha, Início, Treino, sessão (bi-set → superset/biserie, descanso, cronômetro, avisos de fim do descanso), confirmação de encerrar, feedback, card do app e do story (imagem), Pontos, Evolução (registro do mês), Perfil, Vídeos, Tira-dúvidas (sugestões, saudação, erros), anamnese inteira (perguntas e opções; o valor salvo no banco continua em português), toasts e erros, PDF.
+- [x] Seletor com bandeira + nome nativo no Perfil (card "Idioma") e botão pequeno no canto da entrada/login; trocar re-desenha a tela atual na hora.
+- [x] Fontes: pilha com Noto Sans / PingFang SC / Microsoft YaHei / Noto Sans Devanagari / system-ui (nada baixado); entrelinha maior em hindi e chinês; abas com reticências se precisar; botões quebram linha em vez de estourar.
+- [x] IA: o app manda `idioma` pra função `assistente`; fora do português ela acrescenta no system "responda sempre em <língua>". Erros da função (IA desligada, limite, pausada) traduzidos no app pelo código do erro.
+- [x] Teste novo tests/idiomas.mjs: percorre as telas nos 6 idiomas em 360px, falha com erro de página/console, texto sem tradução, frase da interface em português sobrando ou algo estourando a largura. Testes antigos rodam com locale pt-BR fixo.
+Ficou de fora / pendente:
+- [ ] Publicar a função `assistente` (supabase/functions/assistente/index.ts) pra IA responder no idioma da aluna. Sem publicar, o app funciona; a IA só continua respondendo em português.
+- [ ] Conteúdo do Igor continua em português: nomes de exercício, dicas, reps escritas ("1 min cada lado"), recados, nomes dos treinos/programas, desafio do mês e respostas do Igor. A busca de vídeos procura pelos nomes em português.
+- [ ] PDF em chinês e hindi sai em inglês (a fonte do PDF só tem alfabeto latino; embutir fonte custaria vários MB).
+- [ ] Peso em kg e medidas em cm em todos os idiomas (alunas dos EUA podem querer lb/in).
+- [ ] Painel do Igor (admin.js) e notificação push do servidor continuam só em português.
+- [ ] Revisão das traduções por falante nativo (principalmente hindi e chinês) quando tiver aluna nessas línguas.

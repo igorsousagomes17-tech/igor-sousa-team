@@ -6,7 +6,7 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 const falhas = [], errs = []; let n = 0;
 const ok = (cond, msg) => { console.log((cond ? '  ok  ' : '  FALHOU ') + msg); if (!cond) falhas.push(msg); };
 async function nova(t0) {
-  const ctx = await b.newContext({ viewport: { width: W, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+  const ctx = await b.newContext({ locale: 'pt-BR', viewport: { width: W, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
   const p = await ctx.newPage();
   if (t0) await p.clock.install({ time: t0 });
   await p.route('**/*', r => { const u = new URL(r.request().url()); if (u.hostname === 'app.local') { const f = u.pathname === '/' ? '/index.html' : u.pathname; return r.fulfill({ path: APP + f }); } return r.abort(); });

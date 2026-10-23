@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
-import path from 'path'; const APP=path.resolve(path.dirname(new URL(import.meta.url).pathname),'..'); const D=process.env.OUT||'/tmp';
-const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}); const ctx=await b.newContext({viewport:{width:375,height:812},deviceScaleFactor:2,serviceWorkers:'block'}); const p=await ctx.newPage();
+import path from 'path'; const APP=process.env.APP||path.resolve(path.dirname(new URL(import.meta.url).pathname),'..'); const D=process.env.OUT||'/tmp';
+const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}); const ctx=await b.newContext({locale:'pt-BR',viewport:{width:375,height:812},deviceScaleFactor:2,serviceWorkers:'block'}); const p=await ctx.newPage();
 await p.route('**/*', r=>{ const u=new URL(r.request().url()); if(u.hostname==='app.local'){ const f=u.pathname==='/'?'/index.html':u.pathname; return r.fulfill({path:APP+f}); } return r.abort(); });
 const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>{errs.push('DIALOG '+d.message()); d.dismiss();});
 let n=0; const shot=async t=>{await p.waitForTimeout(400); await p.screenshot({path:`${D}/${String(++n).padStart(2,'0')}-${t}.png`});};

@@ -2,7 +2,7 @@
 :root{
   --bg:#0b0b0c;--panel:#151517;--panel2:#1e1e21;--line:#2a2a2e;--fg:#f4f2ee;--muted:#9a968f;
   --accent:#ff6a00;--accent2:#ff8a33;--accent-ink:#1a0d00;--good:#39c56a;--warn:#f4b942;--bad:#ff4d4d;--wa:#25D366;
-  --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;--body:"Barlow","Helvetica Neue",Arial,sans-serif;
+  --display:"Barlow Condensed","Arial Narrow",Impact,"Noto Sans","PingFang SC","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC","Noto Sans Devanagari",system-ui,sans-serif;--body:"Barlow","Helvetica Neue",Arial,"Noto Sans","PingFang SC","Microsoft YaHei","Noto Sans SC","Noto Sans CJK SC","Noto Sans Devanagari",system-ui,sans-serif;
   --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
   color-scheme:dark;
 }
@@ -170,3 +170,17 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .sug{display:flex;flex-wrap:wrap;gap:8px}.sug .pill{font-size:14px;min-height:40px;padding:9px 13px;text-transform:none;letter-spacing:0}
 .chatbar{position:sticky;bottom:calc(76px + var(--sab));display:flex;gap:8px;align-items:flex-end;background:var(--bg);padding:8px 0}
 .chatbar textarea{resize:none;min-height:48px;max-height:140px;font-size:16px}
+
+/* idiomas (2026-10-23): seletor, abas que não estouram, alfabetos sem maiúscula */
+.langbtn{position:absolute;top:calc(12px + var(--sat));right:16px;z-index:3;display:flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:999px;border:0;background:rgba(11,11,12,.72);color:var(--fg);font-size:14px;font-weight:600;letter-spacing:.5px;backdrop-filter:blur(6px)}
+.langbtn span{font-size:18px}
+.langbtn.inline{position:static;background:#2a2a2e}
+.tabs .tab span{display:block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill.quebra{white-space:normal;text-align:center;line-height:1.25;min-width:0}
+.topbar>*{min-width:0}
+.btn{overflow-wrap:anywhere;text-wrap:balance;line-height:1.1}
+h2{overflow-wrap:anywhere}
+:lang(zh) h1,:lang(zh) h2,:lang(zh) h3,:lang(zh) .btn,:lang(zh) .big{letter-spacing:0;line-height:1.25}
+:lang(hi) h1,:lang(hi) h2,:lang(hi) h3,:lang(hi) .btn,:lang(hi) .big{letter-spacing:0;line-height:1.4}
+:lang(hi) h1{font-size:28px}
+:lang(hi) p,:lang(hi) .muted{line-height:1.6}

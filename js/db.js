@@ -1,5 +1,6 @@
 // Camada de dados: Supabase + cache local do treino (pra abrir sem sinal).
 import { createClient } from './vendor/supabase.js'; // empacotado no app: abre sem internet
+import { idioma } from './i18n.js';
 
 const C = window.ISTEAM_CONFIG;
 export const sb = createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
@@ -197,7 +198,7 @@ export const assistente = {
   },
   async perguntar(texto, contexto) {
     const { data: { session } } = await sb.auth.getSession();
-    const r = await fetch(`${C.SUPABASE_URL}/functions/v1/assistente`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}`, apikey: C.SUPABASE_ANON_KEY }, body: JSON.stringify({ texto, contexto }) });
+    const r = await fetch(`${C.SUPABASE_URL}/functions/v1/assistente`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}`, apikey: C.SUPABASE_ANON_KEY }, body: JSON.stringify({ texto, contexto, idioma: idioma() }) }); // a IA responde no idioma do app
     const j = await r.json().catch(() => ({}));
     if (!j.resposta) throw new Error(j.erro || 'falhou');
     return j;

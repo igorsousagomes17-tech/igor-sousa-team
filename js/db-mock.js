@@ -1,3 +1,4 @@
+import { t as tr } from './i18n.js';
 // Modo DEMO: mesma interface do db.js, dados fictícios em memória (nada é enviado).
 const LS = { get(k, d = null) { try { const v = localStorage.getItem('demo:' + k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem('demo:' + k, JSON.stringify(v)); } catch {} }, del(k) { try { localStorage.removeItem('demo:' + k); } catch {} } };
 export { LS };
@@ -61,10 +62,10 @@ export const assistente = {
   async perguntar(texto) {
     await wait(900);
     const t = texto.toLowerCase();
-    const resposta = /dor|doeu|machuc/.test(t) ? 'Se doeu durante o exercício, para esse movimento agora, tá? Dor não é sinal de treino bom. Se for leve e passar em 1-2 dias, segue com carga menor. Se continuar, limitar o movimento ou for forte, procura avaliação e avisa o Igor no recado do fim do treino pra ele ajustar seu treino.'
-      : /carga|subir|peso/.test(t) ? 'Sobe quando você bater o topo das repetições com boa técnica em todas as séries. Ex.: no Agachamento Smith (3 x 12/10/8) sua última foi 28 kg x 10. Fechou as reps com folga? Na próxima tenta 30 kg e volta pro começo da faixa.'
-      : /bi-?set/.test(t) ? 'Bi-set é fazer dois exercícios em sequência, sem descanso entre eles. No app aparece A1 e A2: faz uma série do A1, emenda no A2 e só aí descansa. Economiza tempo e mantém o volume.'
-      : 'Boa pergunta! (Modo demonstração: aqui a IA de verdade responde com base no seu treino, nas suas cargas e na sua anamnese, seguindo as regras do Igor.)';
+    const resposta = tr(/dor|doeu|machuc|pain|hurt|dolor|douleur|疼|दर्द/.test(t) ? 'Se doeu durante o exercício, para esse movimento agora, tá? Dor não é sinal de treino bom. Se for leve e passar em 1-2 dias, segue com carga menor. Se continuar, limitar o movimento ou for forte, procura avaliação e avisa o Igor no recado do fim do treino pra ele ajustar seu treino.'
+      : /carga|subir|peso|weight|load|poids|重量|वजन/.test(t) ? 'Sobe quando você bater o topo das repetições com boa técnica em todas as séries. Ex.: no Agachamento Smith (3 x 12/10/8) sua última foi 28 kg x 10. Fechou as reps com folga? Na próxima tenta 30 kg e volta pro começo da faixa.'
+      : /bi-?set|superset|biserie|超级组|सुपरसेट/.test(t) ? 'Bi-set é fazer dois exercícios em sequência, sem descanso entre eles. No app aparece A1 e A2: faz uma série do A1, emenda no A2 e só aí descansa. Economiza tempo e mantém o volume.'
+      : 'Boa pergunta! (Modo demonstração: aqui a IA de verdade responde com base no seu treino, nas suas cargas e na sua anamnese, seguindo as regras do Igor.)'); // demo: responde no idioma do app, como a IA de verdade
     state.chat = [...(state.chat || []), { papel: 'user', texto }, { papel: 'assistant', texto: resposta }]; save();
     return { resposta, restantes: 27 };
   },
