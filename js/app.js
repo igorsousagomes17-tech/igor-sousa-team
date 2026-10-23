@@ -98,7 +98,7 @@ routes.treino = async (letra) => {
   <div class="row wrap" style="gap:6px">${plano.treinos.map(x => `<button class="pill ${x.letra === t.letra ? 'on' : ''}" data-go="treino" data-arg="${esc(x.letra)}">Treino ${esc(x.letra)}</button>`).join('')}</div>
   <div><h1>Treino ${esc(t.letra)}</h1><p class="muted">${esc(t.nome)} · ${t.exercicios.length} exercícios · ~${t.duracao_min || 40} min</p></div>
   ${plano.obs ? `<div class="card" style="padding:10px 14px"><p class="muted"><b style="color:var(--fg)">Do Igor:</b> ${esc(plano.obs)}</p></div>` : ''}
-  <div>${t.exercicios.map(e => `<div class="ex"><div class="n">${e.ordem}</div><div class="t"><b>${esc(e.nome)}</b><span>${e.series} × ${esc(e.reps)} · descanso ${e.descanso_s}s${e.biset_com ? ' · bi-set com o ' + e.biset_com : ''}</span></div><button class="play" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}" aria-label="Ver vídeo"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></button></div>`).join('')}</div>
+  <div>${t.exercicios.map(e => `<div class="ex"><div class="n">${e.ordem}</div><div class="t"><b>${esc(e.nome)}</b><span>${e.series > 1 ? e.series + ' × ' : ''}${esc(e.reps)}${e.descanso_s ? ' · descanso ' + e.descanso_s + 's' : ''}${e.biset_com ? ' · bi-set com o ' + e.biset_com : ''}</span></div><button class="play" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}" aria-label="Ver vídeo"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></button></div>`).join('')}</div>
   <button class="btn" id="ini">▶ Iniciar treino</button><button class="btn ghost" id="pdf">📄 Baixar treino em PDF</button><p class="muted center small">Treino salvo no celular. Só o vídeo usa internet.</p></div>`, 'treino');
   $('#ini').onclick = () => iniciarSessao({ titulo: `Treino ${t.letra}`, treino_id: t.id, exercicios: t.exercicios, duracao_min: t.duracao_min });
   $('#pdf').onclick = async () => {
@@ -140,7 +140,7 @@ function renderSessao() {
   render(`<div class="view fx"><div class="topbar"><button class="back" id="sair">‹ Sair</button><span class="pill" id="clock">${fmtMin(Math.floor((Date.now() - s.inicio) / 1000))}</span></div>
   <div class="row between"><span class="muted">Exercício ${s.i + 1} de ${s.exercicios.length}</span><span class="muted">${s.feitos} concluído${s.feitos === 1 ? '' : 's'}</span></div>
   <div class="bar"><i style="width:${(s.i) / s.exercicios.length * 100}%"></i></div>
-  <div id="exc"><h1>${esc(e.nome)}</h1><p class="muted">${e.series} × ${esc(e.reps)} · descanso ${e.descanso_s}s${e.dica ? ' · ' + esc(e.dica) : ''}</p>
+  <div id="exc"><h1>${esc(e.nome)}</h1><p class="muted">${e.series > 1 ? e.series + ' × ' : ''}${esc(e.reps)}${e.descanso_s ? ' · descanso ' + e.descanso_s + 's' : ''}${e.dica ? ' · ' + esc(e.dica) : ''}</p>
   <div class="row" style="margin:10px 0"><button class="btn ghost sm" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}">▶ Ver execução</button>${e.alternativa ? `<button class="btn ghost sm" id="swap">⇄ Trocar</button>` : ''}</div>
   <p class="restHint">${e.descanso_s ? 'Terminou a série? <b>Toca no ⏱</b> pra começar o descanso.' : 'Terminou a série? <b>Toca no ✓</b> pra marcar.'}</p>
   <div class="set"><span class="h">Sér</span><span class="h">kg</span><span class="h">reps</span><span class="h c">${e.descanso_s ? 'descanso' : 'feito'}</span></div>
