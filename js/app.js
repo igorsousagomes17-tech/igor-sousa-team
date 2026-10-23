@@ -126,6 +126,7 @@ routes.home = async () => {
     <button class="card" data-go="pontos" style="text-align:left;border:0;color:var(--fg)"><h3>${esc(desafio?.titulo || 'Desafio do mês')}</h3><div class="big" style="margin:6px 0 4px">${mesCount}<small>/${dmeta} treinos</small></div><div class="bar"><i style="width:${Math.min(100, mesCount / dmeta * 100)}%"></i></div><p class="muted mt">${mesCount >= dmeta ? 'Batido! +' + (desafio?.pontos_bonus || 200) + ' pts' : `Faltam ${dmeta - mesCount} pra +${desafio?.pontos_bonus || 200} pts`}</p></button>
     <div class="card"><h3>Meta da semana</h3><div class="big" style="margin:6px 0 4px">${semCount}<small>/${meta} treinos</small></div><div class="row" style="gap:4px">${Array.from({ length: meta }, (_, i) => `<i class="dot ${i < semCount ? 'on' : ''}"></i>`).join('')}</div><p class="muted mt">${semCount >= meta ? 'Semana fechada 💪' : `Falta${meta - semCount > 1 ? 'm' : ''} ${meta - semCount} · você consegue`}</p></div>
   </div>
+  <button class="card row" data-go="assistente" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex-shrink:0;color:var(--accent-ink);font-size:20px">💬</div><div style="flex:1;min-width:0"><b style="font-size:15px">Tira-dúvidas 24h</b><p class="muted">Pergunta sobre seu treino, execução, carga, cardio... a IA do time responde na hora.</p></div></button>
   <div class="row between"><h3>Programas extras</h3><button class="back" style="color:var(--accent)" data-go="lib">ver todos</button></div>
   <div class="hscroll">${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" style="background-image:url(${esc(pr.capa_url)})"><b>${esc(pr.titulo)}</b><span>${esc(subProg(pr))}</span></button>`).join('')}</div></div>`, 'home');
   if ($('#desc')) $('#desc').onclick = async () => { if (await perguntar('Descartar treino?', 'O que você marcou nesse treino vai ser apagado.', 'Descartar', 'Manter')) { pararDescanso(); S.sessao = null; db.LS.del('sessao'); routes.home(); } };
@@ -173,6 +174,49 @@ routes.treino = async (letra) => {
     catch (e) { toast(navigator.onLine === false ? 'Sem internet pra gerar o PDF agora. Depois da 1ª vez ele funciona sem sinal.' : (e.message || 'Não deu pra gerar o PDF'), true); }
     b.disabled = false; b.textContent = '📄 Baixar treino em PDF';
   };
+};
+
+// TIRA-DÚVIDAS (IA do time) -----------------------------------------------------------
+// Responde com o prompt do Igor + os dados da aluna (treino, cargas, anamnese). Quem conversa com a IA é o servidor.
+document.addEventListener('click', e => { const d = e.target.closest('[data-duvida]'); if (!d) return; e.preventDefault(); go('assistente', JSON.stringify({ pergunta: `Sobre o exercício ${d.dataset.duvida}: `, contexto: `Ela está no meio do treino (${S.sessao?.titulo || ''}), no exercício ${d.dataset.duvida}.` })); });
+const SUGESTOES = ['Como faço o búlgaro do jeito certo?', 'Quando eu subo a carga?', 'Senti dor no joelho, e agora?', 'Musculação ou cardio primeiro?', 'Não tô vendo resultado, o que pode ser?', 'Como funciona o bi-set?'];
+routes.assistente = async (arg) => {
+  const a = (() => { try { return JSON.parse(arg || '{}'); } catch { return {}; } })();
+  render(`<div class="view fx chat"><div class="topbar"><button class="back" id="volta">‹ Voltar</button><span class="pill">IA do time</span></div>
+  <div><h2>Tira-dúvidas</h2><p class="muted small">Responde com base no seu treino e nas regras do Igor. Não substitui o Igor, médico nem nutricionista.</p></div>
+  <div id="msgs" class="msgs"><p class="muted center small">Carregando conversa…</p></div>
+  <div class="chatbar"><textarea class="input" id="tx" rows="1" maxlength="1500" placeholder="Escreve sua dúvida…">${esc(a.pergunta || '')}</textarea><button class="btn sm" id="env" style="width:auto;padding:0 18px" aria-label="Enviar">➤</button></div>
+  <a class="small center" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener" style="color:var(--muted)">Caso individual ou mudança no treino? Fala direto com o Igor</a></div>`, 'home');
+  $('#volta').onclick = () => history.length > 1 ? history.back() : go('home');
+  const box = $('#msgs');
+  const bolha = (papel, texto) => `<div class="msg ${papel === 'user' ? 'eu' : 'ia'}">${esc(texto).replace(/\n/g, '<br>')}</div>`;
+  const desce = () => { box.scrollTop = box.scrollHeight; window.scrollTo(0, document.body.scrollHeight); };
+  let hist = [];
+  try { hist = await db.assistente.historico(S.perfil.id); } catch {}
+  if (rotaAtual !== 'assistente') return;
+  box.innerHTML = hist.length ? hist.map(m => bolha(m.papel, m.texto)).join('')
+    : `<div class="msg ia">Oi, ${esc(primeiroNome(S.perfil.nome))}! Sou a assistente do time do Igor. Posso te explicar seu treino, execução, carga, descanso, cardio, sono... Manda a dúvida 💪</div>`;
+  if (!hist.length) box.insertAdjacentHTML('beforeend', `<div class="sug">${SUGESTOES.map(q => `<button class="pill" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>`);
+  desce();
+  $$('.sug [data-q]').forEach(b => b.onclick = () => { $('#tx').value = b.dataset.q; enviar(); });
+  const tx = $('#tx'); const ajusta = () => { tx.style.height = 'auto'; tx.style.height = Math.min(140, tx.scrollHeight) + 'px'; }; tx.oninput = ajusta; ajusta();
+  if (a.pergunta) { tx.focus(); tx.setSelectionRange(tx.value.length, tx.value.length); }
+  tx.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } };
+  $('#env').onclick = enviar;
+  let indo = false;
+  async function enviar() {
+    const texto = tx.value.trim(); if (!texto || indo) return;
+    if (!navigator.onLine) return toast('Sem internet agora. Tenta de novo quando o sinal voltar.', true);
+    indo = true; $('#env').disabled = true; tx.value = ''; ajusta();
+    $$('.sug').forEach(x => x.remove());
+    box.insertAdjacentHTML('beforeend', bolha('user', texto) + '<div class="msg ia digitando" id="dig"><i></i><i></i><i></i></div>'); desce();
+    let r;
+    try { r = await db.assistente.perguntar(texto, a.contexto); } catch (er) { r = { resposta: 'Não consegui responder agora. Confere a internet e tenta de novo.', erro: true }; }
+    $('#dig')?.remove();
+    box.insertAdjacentHTML('beforeend', bolha('assistant', r.resposta || 'Não consegui responder agora.'));
+    if (r.restantes != null && r.restantes <= 5) box.insertAdjacentHTML('beforeend', `<p class="muted center small">${r.restantes} pergunta${r.restantes === 1 ? '' : 's'} restante${r.restantes === 1 ? '' : 's'} hoje</p>`);
+    a.contexto = null; desce(); indo = false; $('#env').disabled = false;
+  }
 };
 
 // BIBLIOTECA DE VÍDEOS: todos os exercícios do treino do mês + programas extras, com busca ---------------
@@ -312,7 +356,7 @@ routes.sessao = () => {
       ${ex ? `<p class="muted small">${esc(ex)}</p>` : ''}
       ${t && lado ? `<p class="muted small">Eu apito na metade pra você trocar de lado.</p>` : ''}
       ${e.dica ? `<p class="dica">${esc(e.dica)}</p>` : ''}
-      <div class="row" style="margin:8px 0;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" style="width:auto" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}">▶ Ver execução</button>${e.alternativa ? `<button class="btn ghost sm swap" style="width:auto" data-i="${i}">⇄ Trocar por ${esc(e.alternativa)}</button>` : e.nome !== e.original ? `<button class="btn ghost sm swap" style="width:auto" data-i="${i}">↺ Voltar pro ${esc(e.original)}</button>` : ''}</div>
+      <div class="row" style="margin:8px 0;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" style="width:auto" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}">▶ Ver execução</button><button class="btn ghost sm" style="width:auto" data-duvida="${esc(e.nome)}">? Dúvida</button>${e.alternativa ? `<button class="btn ghost sm swap" style="width:auto" data-i="${i}">⇄ Trocar por ${esc(e.alternativa)}</button>` : e.nome !== e.original ? `<button class="btn ghost sm swap" style="width:auto" data-i="${i}">↺ Voltar pro ${esc(e.original)}</button>` : ''}</div>
       ${t ? '' : `<div class="set ${sc ? 'sc' : ''}"><span class="h">Série</span>${sc ? '' : '<span class="h">kg</span>'}<span class="h">${lado ? 'reps/lado' : 'reps'}</span><span class="h c">${ultimoDoPar && e.descanso_s ? 'descanso' : 'feito'}</span></div>`}
       ${sets.map((st, k) => t
         ? `<div class="set tset ${st.done ? 'done' : ''}" data-i="${i}" data-k="${k}"><span>${k + 1}</span><span class="muted">${esc(e.reps)}</span>${botao(k)}</div>`

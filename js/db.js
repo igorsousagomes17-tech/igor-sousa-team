@@ -188,3 +188,22 @@ export const admin = {
   async publicarRecado(texto, midia_url) { const { error } = await sb.from('recados').insert({ texto, midia_url }); if (error) throw error; },
   async setAtiva(id, ativa) { const { error } = await sb.from('profiles').update({ ativa }).eq('id', id); if (error) throw error; }
 };
+
+// Tira-dúvidas (IA). A conversa com a IA acontece na função do servidor "assistente".
+export const assistente = {
+  async historico(alunaId) {
+    const { data } = await sb.from('assistente_msgs').select('papel,texto,created_at').eq('aluna_id', alunaId).order('created_at', { ascending: false }).limit(30);
+    return (data || []).reverse();
+  },
+  async perguntar(texto, contexto) {
+    const { data: { session } } = await sb.auth.getSession();
+    const r = await fetch(`${C.SUPABASE_URL}/functions/v1/assistente`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}`, apikey: C.SUPABASE_ANON_KEY }, body: JSON.stringify({ texto, contexto }) });
+    const j = await r.json().catch(() => ({}));
+    if (!j.resposta) throw new Error(j.erro || 'falhou');
+    return j;
+  },
+  async duvidasRecentes() { // painel do Igor
+    const { data } = await sb.from('assistente_msgs').select('texto,created_at,aluna_id,profiles(nome)').eq('papel', 'user').order('created_at', { ascending: false }).limit(25);
+    return data || [];
+  }
+};

@@ -54,3 +54,19 @@ export const admin = {
   async feedbacks() { return [{ id: 'f1', titulo: 'Treino A', finalizada_em: iso(new Date()), esforco: 7, nota: 9, comentario: 'senti a lombar no búlgaro', resposta_igor: null, profiles: { nome: 'Ana Paula', plano: 'personalizado' } }, { id: 'f2', titulo: 'Treino C', finalizada_em: iso(daysAgo(1)), esforco: 5, nota: 8, comentario: 'tá leve, sobe carga', resposta_igor: 'Bora subir 2 kg na mesa flexora então!', profiles: { nome: 'Marcela D.' } }]; },
   async responder() { await wait(); }, async anamneses() { return []; }, async planoDe() { return PLANO; }, async salvarPlano() { await wait(); }, async publicarRecado() { await wait(); }, async setAtiva() { await wait(); }
 };
+
+// Tira-dúvidas no modo demo: respostas de exemplo (a de verdade vem da IA no servidor).
+export const assistente = {
+  async historico() { return state.chat || []; },
+  async perguntar(texto) {
+    await wait(900);
+    const t = texto.toLowerCase();
+    const resposta = /dor|doeu|machuc/.test(t) ? 'Se doeu durante o exercício, para esse movimento agora, tá? Dor não é sinal de treino bom. Se for leve e passar em 1-2 dias, segue com carga menor. Se continuar, limitar o movimento ou for forte, procura avaliação e avisa o Igor no recado do fim do treino pra ele ajustar seu treino.'
+      : /carga|subir|peso/.test(t) ? 'Sobe quando você bater o topo das repetições com boa técnica em todas as séries. Ex.: no Agachamento Smith (3 x 12/10/8) sua última foi 28 kg x 10. Fechou as reps com folga? Na próxima tenta 30 kg e volta pro começo da faixa.'
+      : /bi-?set/.test(t) ? 'Bi-set é fazer dois exercícios em sequência, sem descanso entre eles. No app aparece A1 e A2: faz uma série do A1, emenda no A2 e só aí descansa. Economiza tempo e mantém o volume.'
+      : 'Boa pergunta! (Modo demonstração: aqui a IA de verdade responde com base no seu treino, nas suas cargas e na sua anamnese, seguindo as regras do Igor.)';
+    state.chat = [...(state.chat || []), { papel: 'user', texto }, { papel: 'assistant', texto: resposta }]; save();
+    return { resposta, restantes: 27 };
+  },
+  async duvidasRecentes() { return [{ texto: 'Senti o joelho no búlgaro, posso trocar?', created_at: iso(new Date()), profiles: { nome: 'Ana Paula' } }, { texto: 'Quando eu subo a carga do Smith?', created_at: iso(daysAgo(1)), profiles: { nome: 'Marcela D.' } }]; }
+};

@@ -63,3 +63,9 @@ Pendente:
 - [ ] Nomes quase repetidos na biblioteca ("Abdominal infra" x "Abdominal Infra Solo") e programas extras com poucos treinos: dados do Igor.
 - [ ] iPhone com iOS < 18.4 instalado na tela inicial pode apagar a tela no descanso (limite do iPhone; aviso com tela apagada só com Web Push, fase 2).
 - [ ] Link da Kiwify, WhatsApp do Igor, fotos dos prêmios, vídeos (seguem pendentes, dependem do Igor).
+
+## 2026-10-23 (pedido do Igor: IA tira-dúvidas)
+- [x] Tira-dúvidas 24h: card na Início, botão "? Dúvida" em cada exercício do treino (já abre com o nome do exercício), conversa salva, limite diário, painel do Igor com "Dúvidas na IA".
+- [x] Função do servidor `assistente` (supabase/functions/assistente): prompt do Igor (docs/assistente-prompt.md) + dados só da aluna logada (perfil, treino do mês, últimos treinos, cargas, evolução). Tabela assistente_msgs (migração 005, já rodada).
+- [x] Segurança: v_alunas_status agora com security_invoker (aluna não vê lista das outras; anônimo bloqueado). Migração 004 rodada.
+- [ ] Igor precisa criar a chave da API da Anthropic e colar em Supabase › Edge Functions › Secrets como ANTHROPIC_API_KEY (sem ela a IA responde "ainda tá sendo ligado").

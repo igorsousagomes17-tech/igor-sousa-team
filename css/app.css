@@ -159,3 +159,14 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .senha{position:relative}.senha .input{padding-right:92px}
 .olho{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--accent);font-size:14px;font-weight:600;min-height:44px;padding:0 10px}
 #rest-layer .ov{z-index:9}
+
+/* tira-dúvidas */
+.chat .msgs{display:flex;flex-direction:column;gap:10px;min-height:40vh;padding-bottom:8px}
+.msg{max-width:86%;padding:11px 14px;border-radius:16px;font-size:15px;line-height:1.45;word-wrap:break-word}
+.msg.ia{background:var(--panel);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.eu{background:var(--accent);color:var(--accent-ink);align-self:flex-end;border-bottom-right-radius:4px;font-weight:500}
+.msg.digitando{display:flex;gap:5px;padding:14px}.msg.digitando i{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:dig 1s infinite}.msg.digitando i:nth-child(2){animation-delay:.15s}.msg.digitando i:nth-child(3){animation-delay:.3s}
+@keyframes dig{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.sug{display:flex;flex-wrap:wrap;gap:8px}.sug .pill{font-size:14px;min-height:40px;padding:9px 13px;text-transform:none;letter-spacing:0}
+.chatbar{position:sticky;bottom:calc(76px + var(--sab));display:flex;gap:8px;align-items:flex-end;background:var(--bg);padding:8px 0}
+.chatbar textarea{resize:none;min-height:48px;max-height:140px;font-size:16px}
