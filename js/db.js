@@ -1,5 +1,5 @@
 // Camada de dados: Supabase + cache local do treino (pra abrir sem sinal).
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+import { createClient } from './vendor/supabase.js'; // empacotado no app: abre sem internet
 
 const C = window.ISTEAM_CONFIG;
 export const sb = createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
@@ -94,7 +94,13 @@ export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
   data.forEach(r => { const k = r.sessoes.finalizada_em; if (!por[k] || +r.kg > +por[k].kg) por[k] = { kg: r.kg, reps: r.reps, data: k }; });
   return Object.values(por).sort((a, b) => b.data.localeCompare(a.data)).slice(0, limit);
 }
-export async function ultimaCarga(alunaId, exercicioNome) { return (await historicoCarga(alunaId, exercicioNome, 1))[0] || null; }
+// Última carga: busca no banco e guarda no celular; sem internet usa a guardada.
+export async function ultimaCarga(alunaId, exercicioNome) {
+  const cache = LS.get('cargas', {});
+  try { const u = (await historicoCarga(alunaId, exercicioNome, 1))[0] || null; if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || cache[exercicioNome] || null; }
+  catch { return cache[exercicioNome] || null; }
+}
+export function guardarCarga(exercicioNome, kg, reps) { if (!kg) return; const c = LS.get('cargas', {}); c[exercicioNome] = { kg, reps, data: new Date().toISOString() }; LS.set('cargas', c); }
 export async function minhasSessoes(alunaId, limit = 60) {
   const { data } = await sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor')
     .eq('aluna_id', alunaId).not('finalizada_em', 'is', null).order('finalizada_em', { ascending: false }).limit(limit);
