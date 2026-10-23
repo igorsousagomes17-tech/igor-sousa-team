@@ -20,4 +20,4 @@ Corrigido e no ar:
 Pendente:
 - [ ] Link real da Kiwify e WhatsApp do Igor em js/config.js (Igor precisa passar).
 - [ ] Fotos dos prêmios do trimestre; vídeos dos exercícios (Igor gravando).
-- [ ] Notificação no fim do descanso com a tela bloqueada (hoje: apito/vibração com app aberto).
+- [x] Aviso no fim do descanso com app em segundo plano/tela apagada (service worker, Android; permissão pedida no 1º descanso). iPhone: só com Web Push do servidor (fase 2) — por ora a tela fica acesa no treino.

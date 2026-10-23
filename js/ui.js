@@ -48,6 +48,14 @@ export function beep() {
   } catch {}
 }
 
+// Pede permissão de notificação uma vez, no 1º descanso (o toque dela no ⏱ conta como gesto).
+function pedirAviso() {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'default' || localStorage.getItem('avisoPedido')) return;
+    localStorage.setItem('avisoPedido', '1');
+    Notification.requestPermission().then(r => { if (r === 'granted') toast('Pronto: te aviso quando o descanso acabar, mesmo com a tela apagada.'); });
+  } catch {}
+}
 // Timer em tela cheia (descanso ou exercício de tempo). Conta pelo horário de término, então não atrasa
 // se o celular segurar a tela. "Anotar" encolhe pra uma barra no rodapé pra registrar carga sem parar o tempo.
 // Resolve true (acabou), false (pulou) ou null (fechou sem fazer, só no tempo de exercício).
@@ -61,12 +69,15 @@ export function restTimer(segundos, proximo, titulo = 'Descanso') {
       <div class="ring" id="ring"><b id="rest-n"></b></div>
       <p class="muted center" id="rest-p">${esc(proximo || '')}</p>
       <div class="row"><button class="btn ghost sm" id="rest-skip">${trabalho ? 'Já fiz' : 'Pular'}</button><button class="btn sm" id="rest-add">+15s</button></div></div>`);
+    const avisar = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? 'Tempo! ⏱' : 'Descanso acabou! 💪', corpo: trabalho ? 'Série feita, volta pro app.' : (proximo || 'Bora a próxima série.') }); } catch {} };
+    const cancelarAviso = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} };
+    pedirAviso(); avisar();
     const left = () => Math.max(0, Math.ceil((fim - Date.now()) / 1000));
     const tick = () => { const l = left(), n = $('#rest-n'); if (!n) return; n.textContent = mini ? `${titulo} ${fmtMin(l)} · tocar pra abrir` : (l >= 60 ? fmtMin(l) : l); $('#ring').style.setProperty('--p', (l / total * 100) + '%'); if (l <= 0) end(true); };
-    const end = (r) => { clearInterval(iv); document.removeEventListener('visibilitychange', tick); closeOverlay(); if (r === true) { beep(); toast(trabalho ? 'Tempo! Série feita ✓' : 'Descanso acabou. Bora a próxima!'); } resolve(r); };
+    const end = (r) => { cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); closeOverlay(); if (r === true) { beep(); toast(trabalho ? 'Tempo! Série feita ✓' : 'Descanso acabou. Bora a próxima!'); } resolve(r); };
     iv = setInterval(tick, 250); document.addEventListener('visibilitychange', tick);
     $('#rest-skip').onclick = e => { e.stopPropagation(); end(trabalho ? true : false); };
-    $('#rest-add').onclick = e => { e.stopPropagation(); fim += 15000; total += 15; tick(); };
+    $('#rest-add').onclick = e => { e.stopPropagation(); fim += 15000; total += 15; avisar(); tick(); };
     $('#rest-x').onclick = e => { e.stopPropagation(); if (trabalho) return end(null); mini = true; $('#rest').classList.add('mini'); tick(); };
     $('#rest').onclick = () => { if (mini) { mini = false; $('#rest').classList.remove('mini'); tick(); } };
     tick();
