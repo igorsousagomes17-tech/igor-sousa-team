@@ -1,6 +1,6 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v2';
-const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/db.js','./js/ui.js','./js/admin.js','./js/db-mock.js','./js/config.js','./manifest.webmanifest',
+const CACHE = 'isteam-v4';
+const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/db.js','./js/ui.js','./js/admin.js','./js/pdf.js','./js/db-mock.js','./js/config.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png','./icons/igor_s.jpg','./icons/corrida_s.jpg','./icons/abdomen_s.jpg','./icons/mobilidade_s.jpg','./icons/casa_s.jpg','./icons/guia-frente.jpg','./icons/guia-lado.jpg','./icons/guia-costas.jpg'];
 
 self.addEventListener('install', e => {

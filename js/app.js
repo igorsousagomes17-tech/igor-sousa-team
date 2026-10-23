@@ -99,8 +99,14 @@ routes.treino = async (letra) => {
   <div><h1>Treino ${esc(t.letra)}</h1><p class="muted">${esc(t.nome)} · ${t.exercicios.length} exercícios · ~${t.duracao_min || 40} min</p></div>
   ${plano.obs ? `<div class="card" style="padding:10px 14px"><p class="muted"><b style="color:var(--fg)">Do Igor:</b> ${esc(plano.obs)}</p></div>` : ''}
   <div>${t.exercicios.map(e => `<div class="ex"><div class="n">${e.ordem}</div><div class="t"><b>${esc(e.nome)}</b><span>${e.series} × ${esc(e.reps)} · descanso ${e.descanso_s}s${e.biset_com ? ' · bi-set com o ' + e.biset_com : ''}</span></div><button class="play" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}" aria-label="Ver vídeo"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></button></div>`).join('')}</div>
-  <button class="btn" id="ini">▶ Iniciar treino</button><p class="muted center small">Treino salvo no celular. Só o vídeo usa internet.</p></div>`, 'treino');
+  <button class="btn" id="ini">▶ Iniciar treino</button><button class="btn ghost" id="pdf">📄 Baixar treino em PDF</button><p class="muted center small">Treino salvo no celular. Só o vídeo usa internet.</p></div>`, 'treino');
   $('#ini').onclick = () => iniciarSessao({ titulo: `Treino ${t.letra}`, treino_id: t.id, exercicios: t.exercicios, duracao_min: t.duracao_min });
+  $('#pdf').onclick = async () => {
+    const b = $('#pdf'); b.disabled = true; b.textContent = 'Gerando PDF...';
+    try { const { gerarPdfTreino } = await import('./pdf.js'); await gerarPdfTreino(plano, S.perfil); }
+    catch (e) { toast(e.message || 'Não deu pra gerar o PDF', true); }
+    b.disabled = false; b.textContent = '📄 Baixar treino em PDF';
+  };
 };
 
 // PROGRAMAS EXTRAS -------------------------------------------------------------
@@ -136,15 +142,22 @@ function renderSessao() {
   <div class="bar"><i style="width:${(s.i) / s.exercicios.length * 100}%"></i></div>
   <div id="exc"><h1>${esc(e.nome)}</h1><p class="muted">${e.series} × ${esc(e.reps)} · descanso ${e.descanso_s}s${e.dica ? ' · ' + esc(e.dica) : ''}</p>
   <div class="row" style="margin:10px 0"><button class="btn ghost sm" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}">▶ Ver execução</button>${e.alternativa ? `<button class="btn ghost sm" id="swap">⇄ Trocar</button>` : ''}</div>
-  <div class="set"><span class="h">Sér</span><span class="h">kg</span><span class="h">reps</span><span></span></div>
-  ${sets.map((st, k) => `<div class="set" data-k="${k}"><span>${k + 1}</span><input inputmode="decimal" value="${st.kg}" data-f="kg" placeholder="kg"><input inputmode="numeric" value="${st.reps}" data-f="reps" placeholder="reps"><button class="rest" data-k="${k}">${e.descanso_s}s</button></div>`).join('')}
+  <p class="restHint">${e.descanso_s ? 'Terminou a série? <b>Toca no ⏱</b> pra começar o descanso.' : 'Terminou a série? <b>Toca no ✓</b> pra marcar.'}</p>
+  <div class="set"><span class="h">Sér</span><span class="h">kg</span><span class="h">reps</span><span class="h c">${e.descanso_s ? 'descanso' : 'feito'}</span></div>
+  ${sets.map((st, k) => `<div class="set" data-k="${k}"><span>${k + 1}</span><input inputmode="decimal" value="${st.kg}" data-f="kg" placeholder="kg"><input inputmode="numeric" value="${st.reps}" data-f="reps" placeholder="reps"><button class="rest${k === 0 ? ' next' : ''}" data-k="${k}" aria-label="Iniciar descanso da série ${k + 1}">${e.descanso_s ? `<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/></svg>${e.descanso_s}s` : '✓'}</button></div>`).join('')}
   ${e.ultima ? `<p class="muted small mt">Da última vez você fez <b style="color:var(--fg)">${e.ultima.kg} kg × ${e.ultima.reps}</b>. Bora subir? <a href="#" id="hist">ver histórico</a></p>` : ''}
   <div class="card row between" style="margin-top:12px"><div><b style="font-size:14px">Concluído?</b><p class="muted">Marca que eu já puxo o próximo.</p></div><button class="sw" id="sw" aria-label="Concluir exercício"></button></div></div>
   ${s.i > 0 ? `<button class="btn ghost sm" id="prev" style="align-self:flex-start">‹ Exercício anterior</button>` : ''}
   <button class="btn ghost" id="fim">Finalizar treino</button></div>`);
   clearInterval(clockIv); clockIv = setInterval(() => { const c = $('#clock'); if (c) c.textContent = fmtMin(Math.floor((Date.now() - s.inicio) / 1000)); }, 1000);
   $$('.set input').forEach(inp => inp.oninput = () => { const k = +inp.closest('.set').dataset.k; sets[k][inp.dataset.f] = inp.value; });
-  $$('.set .rest').forEach(b => b.onclick = async () => { b.closest('.set').classList.add('done'); const k = +b.dataset.k; const prox = k + 1 < sets.length ? `Próxima: série ${k + 2} · ${e.nome}` : (s.exercicios[s.i + 1] ? `Próximo: ${s.exercicios[s.i + 1].nome}` : 'Última série!'); await restTimer(e.descanso_s, prox); });
+  $$('.set .rest').forEach(b => b.onclick = async () => {
+    b.closest('.set').classList.add('done'); $$('.set .rest').forEach(x => x.classList.remove('next'));
+    const k = +b.dataset.k; const seg = $$('.set:not(.done) .rest')[0]; if (seg) seg.classList.add('next');
+    if (!e.descanso_s) return;
+    const prox = k + 1 < sets.length ? `Próxima: série ${k + 2} · ${e.nome}` : (s.exercicios[s.i + 1] ? `Próximo: ${s.exercicios[s.i + 1].nome}` : 'Última série!');
+    await restTimer(e.descanso_s, prox);
+  });
   if ($('#hist')) $('#hist').onclick = async ev => { ev.preventDefault(); const h = await db.historicoCarga(S.perfil.id, e.nome, 6); overlay(`<div class="modal" id="hm"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:8px"><h2>${esc(e.nome)}</h2><p class="muted small">Sua melhor carga em cada treino, de qualquer mês.</p>${h.map(x => `<div class="row between" style="padding:6px 0;border-bottom:1px solid var(--line)"><span class="muted">${fmtData(x.data)}</span><b>${x.kg} kg × ${x.reps ?? '–'}</b></div>`).join('')}<button class="btn ghost sm" id="hc" style="margin-top:6px">Fechar</button></div></div>`); $('#hc').onclick = closeOverlay; $('#hm').addEventListener('click', x => { if (x.target.id === 'hm') closeOverlay(); }); };
   if ($('#swap')) $('#swap').onclick = () => { toast(`Opção: ${e.alternativa}`); e.nome = e.alternativa; e.alternativa = null; renderSessao(); };
   $('#sw').onclick = function () { this.classList.add('on'); setTimeout(() => concluir(), 320); };
