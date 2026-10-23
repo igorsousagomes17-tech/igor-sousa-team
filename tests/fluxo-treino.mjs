@@ -14,9 +14,10 @@ console.log('passo1:', await txt('.restHint')); await shot('mobilidade');
 await p.click('.rest.tm'); await p.waitForTimeout(800); await shot('timer-trabalho'); await p.click('#rest-skip'); await p.waitForTimeout(900);
 console.log('apos mobilidade:', await txt('.row.between'));
 await shot('biset');
-// bi-set: digita kg na serie 1 do A1
-await p.fill('.set[data-i="1"][data-k="0"] input[data-f="kg"]','30'); await p.waitForTimeout(200);
-console.log('kg copiado s2:', await p.inputValue('.set[data-i="1"][data-k="1"] input[data-f="kg"]'));
+// bi-set: kg digitado na série 1 do A2 (reps fixas) copia pras próximas; no A1 (pirâmide 12/10/8) não copia
+await p.fill('.set[data-i="2"][data-k="0"] input[data-f="kg"]','30'); await p.fill('.set[data-i="1"][data-k="0"] input[data-f="kg"]','20'); await p.waitForTimeout(200);
+const cop=await p.inputValue('.set[data-i="2"][data-k="1"] input[data-f="kg"]'), pir=await p.inputValue('.set[data-i="1"][data-k="1"] input[data-f="kg"]');
+console.log('kg copiado s2:', cop, '| pirâmide não copia:', pir===''); if(cop!=='30'||pir!=='') errs.push('copia de kg errada');
 await p.click('.set[data-i="1"][data-k="0"] .rest'); await p.waitForTimeout(500);
 console.log('proxima pulsando:', await p.$eval('.rest.next', e=>e.closest('.set').dataset.i+'/'+e.closest('.set').dataset.k));
 await p.click('.set[data-i="2"][data-k="0"] .rest'); await p.waitForTimeout(700); await shot('descanso');

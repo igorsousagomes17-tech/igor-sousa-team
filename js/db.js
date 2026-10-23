@@ -80,7 +80,8 @@ export async function salvarSeries(sessaoId, rows) {
   if (error) throw error;
 }
 export async function finalizarSessao(sessaoId, patch) {
-  const { data, error } = await sb.from('sessoes').update({ ...patch, finalizada_em: new Date().toISOString() }).eq('id', sessaoId).select().single();
+  // finalizada_em vem do celular (hora em que ela terminou), assim treino enviado depois cai no dia certo
+  const { data, error } = await sb.from('sessoes').update({ finalizada_em: new Date().toISOString(), ...patch }).eq('id', sessaoId).select().single();
   if (error) throw error; return data;
 }
 // Histórico de carga por NOME do exercício: vale entre treinos e meses diferentes.
@@ -100,11 +101,22 @@ export async function ultimaCarga(alunaId, exercicioNome) {
   try { const u = (await historicoCarga(alunaId, exercicioNome, 1))[0] || null; if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || cache[exercicioNome] || null; }
   catch { return cache[exercicioNome] || null; }
 }
+// Séries do último treino desse exercício, uma por número de série (pra sugerir a carga certa na pirâmide).
+export async function ultimasSeries(alunaId, exercicioNome) {
+  const { data } = await sb.from('series').select('kg,reps,n,sessao_id,sessoes!inner(aluna_id,finalizada_em)')
+    .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
+    .order('sessoes(finalizada_em)', { ascending: false }).limit(12);
+  if (!data?.length) return null;
+  const sid = data[0].sessao_id, por = {}; data.filter(r => r.sessao_id === sid).forEach(r => { por[r.n] = +r.kg; });
+  return por;
+}
 export function guardarCarga(exercicioNome, kg, reps) { if (!kg) return; const c = LS.get('cargas', {}); c[exercicioNome] = { kg, reps, data: new Date().toISOString() }; LS.set('cargas', c); }
 export async function minhasSessoes(alunaId, limit = 60) {
-  const { data } = await sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor')
+  const { data, error } = await sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor,respondida_em')
     .eq('aluna_id', alunaId).not('finalizada_em', 'is', null).order('finalizada_em', { ascending: false }).limit(limit);
-  return data || [];
+  if (error || !data) return LS.get('sessoes', []); // sem sinal: mostra o que tinha (sequência e metas não zeram)
+  if (limit >= 60) LS.set('sessoes', data);
+  return data;
 }
 export async function registrarPontos(alunaId, motivo, pontos, ref) {
   const { error } = await sb.from('pontos_log').insert({ aluna_id: alunaId, motivo, pontos, ref });
@@ -112,14 +124,16 @@ export async function registrarPontos(alunaId, motivo, pontos, ref) {
   return !error;
 }
 export async function meusPontos(alunaId) {
-  const { data } = await sb.from('pontos_log').select('*').eq('aluna_id', alunaId).order('created_at', { ascending: false }).limit(50);
-  return data || [];
+  const { data, error } = await sb.from('pontos_log').select('*').eq('aluna_id', alunaId).order('created_at', { ascending: false }).limit(50);
+  if (error || !data) return LS.get('pontos', []);
+  LS.set('pontos', data); return data;
 }
 
 // Evolução -------------------------------------------------------------
 export async function evolucao(alunaId) {
-  const { data } = await sb.from('evolucao').select('*').eq('aluna_id', alunaId).order('data');
-  return data || [];
+  const { data, error } = await sb.from('evolucao').select('*').eq('aluna_id', alunaId).order('data');
+  if (error || !data) return LS.get('evolucao', []);
+  LS.set('evolucao', data); return data;
 }
 export async function salvarEvolucao(alunaId, row, fotos = {}) {
   // fotos: { frente: File, lado: File, costas: File }
@@ -143,10 +157,14 @@ export async function fotoUrl(path) {
 // Admin ----------------------------------------------------------------
 export const admin = {
   async alunas() { const { data, error } = await sb.from('v_alunas_status').select('*').order('nome'); if (error) throw error; return data; },
+  // Só treinos COM comentário dela; os sem resposta vêm primeiro (nenhum some da lista por ser antigo).
   async feedbacks() {
-    const { data } = await sb.from('sessoes').select('id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,profiles!sessoes_aluna_id_fkey(nome)')
-      .not('finalizada_em', 'is', null).or('comentario.neq.,resposta_igor.is.null').order('finalizada_em', { ascending: false }).limit(50);
-    return data || [];
+    const sel = 'id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,profiles!sessoes_aluna_id_fkey(nome,plano)';
+    const [abertos, respondidos] = await Promise.all([
+      sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).not('comentario', 'is', null).neq('comentario', '').is('resposta_igor', null).order('finalizada_em', { ascending: true }).limit(200),
+      sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).not('comentario', 'is', null).neq('comentario', '').not('resposta_igor', 'is', null).order('finalizada_em', { ascending: false }).limit(10)]);
+    if (abertos.error) throw abertos.error;
+    return [...(abertos.data || []), ...(respondidos.data || [])];
   },
   async responder(sessaoId, texto) { const { error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId); if (error) throw error; },
   async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,dias_semana,local_treino,limitacoes,peso_kg,altura_m,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(50); return data || []; },

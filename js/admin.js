@@ -20,26 +20,26 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
 
   render(`<div class="view noTabs fx"><div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div><div class="row"><button class="pill" data-go="home">ver como aluna</button><button class="pill" id="out">sair</button></div></div>
   <div class="grid2"><div class="card"><h3>Ativas</h3><div class="big">${ativas.length}</div><p class="muted">${alunas.length - ativas.length} pausadas</p></div><div class="card"><h3>Treinaram hoje</h3><div class="big">${treinaramHoje}</div><p class="muted">${Math.round(treinaramHoje / Math.max(1, ativas.length) * 100)}% das ativas</p></div></div>
-  <div class="row"><button class="btn sm" id="nova">+ Cadastrar aluna</button><button class="btn ghost sm" id="lote">Cadastro em lote</button><button class="btn ghost sm" id="recado">Recado</button></div>
+  <div class="row wrap"><button class="btn sm" id="nova">+ Cadastrar aluna</button><button class="btn ghost sm" id="lote">Cadastro em lote</button><button class="btn ghost sm" id="recado">Recado</button></div>
 
   <div class="card"><div class="row between"><h3>Precisam de atenção</h3><span class="muted small">${atencao.length} alunas</span></div>
     ${atencao.length ? atencao.slice(0, 12).map(a => `<div class="r"><div><b>${esc(a.nome)}</b><span>${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : a.dias_sem_treinar + ' dias sem treinar'} · ${a.treinos_mes} no mês</span></div><span class="pill ${a.dias_sem_treinar >= 7 ? 'warn' : ''}">${a.dias_sem_treinar >= 7 ? 'atenção' : 'aviso'}</span><a class="btn wa sm" style="padding:7px 10px;font-size:13px" href="${wa(a.whatsapp, msgInativa(a.nome, a.dias_sem_treinar === 999 ? 'uns' : a.dias_sem_treinar))}" target="_blank" rel="noopener">WhatsApp</a></div>`).join('') : '<p class="muted mt">Todo mundo em dia 🔥</p>'}
     <p class="muted small mt">Toca em WhatsApp e abre a conversa com a mensagem pronta. Você revisa e envia.</p></div>
 
   <div class="card"><div class="row between"><h3>Feedbacks</h3><span class="muted small">${semResposta.length} sem resposta</span></div>
-    ${fb.length ? fb.slice(0, 15).map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')} · ${esc(f.titulo)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? '<br>↳ você: ' + esc(f.resposta_igor) : ''}</span></div>${f.comentario && !f.resposta_igor ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted mt">Nenhum feedback ainda.</p>'}</div>
+    ${fb.length ? fb.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? '<br>↳ você: ' + esc(f.resposta_igor) : ''}</span></div>${f.comentario && !f.resposta_igor ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted mt">Nenhum feedback ainda.</p>'}</div>
 
   <div class="card"><div class="row between"><h3>Alunas</h3><input class="input" id="busca" placeholder="buscar" style="width:140px;min-height:36px;padding:6px 10px"></div>
     <div id="lista">${alunas.map(a => linhaAluna(a)).join('')}</div></div>
   ${semTreino.length ? `<p class="muted small">${semTreino.length} alunas ainda sem plano de treino no app.</p>` : ''}</div>`);
 
-  function linhaAluna(a) { return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr auto auto"><div><b>${esc(a.nome)}${a.ativa ? '' : ' <span class="pill">pausada</span>'}</b><span>${a.pontos} pts · ${a.treinos_mes} treinos no mês</span></div><button class="pill" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="pill" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div>`; }
+  function linhaAluna(a) { return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr auto auto"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}</b><span>${a.pontos} pts · ${a.treinos_mes} treinos no mês</span></div><button class="pill" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="pill" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div>`; }
 
   $('#out').onclick = async () => { await db.logout(); S.perfil = null; go('entrada'); };
   $('#busca').oninput = () => { const q = $('#busca').value.toLowerCase(); $$('#lista .r').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
   $$('[data-resp]').forEach(b => b.onclick = () => {
     overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Responder</h2><textarea class="input" id="t" placeholder="No seu jeito..."></textarea><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Enviar</button></div></div></div>`);
-    $('#c').onclick = closeOverlay; $('#s').onclick = async () => { try { await db.admin.responder(b.dataset.resp, $('#t').value.trim()); closeOverlay(); toast('Respondido ✓ (ela vê no Perfil)'); go('admin'); } catch (e) { toast(e.message, true); } };
+    $('#c').onclick = closeOverlay; $('#s').onclick = async () => { try { await db.admin.responder(b.dataset.resp, $('#t').value.trim()); closeOverlay(); toast('Respondido ✓ (aparece na tela inicial dela)'); go('admin'); } catch (e) { toast(e.message, true); } };
   });
   $$('[data-ac]').forEach(b => b.onclick = async () => {
     const a = alunas.find(x => x.id === b.dataset.ac);

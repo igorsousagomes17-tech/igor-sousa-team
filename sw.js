@@ -1,5 +1,5 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v8';
+const CACHE = 'isteam-v9';
 const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/db.js','./js/ui.js','./js/admin.js','./js/pdf.js','./js/vendor/supabase.js','./js/db-mock.js','./js/config.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png','./icons/igor_s.jpg','./icons/corrida_s.jpg','./icons/abdomen_s.jpg','./icons/mobilidade_s.jpg','./icons/casa_s.jpg','./icons/guia-frente.jpg','./icons/guia-lado.jpg','./icons/guia-costas.jpg'];
 
@@ -18,7 +18,8 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(cached => {
       const net = fetch(e.request).then(res => {
-        if (res.ok && url.origin === location.origin) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        // arquivos do app (inclui o gerador de PDF, guardado no 1º uso) e as fontes: ficam pra abrir sem sinal
+        if (res.ok && (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname))) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
         return res;
       }).catch(() => cached);
       return cached || net;

@@ -1,12 +1,13 @@
-// PDF informativo do treino do mês. A biblioteca (jsPDF) só baixa quando a aluna toca no botão.
-const JSPDF = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+// PDF informativo do treino do mês. A biblioteca (jsPDF) vem junto do app e só baixa quando a aluna toca no botão;
+// depois da 1ª vez fica no cache e o PDF sai mesmo sem sinal.
+const JSPDF = new URL('./vendor/jspdf.umd.min.js', import.meta.url).href;
 const LARANJA = [255, 106, 0], PRETO = [11, 11, 12], CINZA = [110, 110, 115], CLARO = [245, 245, 245];
 
 function carregar() {
   if (window.jspdf) return Promise.resolve(window.jspdf);
   return new Promise((ok, erro) => {
     const s = document.createElement('script'); s.src = JSPDF;
-    s.onload = () => ok(window.jspdf); s.onerror = () => erro(new Error('Sem internet pra gerar o PDF'));
+    s.onload = () => ok(window.jspdf); s.onerror = () => erro(new Error('Sem internet pra gerar o PDF agora. Depois da 1ª vez ele funciona sem sinal.'));
     document.head.appendChild(s);
   });
 }

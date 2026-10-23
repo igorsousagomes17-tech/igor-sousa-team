@@ -8,4 +8,7 @@ npm i playwright            # em qualquer pasta
 OUT=/tmp/shots node tests/fluxo-treino.mjs
 ```
 Sai com código 1 se aparecer erro de JavaScript ou pop-up do navegador.
+
+`tests/regressao.mjs` testa as correções das críticas (pausa, treino pela metade, feedback, descanso único,
+anamnese, evolução, fila offline sem duplicar, story). Rode em 375 e 360: `W=360 OUT=/tmp/shots node tests/regressao.mjs`.
 No ambiente da Claude: `chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })`.

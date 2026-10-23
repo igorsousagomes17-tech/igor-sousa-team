@@ -4,13 +4,28 @@ export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let tt;
+// Aviso embaixo (não cobre o título), fica mais tempo e fecha com um toque.
 export function toast(msg, err = false) {
   const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : '');
-  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2800);
+  t.onclick = () => t.classList.remove('on');
+  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : 4500);
 }
 
 export function overlay(html) { const o = $('#overlay'); o.innerHTML = html; return o; }
 export function closeOverlay() { $('#overlay').innerHTML = ''; }
+// Mostrar/ocultar senha: qualquer botão .olho ao lado de um input de senha
+document.addEventListener('click', e => { const b = e.target.closest('.olho'); if (!b) return; e.preventDefault(); const i = b.parentElement.querySelector('input'); const ver = i.type === 'password'; i.type = ver ? 'text' : 'password'; b.textContent = ver ? 'ocultar' : 'mostrar'; });
+export const campoSenha = (id, ph = '', ac = 'new-password') => `<div class="senha"><input class="input" id="${id}" type="password" autocomplete="${ac}" placeholder="${ph}"><button type="button" class="olho">mostrar</button></div>`;
+// Erros do servidor em português
+export function traduzErro(e) {
+  const m = String(e?.message || e || '');
+  if (/at least 6|should be at least/i.test(m)) return 'A senha precisa ter pelo menos 6 caracteres.';
+  if (/different from the old|same as/i.test(m)) return 'A senha nova precisa ser diferente da atual.';
+  if (/fetch|network|Failed|timeout|offline/i.test(m)) return 'Sem internet agora. Tenta de novo quando o sinal voltar.';
+  if (/invalid login|credentials/i.test(m)) return 'E-mail ou senha não conferem.';
+  if (/expired|jwt/i.test(m)) return 'Sua sessão expirou. Sai e entra de novo.';
+  return m && /[ãçéíóú]/i.test(m) ? m : 'Não deu certo agora. Tenta de novo ou chama o Igor no WhatsApp.';
+}
 
 export const fmtMin = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 export const hoje = () => new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'short' });
@@ -32,7 +47,7 @@ export function videoModal(nome, url, dica) {
   const o = overlay(inner ? `<div class="modal" id="vm"><div class="box"><div class="area">${inner}</div>
     <div class="row between" style="padding:10px 14px"><span class="muted small">${esc(dica || nome)}</span><button class="back" style="color:var(--accent)" id="vm-close">Fechar</button></div></div></div>`
     : `<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">🎬 vídeo em gravação</span><h2>${esc(nome)}</h2>
-      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:13px;color:var(--accent)">COMO FAZER</b><p style="margin-top:4px;font-size:16px;line-height:1.4">${esc(dica)}</p></div>` : ''}
+      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:14px;color:var(--accent)">DICA DO IGOR</b><p style="margin-top:4px;font-size:16px;line-height:1.4">${esc(dica)}</p></div>` : ''}
       <p class="muted small">O Igor tá gravando os vídeos de todos os exercícios. Ficou com dúvida na execução? Chama ele no WhatsApp.</p><button class="btn sm" id="vm-close">Entendi</button></div></div>`);
   $('#vm-close').onclick = closeOverlay;
   $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });
@@ -58,28 +73,47 @@ function pedirAviso() {
 }
 // Timer em tela cheia (descanso ou exercício de tempo). Conta pelo horário de término, então não atrasa
 // se o celular segurar a tela. "Anotar" encolhe pra uma barra no rodapé pra registrar carga sem parar o tempo.
-// Resolve true (acabou), false (pulou) ou null (fechou sem fazer, só no tempo de exercício).
-export function restTimer(segundos, proximo, titulo = 'Descanso') {
+// Só existe UM timer por vez (abrir outro encerra o anterior) e ele mora numa camada própria, então
+// pop-ups (histórico, vídeo) não matam o descanso. Resolve true (acabou), false (pulou/cancelado) ou null
+// (fechou sem fazer, só no tempo de exercício). meio:true = "cada lado": apita na metade pra trocar de lado.
+let restAtivo = null;
+const trouxe = t => t === "Bora!" ? "Tempo" : t;
+export const descansoAtivo = () => !!restAtivo;
+export function pararDescanso() { if (restAtivo) restAtivo.end(false); }
+export function minimizarDescanso() { if (restAtivo && !restAtivo.mini) { restAtivo.minimizar(); return true; } return false; }
+function camada() { let l = document.getElementById('rest-layer'); if (!l) { l = document.createElement('div'); l.id = 'rest-layer'; document.body.appendChild(l); } return l; }
+export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false, aoMudar } = {}) {
+  pararDescanso();
   return new Promise(resolve => {
-    let total = segundos, fim = Date.now() + segundos * 1000, iv, mini = false;
-    const trabalho = titulo !== 'Descanso';
-    overlay(`<div class="ov" id="rest">
-      <button class="back x" id="rest-x" aria-label="Fechar">${trabalho ? '✕' : '✎ anotar'}</button>
-      <p class="muted" style="letter-spacing:1px;text-transform:uppercase">${esc(titulo)}</p>
+    let total = segundos, fim = Date.now() + segundos * 1000, iv, trocou = false;
+    const trabalho = titulo !== 'Descanso', L = camada();
+    const me = { mini: false, trabalho };
+    L.innerHTML = `<div class="ov" id="rest">
+      <button class="back x" id="rest-x" aria-label="${trabalho ? 'Fechar' : 'Minimizar pra anotar'}">${trabalho ? '✕' : '✎ anotar'}</button>
+      <p class="muted" id="rest-t" style="letter-spacing:1px;text-transform:uppercase">${esc(titulo)}</p>
       <div class="ring" id="ring"><b id="rest-n"></b></div>
       <p class="muted center" id="rest-p">${esc(proximo || '')}</p>
-      <div class="row"><button class="btn ghost sm" id="rest-skip">${trabalho ? 'Já fiz' : 'Pular'}</button><button class="btn sm" id="rest-add">+15s</button></div></div>`);
+      <div class="row"><button class="btn ghost sm" id="rest-skip">${trabalho ? 'Já fiz' : 'Pular'}</button><button class="btn sm" id="rest-add">+15s</button></div></div>`;
+    const q = s => L.querySelector(s);
     const avisar = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? 'Tempo! ⏱' : 'Descanso acabou! 💪', corpo: trabalho ? 'Série feita, volta pro app.' : (proximo || 'Bora a próxima série.') }); } catch {} };
     const cancelarAviso = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} };
     pedirAviso(); avisar();
     const left = () => Math.max(0, Math.ceil((fim - Date.now()) / 1000));
-    const tick = () => { const l = left(), n = $('#rest-n'); if (!n) return; n.textContent = mini ? `${titulo} ${fmtMin(l)} · tocar pra abrir` : (l >= 60 ? fmtMin(l) : l); $('#ring').style.setProperty('--p', (l / total * 100) + '%'); if (l <= 0) end(true); };
-    const end = (r) => { cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); closeOverlay(); if (r === true) { beep(); toast(trabalho ? 'Tempo! Série feita ✓' : 'Descanso acabou. Bora a próxima!'); } resolve(r); };
+    const tick = () => {
+      const l = left(), n = q('#rest-n'); if (!n) return;
+      if (meio && !trocou && l <= total / 2) { trocou = true; beep(); q('#rest-t').textContent = 'Troca de lado!'; toast('Troca de lado 🔄'); }
+      n.textContent = me.mini ? `${trouxe(titulo)} ${fmtMin(l)} · toca pra abrir` : (l >= 60 ? fmtMin(l) : l);
+      q('#ring').style.setProperty('--p', (l / total * 100) + '%'); if (l <= 0) end(true);
+    };
+    const end = (r) => { if (restAtivo !== me) return; restAtivo = null; cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { beep(); toast(trabalho ? 'Tempo! Série feita ✓' : 'Descanso acabou. Bora a próxima!'); } resolve(r); };
+    me.end = end;
+    me.minimizar = () => { if (trabalho) return end(null); me.mini = true; q('#rest').classList.add('mini'); tick(); };
+    restAtivo = me;
     iv = setInterval(tick, 250); document.addEventListener('visibilitychange', tick);
-    $('#rest-skip').onclick = e => { e.stopPropagation(); end(trabalho ? true : false); };
-    $('#rest-add').onclick = e => { e.stopPropagation(); fim += 15000; total += 15; avisar(); tick(); };
-    $('#rest-x').onclick = e => { e.stopPropagation(); if (trabalho) return end(null); mini = true; $('#rest').classList.add('mini'); tick(); };
-    $('#rest').onclick = () => { if (mini) { mini = false; $('#rest').classList.remove('mini'); tick(); } };
+    q('#rest-skip').onclick = e => { e.stopPropagation(); end(trabalho ? true : false); };
+    q('#rest-add').onclick = e => { e.stopPropagation(); fim += 15000; total += 15; avisar(); aoMudar?.(fim); tick(); };
+    q('#rest-x').onclick = e => { e.stopPropagation(); me.minimizar(); };
+    q('#rest').onclick = () => { if (me.mini) { me.mini = false; q('#rest').classList.remove('mini'); tick(); } };
     tick();
   });
 }
@@ -106,7 +140,10 @@ export async function cardImagem({ nome, titulo, minutos, exercicios, streak, da
   x.fillStyle = '#ff6a00'; x.fillText('✓', 70 + x.measureText('FEITO ').width, 1220);
   const stats = [[`${minutos}`, 'min'], [`${exercicios}`, 'exerc.'], [`🔥${streak}`, 'sem.']];
   let sx = 70; stats.forEach(([v, l]) => { x.fillStyle = '#f4f2ee'; x.font = '800 96px "Barlow Condensed", Impact, sans-serif'; x.fillText(v, sx, 1420); const w = x.measureText(v).width; x.fillStyle = '#9a968f'; x.font = '500 34px Barlow, Arial'; x.fillText(l, sx + w + 10, 1420); sx += w + x.measureText(l).width + 80; });
-  x.fillStyle = '#9a968f'; x.font = '500 34px Barlow, Arial'; x.fillText(`${nome} · ${titulo} · ${insta}`, 70, 1760);
+  x.fillStyle = '#9a968f'; x.font = '500 36px Barlow, Arial';
+  let linha = `${nome} · ${titulo}`; if (x.measureText(linha).width > W - 140) { while (x.measureText(linha + '…').width > W - 140 && linha.length > 4) linha = linha.slice(0, -1); linha = linha.trimEnd() + '…'; }
+  x.fillText(linha, 70, 1700);
+  x.fillStyle = '#ff6a00'; x.font = '700 48px Barlow, Arial'; x.fillText(insta, 70, 1775);
   const blob = await new Promise(r => c.toBlob(r, 'image/png'));
   const file = new File([blob], 'treino-feito.png', { type: 'image/png' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: 'Treino feito' }); return 'shared'; } catch { return 'cancel'; } }
