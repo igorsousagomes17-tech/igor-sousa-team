@@ -16,3 +16,21 @@
 - Treinos ganham um "grupamento" (quadriceps | gluteo | posterior | superior) — no editor do Igor.
 - Tabela/registro da escolha semanal da aluna (semana ISO + grupamento) e "Treino de hoje" segue essa ordem.
 - Volume: contar séries por grupamento na semana (incluindo bi-sets) e somar séries nos exercícios-base do foco até a meta.
+
+## 3. Treino-base do mês + adaptação automática por aluna (Igor, 24/10 07:56)
+Fluxo:
+1. Claude monta o TREINO-BASE do mês (padrão 6x, regras do Igor) → manda pro Igor → Igor corrige → Claude sobe no sistema.
+2. Cada aluna recebe o MESMO treino-base, mas o app entrega uma versão adaptada à anamnese/feedback dela:
+   - Dias por semana (ex.: base 6x, aluna treina 4x → reorganizar em 4 dias mantendo o volume semanal).
+   - Tempo por treino (anamnese: 30/40/60 min) → caber no tempo sem perder séries (bi-sets, menos descanso, mais dias).
+   - Foco (ex.: glúteo ~20 séries/semana, demais ~15 — números são referência, não regra fixa; antes ele citou 27/15).
+   - Limitações/dores (anamnese) → usar alternativas aprovadas.
+   - Feedback (esforço/nota/comentário) → ajustar ao longo do mês.
+   - Ordem da semana pela escolha dela (regra 1).
+3. Mesmo treino pra todas, cada app mostra "pensadinho" pra ela.
+
+Proposta técnica (motor de adaptação):
+- Treino-base com metadados por exercício: grupamento, papel (base/composto, acessório, isolador, mobilidade, core, cardio), séries, tempo estimado, alternativas.
+- Motor (determinístico, sem IA, testável): meta de séries/semana por grupamento (foco vs demais) → divide nos N dias da aluna → preenche com exercícios do base por prioridade (base > acessório > isolador) → ajusta séries → checa tempo (≤ tempo dela; usa bi-set agonista/antagonista, com halter, nunca 2 máquinas) → aplica limitações.
+- Resultado salvo como plano da aluna (o Igor vê e pode editar no painel antes/depois).
+- Personalizado: sai como rascunho pro Igor aprovar; Básico: direto (decisão anterior dele).
