@@ -10,3 +10,7 @@ Ao abrir o treino do dia, o app pergunta (clicável, rápido): "Como você tá h
 
 Pendente do Igor: aprovar a lista de 2 exercícios de alívio por região (Claude rascunha a partir do repertório dele).
 Organização geral: Igor quer o app o mais prático possível, tudo clicável.
+
+## Cardio pelo chat (Igor, 24/10 08:13) — FEITO
+- Aluna pede no tira-dúvidas ("quero um cardio de 20 min") → IA dá até 3 opções prontas (aparelho, duração, protocolo, intensidade), ajustadas ao que ela contou.
+- Botão "🔥 Quer um cardio de 20 min agora?" no card do fim do treino e sugestão pronta no chat.

@@ -184,6 +184,8 @@ const D = {
   "{n} pergunta restante hoje": ["{n} question left today", "{n} pregunta restante hoy", "今天还剩 {n} 个问题", "आज {n} सवाल बाकी", "{n} question restante aujourd'hui"],
   "{n} perguntas restantes hoje": ["{n} questions left today", "{n} preguntas restantes hoy", "今天还剩 {n} 个问题", "आज {n} सवाल बाकी", "{n} questions restantes aujourd'hui"],
   "Como faço o búlgaro do jeito certo?": ["How do I do the Bulgarian split squat right?", "¿Cómo hago bien la sentadilla búlgara?", "保加利亚分腿蹲怎么做才标准？", "बुल्गेरियन स्प्लिट स्क्वैट सही तरीके से कैसे करूँ?", "Comment bien faire le squat bulgare ?"],
+  "Me passa um cardio de 20 minutos pra fazer agora": ["Give me a 20-minute cardio to do right now", "Pásame un cardio de 20 minutos para hacer ahora", "给我一个现在就能做的20分钟有氧", "अभी करने के लिए 20 मिनट का कार्डियो बताओ", "Donne-moi un cardio de 20 minutes à faire maintenant"],
+  "Quer um cardio de 20 min agora?": ["Want a 20-min cardio now?", "¿Quieres un cardio de 20 min ahora?", "现在来20分钟有氧吗？", "अभी 20 मिनट का कार्डियो करें?", "Un cardio de 20 min maintenant ?"],
   "Quando eu subo a carga?": ["When should I increase the weight?", "¿Cuándo subo la carga?", "什么时候该加重量？", "वज़न कब बढ़ाऊँ?", "Quand est-ce que j'augmente la charge ?"],
   "Senti dor no joelho, e agora?": ["My knee hurt, what now?", "Me dolió la rodilla, ¿y ahora?", "膝盖疼了，怎么办？", "घुटने में दर्द हुआ, अब क्या करूँ?", "J'ai eu mal au genou, je fais quoi ?"],
   "Musculação ou cardio primeiro?": ["Weights or cardio first?", "¿Pesas o cardio primero?", "先力量还是先有氧？", "पहले वेट ट्रेनिंग या कार्डियो?", "Muscu ou cardio en premier ?"],
