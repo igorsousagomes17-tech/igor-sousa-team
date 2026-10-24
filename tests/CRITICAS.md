@@ -86,3 +86,50 @@ Ficou de fora / pendente:
 - [ ] Peso em kg e medidas em cm em todos os idiomas (alunas dos EUA podem querer lb/in).
 - [ ] Painel do Igor (admin.js) e notificação push do servidor continuam só em português.
 - [ ] Revisão das traduções por falante nativo (principalmente hindi e chinês) quando tiver aluna nessas línguas.
+
+## 2026-10-24 (rodada automática, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~47 únicos)
+Pontos por aluna (resumo):
+- Júlia (iniciante, iPhone 390): treino esquecido registrado virava 840 min e mudava de dia; começar programa com treino pausado apagava o treino (botão laranja = descartar); Início dizia "Treino de hoje: B" depois de treinar; nada dizia qual peso usar na 1ª vez; "Iniciar treino" escondido embaixo das abas; tocar no nome abria carga vazia em vez de "como fazer"; busca não entendia perna/bumbum/barriga/braço; pop-up "Treino em andamento" sem tradução; Pontos se contradizia sobre o print e não dizia quanto falta; "24 De Out." e gráfico de treinos parecendo data.
+- Carla (Android lento, CPU 4x): começar outro treino com um pausado jogava fora as séries; pirâmide mostrava 22/25/28 mas salvava vazio; 1122 kg aceito e virava "Última" sem jeito de apagar; sem sinal o histórico dizia "sem registro"; toque duplo desfazia a série; bi-set obrigava a rolar a cada série; exercício trocado perdia sugestões e sumia de Minhas cargas; Minhas cargas sem progressão; drop set/faixa de reps registrados errado; corrigir pelo "Anterior" não atualizava a "Última" e Enter não pulava de campo.
+- Márcia (zoom 130%): editar anamnese obrigava a passar pelas 16 perguntas; botões quebrando no meio ("DEPOI/S", "AGACHA-MENTO"); fonte grande do celular não mudava nada e textos de 11-13px; chave e campos < 44px; "Sair" sem perguntar colado no "Chamar o Igor"; pergunta de saúde sem avisar que é múltipla e "Nenhuma" escondida; "Esqueceu a senha?" minúsculo colado no "Assinar"; selo "🔥 10 SEMANAS" vazando e aba "Evol…"; "1exerc.", "10sem.", "basal"; aviso cobrindo o descanso e passando de tela.
+- Renata (mãe, Personalizado): mesmo bug do treino esquecido (790 min, dia errado, sem "Continuar"); tempo contava com o app fechado/escondido; desafio/sequência/registro do mês em horário de Londres (treino às 22h caía no mês seguinte e gastava os +80 do mês seguinte); "Batido! +200 pts" sem os pontos entrarem; duas abas apagavam séries uma da outra; Igor conseguia "responder" em branco; no demo o feedback não chegava ao painel; 1ª foto aparecia como "Antes" e sumia ao recarregar no demo; descanso que acabou com a tela apagada não deixava sinal.
+- Bia (rede ruim): 4G lento no fim gravava as séries 2x e dizia "sem internet"; salvamento atrasado da Evolução puxava ela do treino e quebrava a página; tira-dúvidas travava em "Carregando conversa…" e perdia a conversa sem sinal; app baixava ~470 KB a cada abertura (painel do Igor e demo junto); 1ª abertura no 3G com 55 s de logo parado; vídeo sem sinal abria tela cinza e tocava em loop gastando dados; prancha mostrava "descanso 20s" mas não descansava e gravava reps inventadas; PDF sem progresso e programas sem PDF; registro do mês sem sinal perdia as 3 fotos; programa extra de 1 min contava como treino inteiro.
+Corrigido e no ar:
+- [x] Treino esquecido: "Registrar o que fiz" guarda o dia em que ela parou; voltar pro treino não soma a noite nem o tempo parado no feedback; nova opção "Continuar o treino".
+- [x] Começar outro treino com um pausado: "Registrar o X e começar este" (registra de verdade) / "Voltar pro X" / "Descartar" discreto; textos traduzidos; botão "Iniciar o Treino B" (ou "Recomeçar do zero" se for o mesmo).
+- [x] App escondido ou fechado mais de 5 min não conta no tempo do treino (avisa "você ficou X min fora"); fechar o app no meio vira pausa a partir do último toque.
+- [x] Fuso do celular em tudo que é dia/mês: desafio, sequência, gráfico, registro do mês (+80 no mês certo), ref do story, data máxima da anamnese, plano/desafio do mês no banco, "treinaram hoje" do painel.
+- [x] Desafio batido mostra "Batido! 🎉" e só fala "+200 pts" quando os pontos entraram (migração 006 dá os pontos).
+- [x] Duas abas no mesmo treino: a mais recente vale nas duas (nenhuma apaga série da outra); terminar/descartar numa fecha na outra.
+- [x] Séries do treino substituem as que já estão no banco: reenvio da fila nunca duplica; 4G lento diz "internet lenta", não "sem internet".
+- [x] ✓ sem digitar grava no campo o número sugerido (kg da pirâmide por série ou última carga, e as reps da meta): o que aparece é o que fica salvo; série de tempo não inventa reps.
+- [x] Carga absurda (>400 kg ou 2,5× a última) pergunta "Confere a carga"; tocar no campo seleciona o número (12 não vira 1122); histórico com ✕ pra apagar um registro errado.
+- [x] Toque duplo não desmarca; desmarcar avisa "Série N desmarcada"; rola sozinho até a próxima série (bi-set) e depois do descanso; Enter do teclado pula pro próximo campo; corrigir série já feita atualiza a "Última".
+- [x] Exercício trocado busca as cargas por série da última vez; Minhas cargas inclui as trocas e exercícios fora do plano, agrupa por Treino A/B/C/D, mostra a última carga e ↑/↓; os sem registro ficam num "ver N exercícios"; histórico com mini-gráfico e as séries do dia (22 · 25 · 28 kg); sem sinal mostra a carga guardada no celular.
+- [x] 1ª vez no exercício: "Escolhe um peso que dá pra fazer todas as reps com folga… Halter: anota o peso de um."
+- [x] Prancha/tempo com descanso: descanso abre depois da série.
+- [x] Início: "Treino de hoje feito ✓ · próximo é o B" depois de treinar; selo Personalizado também na Início; data "Sábado, 24 de out.".
+- [x] Aba Treino: "Iniciar treino" fixo acima das abas; tocar no exercício abre a ficha (séries, explicação, dica, "Ver como fazer", cargas).
+- [x] Vídeos: busca entende perna, coxa, bumbum, bunda, barriga, braço, ombro, peito, alongar; sem sinal avisa na lista e o vídeo mostra "precisa de sinal" + dica (sem tela cinza); economia de dados/3G: vídeo sem autoplay/loop.
+- [x] Pontos: "Não precisa mandar comprovante dos treinos", quanto falta pro próximo prêmio e em cada um, até quando vale o trimestre, Strap explicado.
+- [x] Card do fim: "3 exercícios", "10 semanas seguidas"; Perfil: "Você gasta uns X kcal por dia (parada, sem treinar: Y)"; texto da senha muda depois que ela já trocou.
+- [x] Evolução: número de treinos em cima da barra e só o mês embaixo; com uma foto só ela aparece como "Sua 1ª foto" e o outro quadro "Daqui a 1 mês"; salvar com tempo limite e sem puxar ela de outra tela; sem sinal guarda fotos e medidas no celular (IndexedDB) e a fila envia (e dá os +80) quando voltar; página não quebra se saiu da conta.
+- [x] Anamnese: editar pelo Perfil abre direto no "Tá tudo certo?" (toca só no que quer mudar, "falta responder" destacado, voltar do celular fecha); saúde avisa múltipla escolha, "Nenhuma" em primeiro e caixinhas ☐/☑; botões fixos no rodapé do pop-up.
+- [x] Leitura/toque: tamanhos em rem (seguem a fonte grande do Android com meta text-scale e do iPhone com -apple-system-body), mínimos 13-14px (abas, pills, rótulos, cabeçalho das séries, fotos), chave 72×44, campos 44px, pills 44px, link do WhatsApp no chat 44px; palavras não quebram no meio; topo quebra linha em vez de vazar o selo; abas com fonte condensada e largura pelo texto ("Evolução" inteiro até 320px); notas 0-10 em 4 colunas em tela muito estreita.
+- [x] Sair pergunta antes e fica separado do "Chamar o Igor"; login com "Esqueci minha senha" grande e "Assinar" em outra linha; e-mail vazio/incompleto avisa embaixo do campo (não manda link pra e-mail errado).
+- [x] Avisos: somem ao trocar de tela e ao abrir o descanso; descanso que acabou com a tela apagada mostra na volta "Descanso acabou há N min" fixo até ela tocar; voltar do celular no treino diz "Toca em Continuar pra voltar".
+- [x] Tira-dúvidas: conversa guardada no celular aparece na hora (sem sinal também), enviar funciona antes do banco responder, tempo limite de 25 s.
+- [x] Dados: service worker cache-first de verdade (não baixa de novo a cada abertura; versão nova só quando o sw muda); painel do Igor, demo, fotos-guia e ícone grande fora da 1ª carga (painel carrega só pro Igor); "?demo" abre sem sinal.
+- [x] 1ª abertura lenta: depois de 4 s o splash diz "Carregando… internet lenta. Só demora assim na 1ª vez."
+- [x] PDF: "Gerando PDF… (na 1ª vez demora um pouco)"; programas extras com botão de PDF próprio; linha "Carga (kg): ___ ___ ___" pra anotar no impresso.
+- [x] Painel: resposta vazia é barrada. Demo: feedback dela chega no painel e a resposta do Igor volta pra ela; foto do demo não some ao recarregar.
+- [x] Traduções das ~75 frases novas nos 5 idiomas (teste de idiomas passa), cache v12, teste novo tests/rodada-2410.mjs.
+Pendente:
+- [ ] Rodar supabase/migracao-006-desafio-do-mes.sql (gatilho dá os +200 do desafio, mês no fuso de SP). Sem ela o app só mostra "Batido! 🎉".
+- [ ] Programa extra de 1 min conta como treino inteiro (desafio, meta, +50): regra de pontos é decisão do Igor.
+- [ ] Drop set ("10 + 4+4+4") com kg de cada queda: precisa de coluna nova no banco (ex.: series.quedas jsonb) — decisão/migração com o Igor.
+- [ ] Capa do PDF preta (gasta tinta se imprimir): visual da marca é decisão do Igor (dá pra fazer uma versão "pra imprimir" clara).
+- [ ] i18n.js inteiro (6 idiomas, ~35 KB com gzip) ainda vem junto: agora só baixa uma vez (cache-first); separar por idioma fica pra quando tiver aluna fora do português.
+- [ ] SUSPEITA (não reproduzida): data de nascimento no calendário nativo abre no ano atual no iPhone/Android antigo.
+- [ ] Bi-set: esconder dica/botões atrás de "mais" pra encurtar a tela (por ora a tela rola sozinha até a próxima série).
+- [ ] Seguem pendentes de antes: migração 004 (se ainda não rodou), chave da IA, publicar função assistente, Kiwify, WhatsApp, fotos dos prêmios, vídeos.

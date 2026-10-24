@@ -1,7 +1,8 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v11';
-const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/admin.js','./js/pdf.js','./js/vendor/supabase.js','./js/db-mock.js','./js/config.js','./manifest.webmanifest',
-  './icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png','./icons/igor_s.jpg','./icons/corrida_s.jpg','./icons/abdomen_s.jpg','./icons/mobilidade_s.jpg','./icons/casa_s.jpg','./icons/guia-frente.jpg','./icons/guia-lado.jpg','./icons/guia-costas.jpg'];
+const CACHE = 'isteam-v12';
+// Só o que a aluna usa ao abrir (painel do Igor, demo e fotos-guia entram no cache no 1º uso).
+const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
+  './icons/icon-192.png','./icons/apple-touch-icon.png','./icons/igor_s.jpg','./icons/corrida_s.jpg','./icons/abdomen_s.jpg','./icons/mobilidade_s.jpg','./icons/casa_s.jpg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -14,16 +15,14 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   // Supabase e vídeos: sempre rede.
   if (url.hostname.includes('supabase') || url.hostname.includes('youtube') || url.hostname.includes('ytimg')) return;
-  // Casca do app: cache primeiro, atualiza em segundo plano.
+  // Casca do app: cache primeiro, sem baixar de novo a cada abertura (economiza o pacote de dados).
+  // Versão nova chega quando o sw.js muda (CACHE novo baixa tudo uma vez). Página com ?demo usa a mesma casca.
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const net = fetch(e.request).then(res => {
-        // arquivos do app (inclui o gerador de PDF, guardado no 1º uso) e as fontes: ficam pra abrir sem sinal
-        if (res.ok && (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname))) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-        return res;
-      }).catch(() => cached);
-      return cached || net;
-    })
+    caches.match(e.request, { ignoreSearch: e.request.mode === 'navigate' }).then(cached => cached || fetch(e.request).then(res => {
+      // arquivos do app (inclui o gerador de PDF, guardado no 1º uso) e as fontes: ficam pra abrir sem sinal
+      if (res.ok && (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname))) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(e.request, cp)); }
+      return res;
+    }))
   );
 });
 self.addEventListener('push', e => {

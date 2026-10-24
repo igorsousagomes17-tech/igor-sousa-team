@@ -41,9 +41,9 @@ export async function salvarPerfil(patch) {
 }
 
 // Plano do mês com treinos e exercícios (uma consulta, cacheada).
+const mesLocal1 = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; };
 export async function planoAtual(alunaId) {
-  const mes = new Date(); mes.setDate(1);
-  const mesStr = mes.toISOString().slice(0, 10);
+  const mesStr = mesLocal1();
   const { data, error } = await sb.from('planos')
     .select('id,mes,titulo,obs,treinos(id,letra,nome,duracao_min,ordem,exercicios(id,ordem,nome,series,reps,descanso_s,video_url,dica,alternativa,biset_com))')
     .eq('aluna_id', alunaId).lte('mes', mesStr).order('mes', { ascending: false }).limit(1);
@@ -65,8 +65,7 @@ export async function recadoAtual() {
   return data?.[0] || null;
 }
 export async function desafioAtual() {
-  const mes = new Date(); mes.setDate(1);
-  const { data } = await sb.from('desafios').select('*').eq('mes', mes.toISOString().slice(0, 10)).maybeSingle();
+  const { data } = await sb.from('desafios').select('*').eq('mes', mesLocal1()).maybeSingle();
   return data;
 }
 
@@ -75,9 +74,18 @@ export async function iniciarSessao(alunaId, { treino_id = null, programa_treino
   const { data, error } = await sb.from('sessoes').insert({ aluna_id: alunaId, treino_id, programa_treino_id, titulo, exercicios_total: total }).select().single();
   if (error) throw error; return data;
 }
+// Substitui as séries da sessão: se a 1ª tentativa chegou no banco mas a resposta não voltou (4G travado),
+// o reenvio da fila não duplica.
 export async function salvarSeries(sessaoId, rows) {
+  const del = await sb.from('series').delete().eq('sessao_id', sessaoId);
+  if (del.error) throw del.error;
   if (!rows.length) return;
   const { error } = await sb.from('series').insert(rows.map(r => ({ ...r, sessao_id: sessaoId })));
+  if (error) throw error;
+}
+// Apaga um registro de carga errado (ex.: digitou 1122 no lugar de 12)
+export async function apagarCarga(sessaoId, exercicioNome) {
+  const { error } = await sb.from('series').delete().eq('sessao_id', sessaoId).eq('exercicio_nome', exercicioNome);
   if (error) throw error;
 }
 export async function finalizarSessao(sessaoId, patch) {
@@ -87,13 +95,15 @@ export async function finalizarSessao(sessaoId, patch) {
 }
 // Histórico de carga por NOME do exercício: vale entre treinos e meses diferentes.
 export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
-  const { data } = await sb.from('series').select('kg,reps,n,sessoes!inner(aluna_id,finalizada_em)')
+  const { data, error } = await sb.from('series').select('kg,reps,n,sessao_id,sessoes!inner(aluna_id,finalizada_em)')
     .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
     .order('sessoes(finalizada_em)', { ascending: false }).limit(limit * 6);
+  if (error) throw error; // sem sinal: quem chamou mostra o que tem no celular
   if (!data?.length) return [];
-  // agrupa por sessão: maior carga da sessão
+  // agrupa por sessão: maior carga da sessão + todas as séries (pirâmide 22/25/28)
   const por = {};
-  data.forEach(r => { const k = r.sessoes.finalizada_em; if (!por[k] || +r.kg > +por[k].kg) por[k] = { kg: r.kg, reps: r.reps, data: k }; });
+  data.forEach(r => { const k = r.sessoes.finalizada_em; const a = por[k] || (por[k] = { kg: r.kg, reps: r.reps, data: k, sessao_id: r.sessao_id, sets: [] }); a.sets.push({ n: r.n, kg: +r.kg, reps: r.reps }); if (+r.kg > +a.kg) { a.kg = r.kg; a.reps = r.reps; } });
+  Object.values(por).forEach(a => a.sets.sort((x, y) => x.n - y.n));
   return Object.values(por).sort((a, b) => b.data.localeCompare(a.data)).slice(0, limit);
 }
 // Última carga: busca no banco e guarda no celular; sem internet usa a guardada.
@@ -111,7 +121,8 @@ export async function ultimasSeries(alunaId, exercicioNome) {
   const sid = data[0].sessao_id, por = {}; data.filter(r => r.sessao_id === sid).forEach(r => { por[r.n] = +r.kg; });
   return por;
 }
-export function guardarCarga(exercicioNome, kg, reps) { if (!kg) return; const c = LS.get('cargas', {}); c[exercicioNome] = { kg, reps, data: new Date().toISOString() }; LS.set('cargas', c); }
+// Guarda a última carga no celular; "ant" = a carga do treino anterior (pra mostrar ↑/↓ em Minhas cargas)
+export function guardarCarga(exercicioNome, kg, reps, sessao) { if (!kg) return; const c = LS.get('cargas', {}), v = c[exercicioNome]; const ant = v && v.sessao && v.sessao === sessao ? v.ant : v?.kg; c[exercicioNome] = { kg, reps, data: new Date().toISOString(), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
 export async function minhasSessoes(alunaId, limit = 60) {
   const { data, error } = await sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor,respondida_em')
     .eq('aluna_id', alunaId).not('finalizada_em', 'is', null).order('finalizada_em', { ascending: false }).limit(limit);
@@ -193,8 +204,9 @@ export const admin = {
 // Tira-dúvidas (IA). A conversa com a IA acontece na função do servidor "assistente".
 export const assistente = {
   async historico(alunaId) {
-    const { data } = await sb.from('assistente_msgs').select('papel,texto,created_at').eq('aluna_id', alunaId).order('created_at', { ascending: false }).limit(30);
-    return (data || []).reverse();
+    const { data, error } = await sb.from('assistente_msgs').select('papel,texto,created_at').eq('aluna_id', alunaId).order('created_at', { ascending: false }).limit(30);
+    if (error || !data) return LS.get('chat', []); // sem sinal: a conversa que estava no celular
+    const h = data.reverse(); LS.set('chat', h); return h;
   },
   async perguntar(texto, contexto) {
     const { data: { session } } = await sb.auth.getSession();

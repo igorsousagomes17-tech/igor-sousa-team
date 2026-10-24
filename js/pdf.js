@@ -33,7 +33,8 @@ async function fotoCapa(url) {
 // Fontes padrão do PDF não têm emoji/símbolos fora do Latin-1.
 const limpa = s => String(s ?? '').replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[^\x20-\xFF]/g, '').trim();
 
-export async function gerarPdfTreino(plano, perfil) {
+// programa: título do programa extra (o PDF vira o do programa, sem a ordem A/B/C/D)
+export async function gerarPdfTreino(plano, perfil, programa = null) {
   const { jsPDF } = await carregar();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = 210, H = 297, M = 16;
@@ -47,14 +48,15 @@ export async function gerarPdfTreino(plano, perfil) {
   if (foto) { try { doc.addImage(foto, 'JPEG', W - 96, 0, 96, 128); } catch {} }
   doc.setFillColor(...LARANJA); doc.rect(M, 28, 22, 2.2, 'F');
   doc.setFont('helvetica', 'bold'); doc.setTextColor(...CLARO); doc.setFontSize(11); doc.text('IGOR SOUSA TEAM', M, 22);
-  const [c1, c2] = limpa(T('TREINO|DO MÊS')).split('|'); doc.setFontSize(34); doc.text(c1, M, 50); doc.setTextColor(...LARANJA); doc.text(c2, M, 64);
+  if (programa) { doc.setFontSize(30); const ls = doc.splitTextToSize(limpa(programa).toUpperCase(), W - 2 * M - 70).slice(0, 2); doc.text(ls, M, 50); }
+  else { const [c1, c2] = limpa(T('TREINO|DO MÊS')).split('|'); doc.setFontSize(34); doc.text(c1, M, 50); doc.setTextColor(...LARANJA); doc.text(c2, M, 64); }
   doc.setFontSize(13); doc.setTextColor(...CLARO); doc.setFont('helvetica', 'normal');
-  doc.text(limpa(mes.charAt(0).toUpperCase() + mes.slice(1)), M, 76);
+  doc.text(limpa(programa ? T('Programa extra') : mes.charAt(0).toUpperCase() + mes.slice(1)), M, 76);
   if (perfil?.nome) { doc.setFontSize(11); doc.setTextColor(...CINZA); doc.text(limpa(T('Para {nome}', { nome: perfil.nome })), M, 84); }
   if (plano.obs) { doc.setFontSize(10); doc.setTextColor(...CINZA); doc.text(doc.splitTextToSize(limpa(plano.obs), 100), M, 92); }
 
   let y = 138;
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...LARANJA); doc.text(limpa(T('SUA SEMANA')), M, y); y += 8;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(...LARANJA); doc.text(limpa(programa ? T('TREINOS') : T('SUA SEMANA')), M, y); y += 8;
   plano.treinos.forEach(t => {
     doc.setFillColor(28, 28, 30); doc.roundedRect(M, y - 5.5, W - 2 * M, 11, 2, 2, 'F');
     doc.setTextColor(...LARANJA); doc.setFontSize(12); doc.text(limpa(t.letra), M + 5, y + 1.8);
@@ -65,7 +67,7 @@ export async function gerarPdfTreino(plano, perfil) {
 
   y += 4; doc.setTextColor(...LARANJA); doc.setFontSize(13); doc.text(limpa(T('COMO USAR')), M, y); y += 7;
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...CLARO);
-  ['Siga a ordem A, B, C, D e recomece. Perdeu um dia? Continua de onde parou.',
+  [...(programa ? [] : ['Siga a ordem A, B, C, D e recomece. Perdeu um dia? Continua de onde parou.']),
     'Bi-set (marcado em laranja): faz um exercício e emenda direto no outro, descansa só no fim.',
     'Pirâmide (ex.: 12/10/8): aumenta a carga a cada série e diminui as repetições.',
     'Bateu o topo das repetições com boa técnica? Sobe a carga na próxima.',
@@ -79,8 +81,8 @@ export async function gerarPdfTreino(plano, perfil) {
     doc.addPage();
     doc.setFillColor(...PRETO); doc.rect(0, 0, W, 40, 'F');
     doc.setFillColor(...LARANJA); doc.rect(0, 40, W, 1.5, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setTextColor(...LARANJA); doc.setFontSize(26); doc.text(limpa(T('Treino {l}', { l: t.letra })), M, 22);
-    doc.setTextColor(...CLARO); doc.setFontSize(13); doc.text(limpa(t.nome), M, 31);
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(...LARANJA); doc.setFontSize(26); doc.text(limpa(programa ? t.nome : T('Treino {l}', { l: t.letra })), M, 22);
+    doc.setTextColor(...CLARO); doc.setFontSize(13); doc.text(limpa(programa || t.nome), M, 31);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(limpa(T('~{d} min  ·  {n} exercícios', { n: t.exercicios.length, d: t.duracao_min || 40 })), W - M, 31, { align: 'right' });
     let y = 52;
     const exs = [...t.exercicios].sort((a, b) => a.ordem - b.ordem);
@@ -88,7 +90,8 @@ export async function gerarPdfTreino(plano, perfil) {
       const hiit = /hiit|cardio/i.test(e.nome);
       const dica = e.dica ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16) : [];
       const alt = e.alternativa ? limpa(T('Ou substitua por: {x}', { x: e.alternativa })) : '';
-      const h = 13 + dica.length * 4.4 + (alt ? 5 : 0);
+      const anota = !hiit && !/\d\s*(s|seg|min)\b|prancha|mobilidade|alongamento/i.test(e.nome + ' ' + e.reps);
+      const h = 13 + dica.length * 4.4 + (alt ? 5 : 0) + (anota ? 6 : 0);
       if (y + h > H - 16) { rodape(); doc.addPage(); y = 20; }
       if (hiit) {
         doc.setFillColor(255, 240, 228); doc.roundedRect(M, y - 5, W - 2 * M, h, 2, 2, 'F');
@@ -103,13 +106,14 @@ export async function gerarPdfTreino(plano, perfil) {
       doc.text(limpa(`${e.series > 1 ? e.series + ' x ' : ''}${e.reps}${e.descanso_s ? '  ·  ' + T('descanso {n}s', { n: e.descanso_s }) : ''}`), M + 12, y + 6);
       let yy = y + 11;
       if (dica.length) { doc.setTextColor(...CINZA); doc.setFontSize(9.5); doc.text(dica, M + 12, yy); yy += dica.length * 4.4; }
-      if (alt) { doc.setTextColor(140, 140, 145); doc.setFontSize(8.5); doc.setFont('helvetica', 'italic'); doc.text(alt, M + 12, yy); doc.setFont('helvetica', 'normal'); }
+      if (alt) { doc.setTextColor(140, 140, 145); doc.setFontSize(8.5); doc.setFont('helvetica', 'italic'); doc.text(alt, M + 12, yy); doc.setFont('helvetica', 'normal'); yy += 5; }
+      if (anota) { doc.setTextColor(...CINZA); doc.setFontSize(8.5); doc.text(limpa(T('Carga (kg):')) + '   ' + Array.from({ length: Math.min(e.series || 3, 5) }, () => '______').join('   '), M + 12, yy + 1); }
       y += h + 3;
     });
     rodape();
   });
 
-  const nome = `${limpa(T('Treino'))} ${limpa(mes).replace(/\s+(de|del)\s+/, ' ')}.pdf`.replace(/\s+/g, '-');
+  const nome = (programa ? `${limpa(programa)}.pdf` : `${limpa(T('Treino'))} ${limpa(mes).replace(/\s+(de|del)\s+/, ' ')}.pdf`).replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const blob = doc.output('blob');
   const arquivo = new File([blob], nome, { type: 'application/pdf' });
   if (navigator.canShare?.({ files: [arquivo] })) {

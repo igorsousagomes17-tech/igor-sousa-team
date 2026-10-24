@@ -6,11 +6,14 @@ export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;'
 
 let tt;
 // Aviso embaixo (não cobre o título), fica mais tempo e fecha com um toque.
-export function toast(msg, err = false) {
-  const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : '');
+// fixo: fica até ela tocar (ex.: "descanso acabou há 2 min" quando ela volta pro app).
+export function toast(msg, err = false, { fixo = false } = {}) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : '') + (fixo ? ' fixo' : '');
   t.onclick = () => t.classList.remove('on');
-  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : 4500);
+  clearTimeout(tt); if (!fixo) tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : 4500);
 }
+// Troca de tela ou descanso abrindo: o aviso antigo some (não fica cobrindo a tela nova)
+export function fecharToast() { const t = $('#toast'); if (t && !t.classList.contains('fixo')) t.classList.remove('on'); }
 
 export function overlay(html) { const o = $('#overlay'); o.innerHTML = html; return o; }
 export function closeOverlay() { $('#overlay').innerHTML = ''; }
@@ -31,26 +34,36 @@ export function traduzErro(e) {
 }
 
 export const fmtMin = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-export const hoje = () => dataLocal(Date.now(), { weekday: 'long', day: 'numeric', month: 'short' });
+// Só a 1ª letra maiúscula ("Sábado, 24 de out.", sem "De")
+export const hoje = () => { const d = dataLocal(Date.now(), { weekday: 'long', day: 'numeric', month: 'short' }); return d.charAt(0).toUpperCase() + d.slice(1); };
 export const primeiroNome = n => (n || '').trim().split(' ')[0];
 // Data só (AAAA-MM-DD) é lida como meio-dia local, pra não voltar um dia no fuso do Brasil.
 export const fmtData = d => d ? dataLocal(/^\d{4}-\d{2}-\d{2}$/.test(d) ? d + 'T12:00' : d, { day: '2-digit', month: 'short' }) : '';
 
+const redeFraca = () => { const c = navigator.connection; return !!(c && (c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || ''))); };
 export function youtubeEmbed(url) {
   if (!url) return null;
   const m = url.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/);
-  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1&rel=0` : null;
+  if (!m) return null;
+  return redeFraca() ? `https://www.youtube-nocookie.com/embed/${m[1]}?playsinline=1&modestbranding=1&rel=0` // economia de dados: só toca quando ela der play, sem repetir
+    : `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1&rel=0`;
 }
 
 export function videoModal(nome, url, dica) {
   const yt = youtubeEmbed(url);
+  if (url && navigator.onLine === false) { // sem sinal: explica e mostra a dica, em vez da tela cinza do navegador
+    overlay(`<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">📶 ${t('sem internet')}</span><h2>${esc(nome)}</h2><p>${t('O vídeo precisa de sinal. Assim que a internet voltar, toca de novo.')}</p>
+      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:0.875rem;color:var(--accent)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(dica)}</p></div>` : ''}<button class="btn sm" id="vm-close">${t('Entendi')}</button></div></div>`);
+    $('#vm-close').onclick = closeOverlay; $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });
+    return;
+  }
   const inner = yt ? `<iframe src="${yt}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`
-    : url ? `<video src="${esc(url)}" autoplay loop muted playsinline controls></video>`
+    : url ? `<video src="${esc(url)}" ${redeFraca() ? 'preload="none"' : 'autoplay loop'} muted playsinline controls></video>`
     : null;
   const o = overlay(inner ? `<div class="modal" id="vm"><div class="box"><div class="area">${inner}</div>
     <div class="row between" style="padding:10px 14px"><span class="muted small">${esc(dica || nome)}</span><button class="back" style="color:var(--accent)" id="vm-close">${t('Fechar')}</button></div></div></div>`
     : `<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">🎬 ${t('vídeo em gravação')}</span><h2>${esc(nome)}</h2>
-      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:14px;color:var(--accent)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:16px;line-height:1.4">${esc(dica)}</p></div>` : ''}
+      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:0.875rem;color:var(--accent)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(dica)}</p></div>` : ''}
       <p class="muted small">${t('O Igor tá gravando os vídeos de todos os exercícios. Ficou com dúvida na execução? Chama ele no WhatsApp.')}</p><button class="btn sm" id="vm-close">${t('Entendi')}</button></div></div>`);
   $('#vm-close').onclick = closeOverlay;
   $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });
@@ -80,6 +93,11 @@ function pedirAviso() {
 // pop-ups (histórico, vídeo) não matam o descanso. Resolve true (acabou), false (pulou/cancelado) ou null
 // (fechou sem fazer, só no tempo de exercício). meio:true = "cada lado": apita na metade pra trocar de lado.
 let restAtivo = null;
+// Descanso que acabou com o app escondido: quando ela volta, um aviso fixo diz há quanto tempo acabou.
+function avisoNaVolta(fim) {
+  const mostra = () => { if (document.hidden) return; document.removeEventListener('visibilitychange', mostra); const m = Math.round((Date.now() - fim) / 60000); toast(m >= 1 ? t('Descanso acabou há {n} min · bora a próxima série', { n: m }) : t('Descanso acabou. Bora a próxima!'), false, { fixo: true }); };
+  document.addEventListener('visibilitychange', mostra);
+}
 const trouxe = x => t(x === "Bora!" ? "Tempo" : x);
 export const descansoAtivo = () => !!restAtivo;
 export function pararDescanso() { if (restAtivo) restAtivo.end(false); }
@@ -100,7 +118,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
     const q = s => L.querySelector(s);
     const avisar = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }); } catch {} };
     const cancelarAviso = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} };
-    pedirAviso(); avisar();
+    pedirAviso(); avisar(); fecharToast();
     const left = () => Math.max(0, Math.ceil((fim - Date.now()) / 1000));
     const tick = () => {
       const l = left(), n = q('#rest-n'); if (!n) return;
@@ -108,7 +126,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       n.textContent = me.mini ? `${trouxe(titulo)} ${fmtMin(l)} · ${t('toca pra abrir')}` : (l >= 60 ? fmtMin(l) : l);
       q('#ring').style.setProperty('--p', (l / total * 100) + '%'); if (l <= 0) end(true);
     };
-    const end = (r) => { if (restAtivo !== me) return; restAtivo = null; cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } resolve(r); };
+    const end = (r) => { if (restAtivo !== me) return; restAtivo = null; cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden && !trabalho) avisoNaVolta(fim); else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
     me.end = end;
     me.minimizar = () => { if (trabalho) return end(null); me.mini = true; q('#rest').classList.add('mini'); tick(); };
     restAtivo = me;

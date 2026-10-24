@@ -28,7 +28,7 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   const rel = await p.innerText('#clock'); ok(/^0:\d\d$/.test(rel), 'pausa de 10 min não conta no relógio (' + rel + ')');
   await p.click('#sair'); await espera(p); await p.clock.fastForward('13:00:00'); await p.reload(); await espera(p, 1200);
   ok(/pela metade/i.test(await p.innerText('#overlay')), '13h depois pergunta "Treino pela metade" (não apaga)'); await shot(p, 'treino-velho');
-  await p.click('#q-s'); await espera(p, 600); ok(/esforço/i.test(await txt(p, '.view')), 'registrar o que fiz abre o feedback'); await ctx.close(); }
+  await p.click('[data-o="0"]'); await espera(p, 600); ok(/esforço/i.test(await txt(p, '.view')), 'registrar o que fiz abre o feedback'); await ctx.close(); }
 
 // 2. Feedback: voltar pro treino funciona e o texto não some; chave sem série pergunta
 { const { ctx, p } = await nova(); await login(p); await abrirTreinoA(p);

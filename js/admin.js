@@ -12,8 +12,8 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   let alunas = [], fb = [];
   try { [alunas, fb] = await Promise.all([db.admin.alunas(), db.admin.feedbacks()]); } catch (e) { toast(e.message, true); }
   const ativas = alunas.filter(a => a.ativa);
-  const hoje = new Date().toISOString().slice(0, 10);
-  const treinaramHoje = ativas.filter(a => a.ultimo_treino?.slice(0, 10) === hoje).length;
+  const dia = d => { d = new Date(d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }; // dia no fuso do celular
+  const treinaramHoje = ativas.filter(a => a.ultimo_treino && dia(a.ultimo_treino) === dia(Date.now())).length;
   const atencao = ativas.filter(a => a.dias_sem_treinar >= 4).sort((a, b) => b.dias_sem_treinar - a.dias_sem_treinar);
   const semResposta = fb.filter(f => f.comentario && !f.resposta_igor);
   const semTreino = alunas.filter(a => a.ativa && a.treinos_mes === 0 && a.dias_sem_treinar === 999);
@@ -41,7 +41,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   $('#busca').oninput = () => { const q = $('#busca').value.toLowerCase(); $$('#lista .r').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
   $$('[data-resp]').forEach(b => b.onclick = () => {
     overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Responder</h2><textarea class="input" id="t" placeholder="No seu jeito..."></textarea><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Enviar</button></div></div></div>`);
-    $('#c').onclick = closeOverlay; $('#s').onclick = async () => { try { await db.admin.responder(b.dataset.resp, $('#t').value.trim()); closeOverlay(); toast('Respondido ✓ (aparece na tela inicial dela)'); go('admin'); } catch (e) { toast(e.message, true); } };
+    $('#c').onclick = closeOverlay; $('#s').onclick = async () => { const tx = $('#t').value.trim(); if (!tx) { toast('Escreve a resposta antes de enviar.', true); $('#t').focus(); return; } try { await db.admin.responder(b.dataset.resp, tx); closeOverlay(); toast('Respondido ✓ (aparece na tela inicial dela)'); go('admin'); } catch (e) { toast(e.message, true); } };
   });
   $$('[data-ac]').forEach(b => b.onclick = async () => {
     const a = alunas.find(x => x.id === b.dataset.ac);

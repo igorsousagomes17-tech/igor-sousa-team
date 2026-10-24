@@ -34,31 +34,34 @@ export async function programas() { return [
 export async function recadoAtual() { return { texto: '"Essa semana é de carga. Anota tudo!" · 0:32', midia_url: null }; }
 export async function desafioAtual() { return { titulo: 'Desafio do mês', meta_treinos: 16, pontos_bonus: 200 }; }
 export async function iniciarSessao(_, { treino_id, programa_treino_id, titulo, total }) { const s = { id: 's' + id(), titulo, exercicios_total: total, finalizada_em: null }; state.sessoes.unshift(s); save(); return s; }
-export async function salvarSeries(sessaoId, rows) { state.series.push(...rows.map(r => ({ ...r, sessao_id: sessaoId }))); save(); }
+export async function salvarSeries(sessaoId, rows) { state.series = state.series.filter(x => x.sessao_id !== sessaoId).concat(rows.map(r => ({ ...r, sessao_id: sessaoId }))); save(); }
+export async function apagarCarga(sessaoId, nome) { state.series = state.series.filter(x => !(x.sessao_id === sessaoId && x.exercicio_nome === nome)); save(); }
 export async function finalizarSessao(sessaoId, patch) { const s = state.sessoes.find(x => x.id === sessaoId); Object.assign(s, { finalizada_em: iso(new Date()) }, patch); state.perfil.pontos += 50; state.pontos.unshift({ motivo: 'treino', pontos: 50, created_at: iso(new Date()) }); save(); return s; }
 export async function historicoCarga(_, nome, limit = 5) {
-  const mine = state.series.filter(x => x.exercicio_nome === nome && x.kg).map(x => ({ kg: x.kg, reps: x.reps, data: iso(new Date()) }));
+  const por = {}; state.series.filter(x => x.exercicio_nome === nome && x.kg).forEach(x => { const s = state.sessoes.find(z => z.id === x.sessao_id); const a = por[x.sessao_id] || (por[x.sessao_id] = { kg: x.kg, reps: x.reps, data: s?.finalizada_em || iso(new Date()), sessao_id: x.sessao_id, sets: [] }); a.sets.push({ n: x.n, kg: +x.kg, reps: x.reps }); if (+x.kg > +a.kg) { a.kg = x.kg; a.reps = x.reps; } });
+  const mine = Object.values(por).sort((a, b) => a.data.localeCompare(b.data));
   const demo = nome === 'Agachamento Smith' ? [{ kg: 28, reps: 10, data: iso(daysAgo(4)) }, { kg: 26, reps: 10, data: iso(daysAgo(11)) }, { kg: 26, reps: 10, data: iso(daysAgo(18)) }, { kg: 24, reps: 12, data: iso(daysAgo(32)) }] : nome === 'Puxada Pronada' ? [{ kg: 35, reps: 10, data: iso(daysAgo(2)) }, { kg: 35, reps: 10, data: iso(daysAgo(9)) }, { kg: 32, reps: 12, data: iso(daysAgo(30)) }] : [];
   return [...mine.reverse(), ...demo].slice(0, limit);
 }
 export async function ultimaCarga(_, nome) { return (await historicoCarga(_, nome, 1))[0] || null; }
-export function guardarCarga() {}
+export function guardarCarga(nome, kg, reps, sessao) { if (!kg) return; const c = LS.get('cargas', {}), v = c[nome]; const ant = v && v.sessao && v.sessao === sessao ? v.ant : v?.kg; c[nome] = { kg, reps, data: iso(new Date()), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
 export async function ultimasSeries(_, nome) { return nome === 'Agachamento Smith' ? { 1: 22, 2: 25, 3: 28 } : null; }
 export async function minhasSessoes() { return state.sessoes.filter(s => s.finalizada_em); }
 export async function registrarPontos(_, motivo, pontos, ref) { if (state.pontos.find(p => p.motivo === motivo && p.ref === ref)) return false; state.pontos.unshift({ motivo, pontos, ref, created_at: iso(new Date()) }); state.perfil.pontos += pontos; save(); return true; }
 export async function meusPontos() { return state.pontos; }
 export async function evolucao() { return state.evolucao; }
-export async function salvarEvolucao(_, row, fotos = {}) { const r = { ...row }; if (fotos.frente) r.foto_path = URL.createObjectURL(fotos.frente); if (fotos.lado) r.foto_lado = URL.createObjectURL(fotos.lado); if (fotos.costas) r.foto_costas = URL.createObjectURL(fotos.costas); state.evolucao = state.evolucao.filter(e => e.data !== row.data).concat(r).sort((a, b) => a.data.localeCompare(b.data)); save(); return r; }
-export async function fotoUrl(p) { return p && p.startsWith('blob:') ? p : null; }
+const dataUrl = f => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
+export async function salvarEvolucao(_, row, fotos = {}) { const r = { ...row }; if (fotos.frente) r.foto_path = await dataUrl(fotos.frente); if (fotos.lado) r.foto_lado = await dataUrl(fotos.lado); if (fotos.costas) r.foto_costas = await dataUrl(fotos.costas); state.evolucao = state.evolucao.filter(e => e.data !== row.data).concat(r).sort((a, b) => a.data.localeCompare(b.data)); save(); return r; }
+export async function fotoUrl(p) { return p && /^(blob|data):/.test(p) ? p : null; }
 export const admin = {
   async alunas() { return [['Marcela D.', 0, 16, 2100], ['Ludimila M.', 1, 15, 1900], ['Ana Paula', 1, 14, 1240], ['Lorena S.', 4, 6, 420], ['Patrícia M.', 6, 3, 310], ['Fabiana R.', 9, 1, 150], ['Nova aluna', 999, 0, 0]].map(([nome, d, m, pts], i) => ({ id: 'a' + i, nome, whatsapp: '62999990000', ativa: i !== 6 || true, pontos: pts, dias_semana: 4, ultimo_treino: d === 999 ? null : iso(daysAgo(d)), dias_sem_treinar: d, treinos_mes: m, plano: i === 2 ? 'personalizado' : 'basico' })); },
-  async feedbacks() { return [{ id: 'f1', titulo: 'Treino A', finalizada_em: iso(new Date()), esforco: 7, nota: 9, comentario: 'senti a lombar no búlgaro', resposta_igor: null, profiles: { nome: 'Ana Paula', plano: 'personalizado' } }, { id: 'f2', titulo: 'Treino C', finalizada_em: iso(daysAgo(1)), esforco: 5, nota: 8, comentario: 'tá leve, sobe carga', resposta_igor: 'Bora subir 2 kg na mesa flexora então!', profiles: { nome: 'Marcela D.' } }]; },
-  async responder() { await wait(); }, async anamneses() { return []; }, async planoDe() { return PLANO; }, async salvarPlano() { await wait(); }, async publicarRecado() { await wait(); }, async setAtiva() { await wait(); }
+  async feedbacks() { const meus = state.sessoes.filter(s => s.finalizada_em && s.comentario).map(s => ({ ...s, profiles: { nome: 'Ana Paula', plano: state.perfil.plano } })); return [...meus.filter(s => !s.resposta_igor), { id: 'f1', titulo: 'Treino A', finalizada_em: iso(new Date()), esforco: 7, nota: 9, comentario: 'senti a lombar no búlgaro', resposta_igor: null, profiles: { nome: 'Ana Paula', plano: 'personalizado' } }, { id: 'f2', titulo: 'Treino C', finalizada_em: iso(daysAgo(1)), esforco: 5, nota: 8, comentario: 'tá leve, sobe carga', resposta_igor: 'Bora subir 2 kg na mesa flexora então!', profiles: { nome: 'Marcela D.' } }, ...meus.filter(s => s.resposta_igor).slice(0, 5)]; },
+  async responder(id, texto) { await wait(); const s = state.sessoes.find(x => x.id === id); if (s) { s.resposta_igor = texto; s.respondida_em = iso(new Date()); save(); } }, async anamneses() { return []; }, async planoDe() { return PLANO; }, async salvarPlano() { await wait(); }, async publicarRecado() { await wait(); }, async setAtiva() { await wait(); }
 };
 
 // Tira-dúvidas no modo demo: respostas de exemplo (a de verdade vem da IA no servidor).
 export const assistente = {
-  async historico() { return state.chat || []; },
+  async historico() { await wait(300); return state.chat || LS.get('chat', []); },
   async perguntar(texto) {
     await wait(900);
     const t = texto.toLowerCase();
