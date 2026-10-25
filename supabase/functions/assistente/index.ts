@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ erro: 'metodo' }, 405);
   const url = Deno.env.get('SUPABASE_URL')!, anon = Deno.env.get('SUPABASE_ANON_KEY')!, service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const chave = Deno.env.get('ANTHROPIC_API_KEY');
+  const chave = (Deno.env.get('ANTHROPIC_API_KEY') || '').trim();
   const modelo = Deno.env.get('ASSISTENTE_MODELO') || 'claude-haiku-5-5';
   const limite = +(Deno.env.get('ASSISTENTE_LIMITE_DIA') || 30);
 
@@ -360,7 +360,8 @@ Data de hoje: ${hojeBR}.${body.contexto ? `\nCONTEXTO DA TELA: ${String(body.con
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': chave, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: modelo, max_tokens: 700, system: PROMPT_IGOR + '\n\n' + SOBRE_O_APP + '\n' + dados + instrucaoIdioma, messages: mensagens }),
+    // thinking desligado: o Haiku 5.5 pensa por padrão e gastava todos os tokens sem escrever a resposta.
+    body: JSON.stringify({ model: modelo, max_tokens: 1200, thinking: { type: 'disabled' }, system: PROMPT_IGOR + '\n\n' + SOBRE_O_APP + '\n' + dados + instrucaoIdioma, messages: mensagens }),
   });
   if (!r.ok) { console.error('anthropic', r.status, (await r.text()).slice(0, 300)); return json({ erro: 'ia_falhou', resposta: 'Não consegui responder agora. Tenta de novo em um minutinho.' }, 502); }
   const out = await r.json();
