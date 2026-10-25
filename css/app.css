@@ -200,3 +200,10 @@ body{font-size:.9375rem}
 .modal .rodape{position:sticky;bottom:-16px;background:var(--panel);margin:0 -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--line)}
 @media (max-width:340px){.tabs .tab span{font-size:.8125rem}.tab svg{width:20px;height:20px}.scale{grid-template-columns:repeat(4,1fr)}.set{grid-template-columns:40px 1fr 1fr 74px;gap:6px}.set .h{font-size:.75rem}}
 details>summary{list-style:none}details>summary::-webkit-details-marker{display:none}
+
+/* Escolha do treino que abre a semana */
+.semopts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.semop{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:#1c1c1f;color:var(--fg);text-align:left;font:inherit}
+.semop b{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex-shrink:0;font-size:0.9375rem}
+.semop span{font-size:0.875rem;font-weight:600;line-height:1.2}
+.semop:active{border-color:var(--accent)}
