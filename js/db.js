@@ -183,6 +183,8 @@ export async function fotoUrl(path) {
 }
 
 // Admin ----------------------------------------------------------------
+// O time: quem treinou hoje, ranking do mês (só primeiro nome + inicial). Função no banco (migração 009).
+export async function comunidade() { const { data, error } = await sb.rpc('fn_comunidade'); if (error) throw error; return data; }
 export const precisaVer = f => !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
 export const admin = {
   async alunas() { const { data, error } = await sb.from('v_alunas_status').select('*').order('nome'); if (error) throw error; return data; },

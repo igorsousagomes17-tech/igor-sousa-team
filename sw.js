@@ -1,7 +1,8 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v17';
+const CACHE = 'isteam-v18';
+const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
 // Só o que a aluna usa ao abrir (painel do Igor, demo e fotos-guia entram no cache no 1º uso).
-const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
+const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/acolhe.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/igor_s.jpg']; // capas dos programas entram no cache no 1º uso
 
 self.addEventListener('install', e => {
@@ -10,7 +11,7 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.keys().then(ks => caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: ks.length ? 'reload' : 'force-cache' }))))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== DADOS).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
@@ -38,6 +39,7 @@ self.addEventListener('push', e => {
 let agendado = null;
 self.addEventListener('message', e => {
   const d = e.data || {};
+  if (d.tipo === 'lembreteDados') { e.waitUntil(lerDados().then(old => gravarDados({ ...old, ultimo: d.ultimo, nome: d.nome, proximo: d.proximo, textos: d.textos }))); return; }
   if (d.tipo === 'cancelar') { if (agendado) { clearTimeout(agendado.t); agendado.ok(); agendado = null; } return; }
   if (d.tipo !== 'agendar') return;
   if (agendado) { clearTimeout(agendado.t); agendado.ok(); }
@@ -56,5 +58,20 @@ self.addEventListener('message', e => {
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => cs.length ? cs[0].focus() : self.clients.openWindow('./#sessao')));
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => cs.length ? cs[0].focus() : self.clients.openWindow(e.notification.data?.url || './#sessao')));
 });
+
+// LEMBRETE de dias sem treinar (Android com o app instalado): o celular acorda o SW de tempos em tempos (periodic sync).
+// 3+ dias sem treinar → um aviso carinhoso por dia no máximo, entre 7h e 21h.
+const lerDados = () => caches.open(DADOS).then(c => c.match('./_lembrete')).then(r => r ? r.json() : {}).catch(() => ({}));
+const gravarDados = d => caches.open(DADOS).then(c => c.put('./_lembrete', new Response(JSON.stringify(d), { headers: { 'content-type': 'application/json' } })));
+async function talvezLembrar() {
+  const d = await lerDados(); if (!d.ultimo || !d.textos) return;
+  const dias = Math.floor((Date.now() - new Date(d.ultimo)) / 86400000), h = new Date().getHours(), hoje = new Date().toDateString();
+  if (dias < 3 || h < 7 || h >= 21 || d.avisadoEm === hoje) return;
+  const telas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true }); if (telas.some(c => c.visibilityState === 'visible')) return;
+  const troca = s => String(s || '').replace('{n}', dias).replace('{x}', d.proximo || '').replace('{nome}', d.nome || '');
+  await self.registration.showNotification(troca(d.textos.titulo), { body: troca(d.textos.corpo), icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: 'lembrete', data: { url: './#home' } });
+  await gravarDados({ ...d, avisadoEm: hoje });
+}
+self.addEventListener('periodicsync', e => { if (e.tag === 'lembrete') e.waitUntil(talvezLembrar()); });

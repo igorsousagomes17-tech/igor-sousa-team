@@ -2,7 +2,8 @@ const C0 = window.ISTEAM_CONFIG;
 const DEMO = !!(C0.DEMO || new URLSearchParams(location.search).has('demo'));
 const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
 import { $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho } from './ui.js';
-import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma } from './i18n.js'; // T = t, pra quando "t" já é nome de variável
+import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma } from './i18n.js';
+import * as A from './acolhe.js'; // T = t, pra quando "t" já é nome de variável
 
 const C = window.ISTEAM_CONFIG;
 const app = $('#app');
@@ -155,8 +156,11 @@ routes.home = async () => {
   const meta = p.dias_semana || 4; const dmeta = desafio?.meta_treinos || 16;
   const prox = proximoTreino(plano, sessoes);
   const sf = sa ? seriesFeitas(sa) : 0;
+  const dow = new Date().getDay(), resumoAnt = [1, 2, 3].includes(dow) ? A.resumoSemana({ sessoes, cargas: db.LS.get('cargas', {}), perfil: p, semanaKey: isoWeek(new Date(Date.now() - 7 * 86400000)), isoWeek, semanasSeguidas: st.semanas }) : null;
   render(`<div class="view fx"><div class="topbar"><div class="logo sm">IGOR SOUSA <b>TEAM</b></div>${st.semanas ? `<span class="pill on" title="${t('semanas seguidas treinando')}">${fogo(st)}</span>` : ''}</div>
   <div><p class="muted">${hoje()}${p.plano === 'personalizado' ? ` <span class="pill" style="vertical-align:middle">${t('Personalizado')}</span>` : ''}</p><h1>${t('Bora, {nome}?', { nome: esc(primeiroNome(p.nome)) })}</h1></div>
+  ${!sa ? A.cardVolta(p, sessoes, prox) : ''}
+  ${resumoAnt ? A.cardResumoHome(resumoAnt) : ''}
   ${!p.objetivo ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1rem">${t('Falta me contar de você')}</b><p class="muted">${t('{n} perguntas rápidas (uns 3 min) pro Igor montar o seu treino.', { n: Q.length })}</p><button class="btn sm mt" id="anam" style="width:100%">${t('Responder agora')}</button></div>` : ''}
   ${sa && sa.fimEm ? `<div class="card hero"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Falta enviar')}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${t('Seu treino ainda não foi registrado: falta tocar em Enviar (o esforço e o recado pro Igor).')}</p><button class="btn dark" style="margin-top:8px" data-go="fim">${t('Enviar agora')}</button></div>`
     : sa ? `<div class="card hero"><span class="pill" id="pausaPill" style="background:rgba(0,0,0,.18);color:#1a0d00">${pillPausa(sa)}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${tp(sf, '{n} série feita', '{n} séries feitas')} · ${t('{a} de {b} exercícios · tudo salvo', { a: completosCount(sa), b: sa.exs.length })}</p><button class="btn dark" style="margin-top:8px" data-go="sessao">${t('Continuar de onde parei')}</button><button class="back" id="desc" style="color:#1a0d00;margin-top:4px;text-decoration:underline">${t('descartar esse treino')}</button></div>`
@@ -172,7 +176,8 @@ routes.home = async () => {
     <button class="card" data-go="pontos" style="text-align:left;border:0;color:var(--fg)"><h3>${esc(!desafio?.titulo || desafio.titulo === 'Desafio do mês' ? t('Desafio do mês') : desafio.titulo)}</h3><div class="big" style="margin:6px 0 4px">${mesCount}<small>/${tp(dmeta, '{n} treino', '{n} treinos')}</small></div><div class="bar"><i style="width:${Math.min(100, mesCount / dmeta * 100)}%"></i></div><p class="muted mt" id="desaf">${mesCount >= dmeta ? t('Batido! 🎉') : tp(dmeta - mesCount, 'Falta {n} pra +{b} pts', 'Faltam {n} pra +{b} pts', { b: desafio?.pontos_bonus || 200 })}</p></button>
     <div class="card"><h3>${t('Meta da semana')}</h3><div class="big" style="margin:6px 0 4px">${semCount}<small>/${tp(meta, '{n} treino', '{n} treinos')}</small></div><div class="row" style="gap:4px">${Array.from({ length: meta }, (_, i) => `<i class="dot ${i < semCount ? 'on' : ''}"></i>`).join('')}</div><p class="muted mt">${semCount >= meta ? t('Semana fechada 💪') : tp(meta - semCount, 'Falta {n} · você consegue', 'Faltam {n} · você consegue')}</p></div>
   </div>
-  <button class="card row" data-go="assistente" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex-shrink:0;color:var(--accent-ink);font-size:1.25rem">💬</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('Tira-dúvidas 24h')}</b><p class="muted">${t('Pergunta sobre seu treino, execução, carga, cardio... a IA do time responde na hora.')}</p></div></button>
+  <button class="card row home-ia" data-go="assistente" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex-shrink:0;color:var(--accent-ink);font-size:1.25rem">💬</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('Tira-dúvidas 24h')}</b><p class="muted">${t('Pergunta sobre seu treino, execução, carga, cardio... a IA do time responde na hora.')}</p></div></button>
+  <button class="card row home-time" data-go="comunidade" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:#2a2a2e;display:grid;place-items:center;flex-shrink:0;font-size:1.25rem">🔥</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('O time')}</b><p class="muted" id="timeHoje">${t('Veja quem já treinou hoje e o ranking do mês.')}</p></div></button>
   <div class="row between"><h3>${t('Programas extras')}</h3><button class="back" style="color:var(--accent)" data-go="lib">${t('ver todos')}</button></div>
   <div class="hscroll">${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" style="background-image:url(${esc(pr.capa_url)})"><b style="font-size:${tamTitulo(pr.titulo, 126, 17)}">${esc(pr.titulo)}</b><span>${esc(subProg(pr))}</span></button>`).join('')}</div></div>`, 'home');
   // Desafio batido: só fala dos pontos quando eles já entraram de verdade
@@ -180,6 +185,11 @@ routes.home = async () => {
   if ($('#desc')) $('#desc').onclick = async () => { if (await perguntar(t('Descartar treino?'), t('O que você marcou nesse treino vai ser apagado.'), t('Descartar'), t('Manter'))) { pararDescanso(); S.sessao = null; db.LS.del('sessao'); routes.home(); } };
   if ($('#resp')) $('#resp').onclick = () => { db.LS.set('respLidas', [...db.LS.get('respLidas', []), resp.id].slice(-50)); go('perfil'); };
   if ($('#anam')) $('#anam').onclick = () => anamneseForm(S.perfil, () => go('home'));
+  if ($('#resumoSem')) $('#resumoSem').onclick = () => { A.resumoVisto(resumoAnt.semanaKey); go('semana', resumoAnt.semanaKey); };
+  if ($('.volta-x')) $('.volta-x').onclick = () => { A.voltaVisto(); $('#volta')?.remove(); };
+  const ult = sessoes.find(s => s.finalizada_em); A.avisarSW({ ultimo: ult?.finalizada_em || null, nome: primeiroNome(p.nome), proximo: prox ? t('Treino {l}', { l: prox.letra }) : t('treino') });
+  rapido(db.comunidade(), null, 6000).then(d => { const el = $('#timeHoje'); if (el && d?.hoje) el.textContent = tp(d.hoje, '{n} menina do time já treinou hoje. Bora?', '{n} meninas do time já treinaram hoje. Bora?'); });
+  if (A.passeioPendente(p) && !$('#overlay')?.innerHTML && !document.querySelector('.bv')) setTimeout(() => { if (rotaAtual === 'home' && !$('#overlay')?.innerHTML) A.passeio(p); }, 500);
   $$('.semop').forEach(b => b.onclick = () => { db.LS.set('inicioSemana', { semana: isoWeek(new Date()), letra: b.dataset.letra }); routes.home(); toast(t('Semana começa pelo Treino {l} ✓', { l: b.dataset.letra })); });
   if ($('#seguirMeia')) $('#seguirMeia').onclick = () => { db.LS.set('seguirMeia', prox.repete.finalizada_em); routes.home(); };
   if ($('#semTroca')) $('#semTroca').onclick = () => { db.LS.del('inicioSemana'); db.LS.del('inicioSemanaPulou'); routes.home(); };
@@ -879,9 +889,11 @@ routes.card = async (arg) => {
     <div><div class="logo" style="font-size:2.5rem">${d.ex === 0 ? t('Treino<br>registrado') : t('Treino<br>feito')} <b>✓</b></div><div class="row wrap" style="gap:6px 18px;margin-top:14px"><div class="big" style="font-size:1.875rem">${d.min}<small> ${t('min')}</small></div>${d.ex === 0 && d.series ? `<div class="big" style="font-size:1.875rem">${d.series}<small> ${tp(d.series, 'série', 'séries')}</small></div>` : `<div class="big" style="font-size:1.875rem">${d.ex}<small> ${tp(d.ex, 'exercício', 'exercícios')}</small></div>`}<div class="big" style="font-size:1.875rem;color:var(--accent)">🔥${st.semanas}<small> ${tp(st.semanas, 'semana seguida', 'semanas seguidas')}</small></div></div>
     <p class="muted mt small">${esc(primeiroNome(S.perfil.nome))} · ${esc(nomeCurto(d.titulo))} · ${esc(C.INSTAGRAM)}</p></div></div>
   ${d.recordes?.length ? `<div class="card" style="border:1px solid var(--accent)"><b>🏆 ${tp(d.recordes.length, 'Recorde!', 'Recordes!')}</b><p class="muted">${esc(d.recordes.join(' · '))} · ${t('mais do que da última vez')}</p></div>` : ''}
+  ${!A.lembreteLigado() && 'Notification' in window && Notification.permission === 'default' && !db.LS.get('lembretePerg') ? `<div class="card" id="lemb"><b style="font-size:0.9375rem">🔔 ${t('Quer que eu te lembre se passar uns dias sem treinar?')}</b><p class="muted">${t('Um aviso carinhoso, sem cobrança. Dá pra desligar no Perfil.')}</p><div class="row mt"><button class="btn ghost sm" id="lembN" style="flex:1">${t('Agora não')}</button><button class="btn sm" id="lembS" style="flex:1">${t('Quero')}</button></div></div>` : ''}
   <div class="row"><button class="btn sm" style="flex:1" id="share">${t('Postar no story')}</button><button class="btn ghost sm" style="flex:1" data-go="evolucao">${t('Minha evolução')}</button></div>
   ${d.titulo === 'Cardio 20 min' || d.hiit || d.ex === 0 ? '' : `<button class="btn ghost sm" data-go="assistente" data-arg='${esc(JSON.stringify({ pergunta: t('Me passa um cardio de 20 minutos pra fazer agora'), contexto: 'Ela acabou de terminar o ' + (d.titulo || 'treino') + '.', enviar: true, cardio: true }))}'>🔥 ${t('Quer um cardio de 20 min agora?')}</button>`}
   <p class="muted center small">${t('Cada story é um convite pra sua amiga entrar no time.')}</p></div>`, 'home');
+  if ($('#lemb')) { $('#lembN').onclick = () => { db.LS.set('lembretePerg', Date.now()); $('#lemb').remove(); }; $('#lembS').onclick = async () => { db.LS.set('lembretePerg', Date.now()); const r = await A.ligarLembrete(); $('#lemb')?.remove(); toast(r === 'negado' ? t('Sem permissão. Dá pra ligar nos ajustes do celular.') : t('Lembretes ligados ✓')); }; }
   $('#share').onclick = async () => {
     const bt = $('#share'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
     let r; try { r = await cardImagem({ nome: primeiroNome(S.perfil.nome), titulo: nomeCurto(d.titulo), minutos: d.min, exercicios: d.ex, series: d.series, streak: st.semanas, data, insta: C.INSTAGRAM }); } catch { r = 'erro'; } finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
@@ -892,6 +904,29 @@ routes.card = async (arg) => {
     if (ok === null) { novaFila({ tipo: 'pontos', motivo: 'story', pontos: 30, ref }); toast(onde + t('Os +30 pts entram quando a internet voltar.')); }
     else toast(onde + (ok ? t('+{n} pts', { n: 30 }) : t('(os pontos do story de hoje já foram contados)')));
   };
+};
+
+// O TIME (comunidade) -----------------------------------------------------------------
+routes.comunidade = async () => {
+  render(`<div class="view fx"><div class="topbar"><button class="back" data-go="home">‹ ${t('Início')}</button><h2>${t('O time')}</h2></div><div class="card"><p class="muted">${t('Carregando…')}</p></div></div>`, 'home');
+  const d = await rapido(db.comunidade(), null, 8000); if (rotaAtual !== 'comunidade') return;
+  render(`<div class="view fx"><div class="topbar"><button class="back" data-go="home">‹ ${t('Início')}</button><h2>${t('O time')}</h2></div>
+  ${d ? A.htmlTime(d) : `<div class="card"><b>${t('O time abre já já 🔥')}</b><p class="muted">${t('Sem conexão com o time agora. Tenta de novo daqui a pouco.')}</p><button class="btn ghost sm mt" id="tn" style="width:100%">↻ ${t('Tentar de novo')}</button></div>`}</div>`, 'home');
+  if ($('#tn')) $('#tn').onclick = () => routes.comunidade();
+};
+// RESUMO DA SEMANA ---------------------------------------------------------------------
+routes.semana = async (key) => {
+  const p = S.perfil, k = key || isoWeek(new Date());
+  const [sessoes, doBanco] = await Promise.all([sessoesComFila(p, 200), rapido(db.cargasRecentes(p.id), null, 4000)]);
+  if (rotaAtual !== 'semana') return;
+  const r = A.resumoSemana({ sessoes, cargas: { ...db.LS.get('cargas', {}), ...(doBanco || {}) }, perfil: p, semanaKey: k, isoWeek, semanasSeguidas: streakDias(sessoes).semanas });
+  const atual = k === isoWeek(new Date()), seg = new Date(); seg.setDate(seg.getDate() - (seg.getDay() + 6) % 7 - (atual ? 0 : 7)); const dom = new Date(seg); dom.setDate(seg.getDate() + 6);
+  const titulo = `${dataLocal(seg, { day: 'numeric' })}–${dataLocal(dom, { day: 'numeric', month: 'short' })}`;
+  render(`<div class="view fx"><div class="topbar"><button class="back" data-go="home">‹ ${t('Início')}</button><span class="row" style="gap:6px"><button class="pill ${atual ? '' : 'on'}" data-go="semana" data-arg="${isoWeek(new Date(Date.now() - 7 * 86400000))}">${t('Semana passada')}</button><button class="pill ${atual ? 'on' : ''}" data-go="semana" data-arg="${isoWeek(new Date())}">${t('Esta semana')}</button></span></div>
+  ${A.htmlResumo(r, { nome: primeiroNome(p.nome), titulo })}
+  ${r.treinos ? `<button class="btn" id="shSem">${t('Postar no story')}</button>` : `<button class="btn" data-go="treino">${t('Abrir treino')}</button>`}
+  <p class="muted center small">${r.bateu ? t('Semana assim merece story. Marca o Igor!') : t('Toda semana conta. O que importa é não parar.')}</p></div>`, 'evolucao');
+  if ($('#shSem')) $('#shSem').onclick = async () => { const b = $('#shSem'), rot = b.textContent; b.disabled = true; b.textContent = t('Gerando imagem…'); let x; try { x = await A.imagemResumo(r, { nome: primeiroNome(p.nome), titulo, insta: C.INSTAGRAM }); } catch { x = 'erro'; } b.disabled = false; b.textContent = rot; if (x === 'erro') toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true); else if (x === 'download') toast(t('Imagem salva no celular (Downloads/Galeria): abre o Instagram e escolhe ela.')); };
 };
 
 // PONTOS --------------------------------------------------------------------------
@@ -938,6 +973,7 @@ routes.evolucao = async () => {
   const nomes = grupos.flatMap(g => g.nomes);
   const linhaCarga = n => { const c = cargas[n], d = c && c.ant != null ? +c.kg - +c.ant : 0; return `<button class="linha" data-hist="${esc(n)}"><span style="color:var(--fg);flex:1;min-width:0">${esc(n)}</span><span>${c ? `<b style="color:var(--fg)">${dec(c.kg)} kg</b>${d ? ` <i style="font-style:normal;color:${d > 0 ? 'var(--accent)' : 'var(--muted)'}">${d > 0 ? '+' : '−'}${dec(Math.abs(d))} kg</i>` : ''}` : t('sem registro')} ›</span></button>`; };
   render(`<div class="view fx"><div class="topbar"><h2>${t('Minha evolução')}</h2></div>
+  <button class="card row" data-go="semana" style="gap:12px;text-align:left;border:1px solid var(--accent);color:var(--fg);width:100%"><div style="font-size:1.5rem">📊</div><div style="flex:1"><b style="font-size:0.9375rem">${t('Resumo da semana')}</b><p class="muted">${t('Treinos, minutos e cargas que subiram. Dá pra postar no story.')}</p></div><span style="color:var(--accent)">›</span></button>
   <div class="row" id="ang" style="gap:6px">${ANG.map(([k, l], i) => `<button class="pill big-pill ${i ? '' : 'on'}" data-a="${k}">${t(l)}</button>`).join('')}</div>
   <div id="fotos"></div>
   <button class="btn ghost sm" id="add" style="align-self:flex-start">+ ${t('Registro do mês')}${jaContou ? '' : ' (' + t('+{n} pts', { n: 80 }) + ')'}</button>
@@ -1045,7 +1081,9 @@ routes.perfil = async () => {
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Respostas do Igor')}</b>${novas ? `<span class="pill on">${tp(novas, '{n} nova', '{n} novas')}</span>` : ''}</div>${resp.length ? resp.slice(0, 3).map(s => `<div class="mt"><p class="muted small">${t('Seu {x}', { x: esc(s.titulo ? nomeCurto(s.titulo) : t('treino')) })} · ${fmtData(s.finalizada_em)}${s.comentario ? ': "' + esc(s.comentario) + '"' : ''}</p><p style="margin-top:2px">↳ "${esc(s.resposta_igor)}"</p></div>`).join('') + `<p class="muted small mt">${t('Quer responder? Escreve no recado do próximo treino ou')} <a href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 2px">${t('chama no WhatsApp')}</a>.</p>` : `<p class="muted">${t('Quando você mandar feedback no fim do treino, ele responde aqui.')}</p>`}</div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Indique uma amiga')}</b><b style="color:var(--accent)">${t('+{n} pts', { n: 300 })}</b></div><p class="muted">${t('Seu código:')} <b style="color:var(--fg)">${esc(p.cod_indicacao || '')}</b>. ${t('Ela coloca no cadastro e vocês duas ganham.')}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🌐 ${t('Idioma')}</b><button class="btn ghost sm" id="idi">${infoIdioma().flag} ${infoIdioma().nome}</button></div><p class="muted">${t('O app aparece nesse idioma. Treinos, dicas e recados do Igor continuam em português.')}</p></div>
-  <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b><button class="btn ghost sm" id="notif">${t('ativar')}</button></div><p class="muted">${t('Aviso leve se ficar 3 dias sem treinar. No iPhone, adiciona o app à tela inicial primeiro.')}</p></div>
+  <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteLigado() ? `<span class="pill on">${t('ligados ✓')}</span>` : `<button class="btn ghost sm" id="notif">${t('ativar')}</button>`}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : t('Nesse celular, o aviso de dias sem treinar chega numa próxima atualização. O aviso do fim do descanso já funciona.')}</p></div>
+  <div class="card"><div class="row between"><b style="font-size:0.9375rem">🔥 ${t('Aparecer no time')}</b><button class="sw ${p.comunidade === false ? '' : 'on'}" id="swTime" aria-label="${t('Aparecer no time')}"></button></div><p class="muted">${t('Seu primeiro nome e a inicial aparecem no ranking e em "treinou agora há pouco". Nada de foto, carga ou peso.')}</p></div>
+  <button class="btn ghost sm" id="tour" style="width:100%">🧭 ${t('Ver o passeio pelo app de novo')}</button>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Senha')}</b><button class="btn ghost sm" id="pw">${t('trocar')}</button></div><p class="muted">${p.senha_trocada === false ? t('Se ainda é o seu número de WhatsApp, troca aqui.') : t('Quer mudar sua senha? Troca aqui quando quiser.')}</p></div>
   <a class="btn ghost sm" style="width:100%" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener">${t('Chamar o Igor')}</a>
   <button class="link-fim" id="out" style="margin-top:14px">${t('Sair da minha conta')}</button></div>`, 'perfil');
@@ -1058,7 +1096,9 @@ routes.perfil = async () => {
     if (S.sessao) { db.LS.set('sessao@' + S.perfil.id, S.sessao); db.LS.del('sessao'); S.sessao = null; } // treino pausado é só dela: quem entrar depois não vê
     await db.logout().catch(() => {}); ['chat', 'chatRasc', 'chatPend', 'chatRest', 'chatEm', 'cargas', 'evolucao', 'sessoes'].forEach(k => db.LS.del(k)); S.perfil = null; go('entrada'); // outra pessoa no mesmo celular não vê a conversa dela
   };
-  $('#notif').onclick = async () => { if (!('Notification' in window)) return toast(t('Seu navegador não suporta. No iPhone: Compartilhar → Adicionar à Tela de Início.'), true); const r = await Notification.requestPermission(); toast(r === 'granted' ? t('Lembretes ligados ✓') : t('Sem permissão. Dá pra ligar nos ajustes do celular.')); };
+  if ($('#notif')) $('#notif').onclick = async () => { if (!('Notification' in window)) return toast(t('Seu navegador não suporta. No iPhone: Compartilhar → Adicionar à Tela de Início.'), true); const r = await A.ligarLembrete(); toast(r === 'negado' ? t('Sem permissão. Dá pra ligar nos ajustes do celular.') : t('Lembretes ligados ✓')); routes.perfil(); };
+  $('#tour').onclick = () => { A.refazerPasseio(p); go('home'); };
+  $('#swTime').onclick = async () => { const b = $('#swTime'), quer = !b.classList.contains('on'); b.classList.toggle('on', quer); try { S.perfil = await db.salvarPerfil({ comunidade: quer }); toast(quer ? t('Você aparece no time ✓') : t('Pronto: você não aparece mais no time.')); } catch { b.classList.toggle('on', !quer); toast(t('Não deu pra salvar agora. Tenta de novo com internet.'), true); } };
   $('#pw').onclick = () => {
     overlay(`<div class="modal" id="m"><form class="box" id="fs" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${t('Nova senha')}</h2>
       <div class="field"><label class="l" for="n1">${t('Nova senha')}</label>${campoSenha('n1', t('6 ou mais'))}</div><div class="field"><label class="l" for="n2">${t('Repete a senha')}</label>${campoSenha('n2')}</div>
@@ -1238,7 +1278,8 @@ async function boot() {
     return;
   }
   if (S.sessao && ['sessao', 'fim'].includes(h)) return go(h);
-  go(['treino', 'videos', 'pontos', 'evolucao', 'perfil', 'lib', 'assistente'].includes(h) ? h : 'home');
+  if (A.boasVindasPendente(S.perfil)) await A.boasVindas(S.perfil);
+  go(['treino', 'videos', 'pontos', 'evolucao', 'perfil', 'lib', 'assistente', 'comunidade'].includes(h) ? h : 'home');
   if (!S.perfil.objetivo) anamneseForm(S.perfil, () => go('home'), 'Me conta de você');
 }
 // 1º acesso: a senha inicial é o WhatsApp; ela cria uma só dela antes de entrar.
