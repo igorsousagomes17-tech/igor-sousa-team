@@ -63,7 +63,7 @@ export async function comunidade() {
   const feed = [['Marcela D.', 'Treino C', 18], ['Ludimila M.', 'Treino A', 45], ['Patrícia M.', 'Treino em casa · Base 1 · pernas e core', 95], ['Lorena S.', 'Treino B', 160], ['Fabiana R.', 'Treino D', 300], ['Camila T.', 'Treino A', 610], ['Júlia P.', 'Treino B', 1300]].map(([nome, titulo, m]) => ({ nome, titulo, finalizada_em: h(m) }));
   const meus = state.sessoes.filter(s => s.finalizada_em && String(s.finalizada_em).slice(0, 7) === iso(new Date()).slice(0, 7)).length;
   const ranking = [['Marcela D.', 16], ['Ludimila M.', 15], ['Ana P.', meus, true], ['Patrícia M.', 11], ['Lorena S.', 9], ['Camila T.', 8], ['Fabiana R.', 6]].map(([nome, n, eu]) => ({ nome, n, eu: !!eu })).sort((a, b) => b.n - a.n);
-  return { hoje: 5, mes: 214, time: 38, feed, ranking };
+  return { hoje: 5, mes: 214, time: 38, ativas_mes: 24, feed: feed.filter(f => Date.now() - new Date(f.finalizada_em) < 10 * 3600000), ranking };
 }
 export const admin = {
   async alunas() { return [['Marcela D.', 0, 16, 2100], ['Ludimila M.', 1, 15, 1900], ['Ana Paula', 1, 14, 1240], ['Lorena S.', 4, 6, 420], ['Patrícia M.', 6, 3, 310], ['Fabiana R.', 9, 1, 150], ['Nova aluna', 999, 0, 0]].map(([nome, d, m, pts], i) => ({ id: 'a' + i, nome, whatsapp: '62999990000', ativa: i !== 6 || true, pontos: pts, dias_semana: 4, ultimo_treino: d === 999 ? null : iso(daysAgo(d)), dias_sem_treinar: d, treinos_mes: m, plano: i === 2 ? 'personalizado' : 'basico' })); },

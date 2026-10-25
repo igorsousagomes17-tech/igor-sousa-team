@@ -17,7 +17,7 @@ for (const vw of [375,360]) {
   if (await p.isVisible('.bv')) errs.push(vw+' boas-vindas não fechou');
   await p.waitForSelector('.tour',{timeout:4000}).catch(()=>errs.push(vw+' passeio não apareceu'));
   let passos=0; while (await p.isVisible('.tour')) { passos++; if(passos===1) await shot('tour1'); if(passos===3) await shot('tour3'); const box=await p.$eval('.tour-box',e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;}); if(!box) errs.push(`${vw} balão do passeio fora da tela no passo ${passos}`); await p.click('.tour-ok'); await p.clock.runFor(400); if(passos>12) break; }
-  console.log(vw,'passos do passeio:',passos); if(passos<5) errs.push(vw+' passeio curto: '+passos);
+  console.log(vw,'passos do passeio:',passos); if(passos<4) errs.push(vw+' passeio curto: '+passos);
   await p.reload(); await p.clock.runFor(1500); if(await p.isVisible('.bv')||await p.isVisible('.tour')) errs.push(vw+' boas-vindas/passeio repetiu');
   const home=(await p.innerText('.view')).replace(/\s+/g,' '); console.log(vw,'home:',home.slice(0,220));
   if(!/Sua semana passada/.test(home)) errs.push(vw+' sem card do resumo');

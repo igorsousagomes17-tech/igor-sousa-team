@@ -58,7 +58,7 @@ self.addEventListener('message', e => {
 });
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => cs.length ? cs[0].focus() : self.clients.openWindow(e.notification.data?.url || './#sessao')));
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => cs.length ? (e.notification.data?.url ? cs[0].navigate(e.notification.data.url).catch(() => null).then(() => cs[0].focus()) : cs[0].focus()) : self.clients.openWindow(e.notification.data?.url || './#sessao')));
 });
 
 // LEMBRETE de dias sem treinar (Android com o app instalado): o celular acorda o SW de tempos em tempos (periodic sync).
@@ -68,7 +68,7 @@ const gravarDados = d => caches.open(DADOS).then(c => c.put('./_lembrete', new R
 async function talvezLembrar() {
   const d = await lerDados(); if (!d.ultimo || !d.textos) return;
   const dias = Math.floor((Date.now() - new Date(d.ultimo)) / 86400000), h = new Date().getHours(), hoje = new Date().toDateString();
-  if (dias < 3 || h < 7 || h >= 21 || d.avisadoEm === hoje) return;
+  if (![3, 5, 8, 14].includes(dias) || h < 7 || h >= 21 || d.avisadoEm === hoje) return; // não vira cobrança diária
   const telas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true }); if (telas.some(c => c.visibilityState === 'visible')) return;
   const troca = s => String(s || '').replace('{n}', dias).replace('{x}', d.proximo || '').replace('{nome}', d.nome || '');
   await self.registration.showNotification(troca(d.textos.titulo), { body: troca(d.textos.corpo), icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: 'lembrete', data: { url: './#home' } });
