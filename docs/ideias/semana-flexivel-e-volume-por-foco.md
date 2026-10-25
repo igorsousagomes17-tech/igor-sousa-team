@@ -39,3 +39,14 @@ Proposta técnica (motor de adaptação):
 - [x] Grupo que abre a semana: a aluna escolhe **toda semana** (card no início, antes do 1º treino da semana). Escolha fica no celular; "seguir a ordem normal" pula a pergunta naquela semana. Teste: tests/semana-flexivel.mjs.
 - [ ] Volume do foco: Igor pediu pra perguntar depois (lembrete agendado pra 25/10 à noite).
 - [ ] Check-in com dor (2 exercícios de alívio): esperar o Igor gravar os exercícios (mapa de filmagem) e aí montar.
+
+## Volume por foco — regras do Igor (25/10, áudio)
+- **Treino feminino 3x/semana:**
+  - Dia 1: glúteo + posterior **ou** glúteo + quadríceps.
+  - Dia 2: glúteo + o outro (o inverso do dia 1).
+  - Dia 3: glúteo + perna.
+- **Exercícios que contam pra dois grupos:** todas as variações de afundo e de agachamento trabalham quadríceps **e** glúteo. O Igor vai mandar a lista de qual exercício trabalha quais músculos.
+- **Grupos de foco** (o que ela marcou na anamnese, ex.: glúteo e quadríceps): **15 a 20 séries por semana** cada.
+- **Demais grupos:** **10 a 12 séries por semana**, dependendo da aluna.
+- **Se a anamnese diz que ela não quer desenvolver superior:** mínimo, sem metodologia, ex.: 1 elevação lateral + 1 tríceps + 1 bíceps, **1 dia na semana**.
+- Pendente com o Igor: a lista exercício → músculos; divisões de 4x, 5x e 6x; onde entra o superior no 3x.
