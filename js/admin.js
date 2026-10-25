@@ -7,6 +7,10 @@ const msgAcesso = (nome, email) => `Olá ${nome.split(' ')[0]}! Seu acesso ao ap
 const wa = (num, txt) => `https://wa.me/55${String(num || '').replace(/\D/g, '').replace(/^55/, '')}?text=${encodeURIComponent(txt)}`;
 
 let db;
+// Precisa da resposta do Igor: comentou, ou deu nota baixa / esforço no limite sem escrever nada
+const precisa = f => !f.resposta_igor && !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
+const selo = f => /\bdor|doeu|doendo|les[aã]o|machuc/i.test(f.comentario || '') ? ' <span class="pill warn">dor</span>' : !String(f.comentario || '').trim() && f.nota != null && f.nota <= 4 ? ' <span class="pill warn">nota baixa</span>' : !String(f.comentario || '').trim() && f.esforco >= 9 ? ' <span class="pill warn">esforço no limite</span>' : '';
+const pl = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   db = _db;
   let alunas = [], fb = [];
@@ -15,26 +19,27 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   const dia = d => { d = new Date(d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }; // dia no fuso do celular
   const treinaramHoje = ativas.filter(a => a.ultimo_treino && dia(a.ultimo_treino) === dia(Date.now())).length;
   const atencao = ativas.filter(a => a.dias_sem_treinar >= 4).sort((a, b) => b.dias_sem_treinar - a.dias_sem_treinar);
-  const semResposta = fb.filter(f => f.comentario && !f.resposta_igor);
+  const semResposta = fb.filter(precisa);
   const semTreino = alunas.filter(a => a.ativa && a.treinos_mes === 0 && a.dias_sem_treinar === 999);
 
-  render(`<div class="view noTabs fx"><div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div><div class="row"><button class="pill" data-go="home">ver como aluna</button><button class="pill" id="out">sair</button></div></div>
+  render(`<div class="view noTabs fx"><div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div><div class="row"><button class="btn ghost sm" data-go="home">ver como aluna</button><button class="btn ghost sm" id="out">sair</button></div></div>
   <div class="grid2"><div class="card"><h3>Ativas</h3><div class="big">${ativas.length}</div><p class="muted">${alunas.length - ativas.length} pausadas</p></div><div class="card"><h3>Treinaram hoje</h3><div class="big">${treinaramHoje}</div><p class="muted">${Math.round(treinaramHoje / Math.max(1, ativas.length) * 100)}% das ativas</p></div></div>
   <div class="row wrap"><button class="btn sm" id="nova">+ Cadastrar aluna</button><button class="btn ghost sm" id="lote">Cadastro em lote</button><button class="btn ghost sm" id="recado">Recado</button></div>
 
-  <div class="card"><div class="row between"><h3>Precisam de atenção</h3><span class="muted small">${atencao.length} alunas</span></div>
-    ${atencao.length ? atencao.slice(0, 12).map(a => `<div class="r"><div><b>${esc(a.nome)}</b><span>${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : a.dias_sem_treinar + ' dias sem treinar'} · ${a.treinos_mes} no mês</span></div><span class="pill ${a.dias_sem_treinar >= 7 ? 'warn' : ''}">${a.dias_sem_treinar >= 7 ? 'atenção' : 'aviso'}</span><a class="btn wa sm" style="padding:7px 10px;font-size:13px" href="${wa(a.whatsapp, msgInativa(a.nome, a.dias_sem_treinar === 999 ? 'uns' : a.dias_sem_treinar))}" target="_blank" rel="noopener">WhatsApp</a></div>`).join('') : '<p class="muted mt">Todo mundo em dia 🔥</p>'}
+  <div class="card"><div class="row between"><h3>Precisam de atenção</h3><span class="muted small">${pl(atencao.length, 'aluna', 'alunas')}</span></div>
+    ${atencao.length ? atencao.slice(0, 12).map(a => `<div class="r"><div><b>${esc(a.nome)}</b><span>${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : a.dias_sem_treinar + ' dias sem treinar'} · ${a.treinos_mes} no mês</span></div><span class="pill ${a.dias_sem_treinar >= 7 ? 'warn' : ''}">${a.dias_sem_treinar >= 7 ? '7+ dias' : '4-6 dias'}</span><a class="btn wa sm" style="padding:7px 10px;font-size:13px" href="${wa(a.whatsapp, msgInativa(a.nome, a.dias_sem_treinar === 999 ? 'uns' : a.dias_sem_treinar))}" target="_blank" rel="noopener">WhatsApp</a></div>`).join('') : '<p class="muted mt">Todo mundo em dia 🔥</p>'}
     <p class="muted small mt">Toca em WhatsApp e abre a conversa com a mensagem pronta. Você revisa e envia.</p></div>
 
   <div class="card"><div class="row between"><h3>Feedbacks</h3><span class="muted small">${semResposta.length} sem resposta</span></div>
-    ${fb.length ? fb.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? '<br>↳ você: ' + esc(f.resposta_igor) : ''}</span></div>${f.comentario && !f.resposta_igor ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted mt">Nenhum feedback ainda.</p>'}</div>
+    ${fb.length ? fb.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? '<br>↳ você: ' + esc(f.resposta_igor) : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted mt">Nenhum feedback ainda.</p>'}</div>
 
   <div class="card"><div class="row between"><h3>Dúvidas na IA</h3><span class="muted small">últimas</span></div><div id="duv"><p class="muted mt">Carregando…</p></div><p class="muted small mt">O que as alunas perguntam pro tira-dúvidas. Bom pra pauta de conteúdo e pra ver quem precisa de você.</p></div>
   <div class="card"><div class="row between"><h3>Alunas</h3><input class="input" id="busca" placeholder="buscar" style="width:140px;min-height:36px;padding:6px 10px"></div>
     <div id="lista">${alunas.map(a => linhaAluna(a)).join('')}</div></div>
-  ${semTreino.length ? `<p class="muted small">${semTreino.length} alunas ainda sem plano de treino no app.</p>` : ''}</div>`);
+  ${semTreino.length ? `<p class="muted small">${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino no app.</p>` : ''}</div>`);
 
-  function linhaAluna(a) { return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr auto auto"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}</b><span>${a.pontos} pts · ${a.treinos_mes} treinos no mês</span></div><button class="pill" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="pill" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div>`; }
+  // Botões embaixo do nome (cabe com zoom/fonte grande) e com 44px pra tocar
+  function linhaAluna(a) { return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}</b><span>${a.pontos} pts · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês</span></div><div class="row" style="gap:8px"><button class="btn ghost sm" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="btn ghost sm" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div></div>`; }
 
   (db.assistente?.duvidasRecentes?.() || Promise.resolve([])).then(ds => { const el = $('#duv'); if (el) el.innerHTML = ds.length ? ds.map(d => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${esc(d.profiles?.nome || 'Aluna')}</b> <span class="muted small">· ${new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><p class="muted" style="margin-top:2px">${esc(d.texto)}</p></div>`).join('') : '<p class="muted mt">Nenhuma dúvida ainda.</p>'; }).catch(() => { const el = $('#duv'); if (el) el.innerHTML = '<p class="muted mt">Não deu pra carregar agora.</p>'; });
   $('#out').onclick = async () => { await db.logout(); S.perfil = null; go('entrada'); };
@@ -92,7 +97,7 @@ function formLote(go) {
 const EXEMPLO = `# A | Inferior · glúteo e quadríceps | 40
 Mobilidade quadril 90/90 | 1 | 1 min cada | 0 | | mobilidade importante
 Agachamento no Smith | 4 | 10 | 60 | https://youtu.be/XXXX | pé na largura do quadril | Agachamento livre
-Agachamento goblet (calcanhar elevado) | 3 | 12 | 60 | | bi-set com o 2
+Agachamento goblet (calcanhar elevado) | 3 | 12 | 60 | | | | bi 2
 Elevação pélvica | 4 | 12 | 60 | | segura 1s em cima
 Búlgaro com halter | 3 | 10 cada | 60
 Cadeira extensora | 3 | 15 | 45
@@ -111,20 +116,22 @@ function parseTreinos(txt) {
     l = l.trim(); if (!l) return;
     if (l.startsWith('#')) { const [letra, nome, dur] = l.slice(1).split('|').map(x => x.trim()); cur = { letra, nome: nome || '', duracao_min: +dur || 40, exercicios: [] }; treinos.push(cur); return; }
     if (!cur) return;
-    const [nome, series, reps, descanso, video, dica, alternativa] = l.split('|').map(x => (x || '').trim());
-    cur.exercicios.push({ nome, series: +series || 3, reps: reps || '12', descanso_s: descanso === '' ? 60 : +descanso, video_url: video || null, dica: dica || null, alternativa: alternativa || null });
+    const [nome, series, reps, descanso, video, dica, alternativa, bi] = l.split('|').map(x => (x || '').trim());
+    // bi-set: 8ª coluna "bi 2" (ou só o número), ou a dica "bi-set com o 2"
+    const mb = String(bi || '').match(/\d+/), md = String(dica || '').match(/^bi-?set com (?:o )?(\d+)\.?$/i);
+    cur.exercicios.push({ nome, series: +series || 3, reps: reps || '12', descanso_s: descanso === '' ? 60 : +descanso, video_url: video || null, dica: md ? null : (dica || null), alternativa: alternativa || null, biset_com: mb ? +mb[0] : md ? +md[1] : null });
   });
   return treinos;
 }
 function serializar(plano) {
-  return plano.treinos.map(t => `# ${t.letra} | ${t.nome} | ${t.duracao_min || 40}\n` + t.exercicios.sort((a, b) => a.ordem - b.ordem).map(e => [e.nome, e.series, e.reps, e.descanso_s, e.video_url || '', e.dica || '', e.alternativa || ''].join(' | ').replace(/( \| )+$/, '')).join('\n')).join('\n\n');
+  return plano.treinos.map(t => `# ${t.letra} | ${t.nome} | ${t.duracao_min || 40}\n` + t.exercicios.sort((a, b) => a.ordem - b.ordem).map(e => [e.nome, e.series, e.reps, e.descanso_s, e.video_url || '', e.dica || '', e.alternativa || '', e.biset_com ? 'bi ' + e.biset_com : ''].join(' | ').replace(/( \| )+$/, '')).join('\n')).join('\n\n');
 }
 async function editorTreino(alunaId, nome, go) {
   const atual = await db.admin.planoDe(alunaId);
   const mes = new Date(); mes.setDate(1); const mesStr = mes.toISOString().slice(0, 10);
   overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;margin:20px 0;max-width:460px"><h2>Treino de ${esc(nome)}</h2>
     <div class="row between"><input class="input" id="mes" type="month" value="${mesStr.slice(0, 7)}" style="width:160px"><button class="pill" id="ex">colar exemplo</button></div>
-    <p class="muted small">Formato: <b># Letra | Nome | minutos</b> e abaixo <b>exercício | séries | reps | descanso s | vídeo | dica | alternativa</b>. Dá pra pedir pra Claudete gerar nesse formato.</p>
+    <p class="muted small">Formato: <b># Letra | Nome | minutos</b> e abaixo <b>exercício | séries | reps | descanso s | vídeo | dica | alternativa | bi N</b> (bi 2 = emenda com o exercício 2). Dá pra pedir pra Claudete gerar nesse formato.</p>
     <textarea class="input" id="t" style="min-height:300px;font-family:monospace;font-size:13px">${esc(atual ? serializar(atual) : '')}</textarea>
     <div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Publicar pra aluna</button></div></div></div>`);
   $('#ex').onclick = () => { $('#t').value = EXEMPLO; };

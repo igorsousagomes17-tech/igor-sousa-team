@@ -1,11 +1,13 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v13';
+const CACHE = 'isteam-v14';
 // Só o que a aluna usa ao abrir (painel do Igor, demo e fotos-guia entram no cache no 1º uso).
 const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
-  './icons/icon-192.png','./icons/apple-touch-icon.png','./icons/igor_s.jpg','./icons/corrida_s.jpg','./icons/abdomen_s.jpg','./icons/mobilidade_s.jpg','./icons/casa_s.jpg'];
+  './icons/icon-192.png','./icons/igor_s.jpg']; // capas dos programas entram no cache no 1º uso
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // 1ª instalação: reaproveita o que a página acabou de baixar (não gasta o pacote de dados 2x).
+  // Atualização (já tinha cache): baixa a versão nova de verdade, sem pegar arquivo velho guardado.
+  e.waitUntil(caches.keys().then(ks => caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: ks.length ? 'reload' : 'force-cache' }))))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));

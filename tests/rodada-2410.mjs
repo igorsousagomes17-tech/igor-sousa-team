@@ -34,7 +34,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'A'); await p.click('#pular'); await espera(p);
   await p.click('.set[data-k="0"] .rest'); await espera(p, 500); await p.click('#sair'); await espera(p, 500);
   await p.click('[data-go="programa"][data-arg="abdomen"]'); await espera(p, 500); await p.click('[data-pt]'); await espera(p, 500);
-  const ov = await p.innerText('#overlay'); ok(/Registrar o Treino A e começar este/i.test(ov) && /Descartar/.test(ov), 'pop-up oferece registrar / voltar / descartar'); await shot(p, 'pausado-3-opcoes');
+  const ov = await p.innerText('#overlay'); ok(/Registrar e começar este/i.test(ov) && /Treino A pela metade/i.test(ov) && /Descartar/.test(ov), 'pop-up oferece registrar / voltar / descartar'); await shot(p, 'pausado-3-opcoes');
   await p.click('[data-o="0"]'); await espera(p, 900);
   const st = await estado(p); ok(st.sessoes.some(x => x.titulo === 'Treino A' && x.finalizada_em && x.exercicios_feitos >= 1 && new Date(x.finalizada_em).toDateString() === new Date().toDateString()), 'Treino A pausado foi registrado');
   ok(/Abdômen/i.test(await txt(p, '.view')), 'programa começou'); await ctx.close(); }
@@ -91,7 +91,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
   await p.click('.tabs [data-go="videos"]'); await espera(p, 500); await p.fill('#busca', 'bumbum'); await espera(p, 300); ok((await p.$$('#lv .vid')).length > 0, 'busca "bumbum" acha exercícios');
   await p.fill('#busca', 'barriga'); await espera(p, 300); ok((await p.$$('#lv .vid')).length > 0, 'busca "barriga" acha exercícios');
   await p.click('.tabs [data-go="treino"]'); await espera(p, 500); await p.click('[data-ficha="2"]'); await espera(p, 600);
-  ok(/Ver como fazer/i.test(await p.innerText('#overlay')) && /Suas cargas/i.test(await p.innerText('#overlay')), 'tocar no exercício abre a ficha (como fazer + cargas)'); await shot(p, 'ficha'); await p.click('#hc');
+  ok(/Ver como fazer|Tirar dúvida da execução/i.test(await p.innerText("#overlay")) && /Suas cargas/i.test(await p.innerText('#overlay')), 'tocar no exercício abre a ficha (como fazer + cargas)'); await shot(p, 'ficha'); await p.click('#hc');
   const bx = await p.$eval('#ini', e => e.getBoundingClientRect().bottom); ok(bx <= 800, `"Iniciar treino" visível sem rolar (${Math.round(bx)})`); await ctx.close(); }
 
 // 10. Perfil: editar anamnese abre na revisão; Sair pergunta; Pontos diz quanto falta
@@ -100,7 +100,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
   await p.goBack(); await espera(p, 400); ok(!(await p.innerText('#overlay')).trim(), 'voltar do celular fecha a revisão');
   await p.click('#out'); await espera(p, 400); ok(/Sair do app/i.test(await p.innerText('#overlay')), 'Sair pergunta antes'); await p.click('#q-n'); await espera(p, 300);
   ok(/Perfil/i.test(await txt(p, '.view')), '"Ficar" continua logada');
-  await p.click('.tabs [data-go="pontos"]'); await espera(p, 600); ok(/Faltam .* pts pro próximo prêmio/i.test(await txt(p, '.view')) && !/print/i.test(await txt(p, '.view')), 'Pontos: quanto falta e sem contradição do print'); await shot(p, 'pontos'); await ctx.close(); }
+  await p.click('.tabs [data-go="pontos"]'); await espera(p, 600); ok(/Faltam .* pts pra /i.test(await txt(p, '.view')) && !/print/i.test(await txt(p, '.view')), 'Pontos: quanto falta e sem contradição do print'); await shot(p, 'pontos'); await ctx.close(); }
 
 // 11. Tira-dúvidas mostra a conversa guardada na hora; login: e-mail incompleto no "esqueci"
 { const { ctx, p } = await nova(); await login(p); await p.evaluate(() => localStorage.setItem('demo:chat', JSON.stringify([{ papel: 'user', texto: 'pergunta velha' }, { papel: 'assistant', texto: 'resposta velha' }])));

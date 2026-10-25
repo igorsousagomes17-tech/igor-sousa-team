@@ -107,10 +107,23 @@ export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
   return Object.values(por).sort((a, b) => b.data.localeCompare(a.data)).slice(0, limit);
 }
 // Última carga: busca no banco e guarda no celular; sem internet usa a guardada.
+// Dia em que ela parou no meio (1 de 3 séries) não vira a "Última"; "ant" = treino anterior (pro +/− kg).
+export const escolheUltima = h => { const mx = Math.max(0, ...h.map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.sets.length >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; };
 export async function ultimaCarga(alunaId, exercicioNome) {
   const cache = LS.get('cargas', {});
-  try { const u = (await historicoCarga(alunaId, exercicioNome, 1))[0] || null; if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || cache[exercicioNome] || null; }
+  try { const u = escolheUltima(await historicoCarga(alunaId, exercicioNome, 3)); if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || cache[exercicioNome] || null; }
   catch { return cache[exercicioNome] || null; }
+}
+// Minhas cargas: a carga mais pesada do último treino de cada exercício + a do anterior, direto do banco.
+export async function cargasRecentes(alunaId) {
+  const { data, error } = await sb.from('series').select('exercicio_nome,kg,reps,sessao_id,sessoes!inner(aluna_id,finalizada_em)')
+    .eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
+    .order('sessoes(finalizada_em)', { ascending: false }).limit(1500);
+  if (error) throw error;
+  const por = {};
+  (data || []).forEach(r => { const l = por[r.exercicio_nome] || (por[r.exercicio_nome] = []); let a = l.find(x => x.sessao_id === r.sessao_id); if (!a) { if (l.length >= 2) return; a = { sessao_id: r.sessao_id, kg: +r.kg, reps: r.reps, data: r.sessoes.finalizada_em }; l.push(a); } else if (+r.kg > a.kg) { a.kg = +r.kg; a.reps = r.reps; } });
+  const out = {}; Object.entries(por).forEach(([n, l]) => { out[n] = { kg: l[0].kg, reps: l[0].reps, data: l[0].data, ant: l[1]?.kg ?? null }; });
+  return out;
 }
 // Séries do último treino desse exercício, uma por número de série (pra sugerir a carga certa na pirâmide).
 export async function ultimasSeries(alunaId, exercicioNome) {
@@ -167,16 +180,19 @@ export async function fotoUrl(path) {
 }
 
 // Admin ----------------------------------------------------------------
+export const precisaVer = f => !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
 export const admin = {
   async alunas() { const { data, error } = await sb.from('v_alunas_status').select('*').order('nome'); if (error) throw error; return data; },
-  // Só treinos COM comentário dela; os sem resposta vêm primeiro (nenhum some da lista por ser antigo).
+  // Treinos com comentário dela OU nota baixa (≤ 4) / esforço no limite (≥ 9) sem texto: sem tempo de escrever,
+  // a nota é o sinal. Os sem resposta vêm primeiro (nenhum some da lista por ser antigo).
   async feedbacks() {
     const sel = 'id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,profiles!sessoes_aluna_id_fkey(nome,plano)';
+    const sinal = 'comentario.not.is.null,nota.lte.4,esforco.gte.9';
     const [abertos, respondidos] = await Promise.all([
-      sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).not('comentario', 'is', null).neq('comentario', '').is('resposta_igor', null).order('finalizada_em', { ascending: true }).limit(200),
-      sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).not('comentario', 'is', null).neq('comentario', '').not('resposta_igor', 'is', null).order('finalizada_em', { ascending: false }).limit(10)]);
+      sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).or(sinal).is('resposta_igor', null).order('finalizada_em', { ascending: true }).limit(200),
+      sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).or(sinal).not('resposta_igor', 'is', null).order('finalizada_em', { ascending: false }).limit(10)]);
     if (abertos.error) throw abertos.error;
-    return [...(abertos.data || []), ...(respondidos.data || [])];
+    return [...(abertos.data || []), ...(respondidos.data || [])].filter(precisaVer);
   },
   async responder(sessaoId, texto) { const { error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId); if (error) throw error; },
   async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,dias_semana,local_treino,limitacoes,peso_kg,altura_m,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(50); return data || []; },

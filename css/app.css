@@ -198,5 +198,19 @@ body{font-size:.9375rem}
 .opcoes.multi .opc::before{content:"";position:absolute;left:14px;top:50%;width:20px;height:20px;margin-top:-10px;border-radius:5px;box-shadow:inset 0 0 0 2px #8f8b84}
 .opcoes.multi .opc.on::before{box-shadow:none;background:var(--accent-ink);content:"✓";color:var(--accent);display:grid;place-items:center;font-size:.875rem;font-weight:800}
 .modal .rodape{position:sticky;bottom:-16px;background:var(--panel);margin:0 -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--line)}
-@media (max-width:340px){.tabs .tab span{font-size:.8125rem}.tab svg{width:20px;height:20px}.scale{grid-template-columns:repeat(4,1fr)}.set{grid-template-columns:40px 1fr 1fr 74px;gap:6px}.set .h{font-size:.75rem}}
+@media (max-width:340px){.tabs .tab span{font-size:.8125rem}.tab svg{width:20px;height:20px}.scale{grid-template-columns:repeat(4,1fr)}.set{grid-template-columns:40px 1fr 1fr 74px;gap:6px}}
 details>summary{list-style:none}details>summary::-webkit-details-marker{display:none}
+
+/* rodada 25/10 */
+.sug .pill{white-space:normal;text-align:left;max-width:100%;line-height:1.3} /* sugestão comprida quebra a linha (não estoura a tela) */
+.tabs .tab{padding:4px 2px;gap:2px}
+@media (max-width:330px){.tabs{padding-left:2px;padding-right:2px}.tabs .tab span{letter-spacing:-.2px}}
+.lib b{overflow-wrap:normal;word-break:normal}
+h1{overflow-wrap:normal}
+@media (max-width:340px){.sessao h1,.modal h2{overflow-wrap:break-word}}
+.set input::placeholder{font-style:italic;color:#7d7973}
+details>summary .seta{transition:transform .2s;color:var(--muted)}details[open]>summary .seta{transform:rotate(180deg)}
+details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(--accent);font-size:.875rem;font-weight:600;cursor:pointer}
+.photo.vazia{cursor:pointer;border:1.5px dashed #4a4a50}
+.r .row .btn.sm{min-height:44px}
+.lib.mini{min-width:150px}

@@ -1,6 +1,7 @@
 // PDF informativo do treino do mês. A biblioteca (jsPDF) vem junto do app e só baixa quando a aluna toca no botão;
 // depois da 1ª vez fica no cache e o PDF sai mesmo sem sinal.
 import { tl, idioma, loc } from './i18n.js';
+import { semCarga } from './ui.js'; // mesma regra do app: exercício sem peso não ganha linha de carga
 // As fontes do PDF só têm o alfabeto latino: em chinês e hindi o PDF sai em inglês (embutir fonte custaria vários MB).
 const LP = () => ['zh', 'hi'].includes(idioma()) ? 'en' : idioma();
 const T = (pt, v) => tl(LP(), pt, v);
@@ -67,11 +68,12 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
 
   y += 4; doc.setTextColor(...LARANJA); doc.setFontSize(13); doc.text(limpa(T('COMO USAR')), M, y); y += 7;
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...CLARO);
+  // "Como usar" só com o que existe nesse treino (mobilidade não fala de pirâmide nem de carga)
+  const todos = plano.treinos.flatMap(t => t.exercicios), temCarga = todos.some(e => !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || ''));
   [...(programa ? [] : ['Siga a ordem A, B, C, D e recomece. Perdeu um dia? Continua de onde parou.']),
-    'Bi-set (marcado em laranja): faz um exercício e emenda direto no outro, descansa só no fim.',
-    'Pirâmide (ex.: 12/10/8): aumenta a carga a cada série e diminui as repetições.',
-    'Bateu o topo das repetições com boa técnica? Sobe a carga na próxima.',
-    'No app você tem o vídeo de cada exercício, o cronômetro do descanso e registra a carga.',
+    ...(todos.some(e => e.biset_com) ? ['Bi-set (marcado em laranja): faz um exercício e emenda direto no outro, descansa só no fim.'] : []),
+    ...(todos.some(e => /\d\s*\/\s*\d/.test(e.reps || '')) ? ['Pirâmide (ex.: 12/10/8): aumenta a carga a cada série e diminui as repetições.'] : []),
+    ...(temCarga ? ['Bateu o topo das repetições com boa técnica? Sobe a carga na próxima.', 'No app você tem o vídeo de cada exercício, o cronômetro do descanso e registra a carga.'] : ['No app você tem o vídeo de cada exercício e o cronômetro do descanso.']),
     'Treino ficou leve ou pesado demais? Me fala no feedback do app que eu ajusto.']
     .forEach(l => { const ls = doc.splitTextToSize(limpa(T(l)), W - 2 * M - 6); doc.setFillColor(...LARANJA); doc.circle(M + 1.2, y - 1.2, 0.9, 'F'); doc.text(ls, M + 5, y); y += ls.length * 5 + 1.5; });
   rodape(true);
@@ -90,9 +92,10 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
       const hiit = /hiit|cardio/i.test(e.nome);
       const dica = e.dica ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16) : [];
       const alt = e.alternativa ? limpa(T('Ou substitua por: {x}', { x: e.alternativa })) : '';
-      const anota = !hiit && !/\d\s*(s|seg|min)\b|prancha|mobilidade|alongamento/i.test(e.nome + ' ' + e.reps);
+      const anota = !hiit && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || '');
       const h = 13 + dica.length * 4.4 + (alt ? 5 : 0) + (anota ? 6 : 0);
-      if (y + h > H - 16) { rodape(); doc.addPage(); y = 20; }
+      if (y + h > H - 16) { rodape(); doc.addPage(); y = 20; // página nova repete de qual treino é
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...LARANJA); doc.text(limpa((programa ? t.nome : T('Treino {l}', { l: t.letra })) + ' ' + T('(continuação)')), M, y); y += 12; }
       if (hiit) {
         doc.setFillColor(255, 240, 228); doc.roundedRect(M, y - 5, W - 2 * M, h, 2, 2, 'F');
       } else if (e.biset_com) {

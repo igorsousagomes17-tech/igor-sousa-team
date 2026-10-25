@@ -1,19 +1,28 @@
 // Helpers de interface
-import { t, dataLocal, idioma } from './i18n.js';
+import { t, tp, dataLocal, idioma } from './i18n.js';
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-let tt;
+let tt, ttEm = 0;
 // Aviso embaixo (não cobre o título), fica mais tempo e fecha com um toque.
 // fixo: fica até ela tocar (ex.: "descanso acabou há 2 min" quando ela volta pro app).
 export function toast(msg, err = false, { fixo = false } = {}) {
-  const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : '') + (fixo ? ' fixo' : '');
+  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + (err ? ' err' : '') + (fixo ? ' fixo' : '');
   t.onclick = () => t.classList.remove('on');
   clearTimeout(tt); if (!fixo) tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : 4500);
 }
 // Troca de tela ou descanso abrindo: o aviso antigo some (não fica cobrindo a tela nova)
-export function fecharToast() { const t = $('#toast'); if (t && !t.classList.contains('fixo')) t.classList.remove('on'); }
+// (aviso de menos de 0,7 s fica: "Treino pausado" logo antes de trocar de tela precisa aparecer)
+export function fecharToast() { const t = $('#toast'); if (t && !t.classList.contains('fixo') && Date.now() - ttEm > 700) t.classList.remove('on'); }
+// Texto do aviso que acabou de aparecer (pra juntar dois avisos em vez de um apagar o outro)
+const avisoRecente = () => { const t = $('#toast'); return t && t.classList.contains('on') && Date.now() - ttEm < 1500 ? t.textContent : ''; };
+// Exercício sem peso (peso do corpo, elástico, mobilidade): esconde a coluna de kg (vale no app e no PDF).
+// Ela também pode marcar "sem peso" num exercício (treino em casa sem halter): fica guardado no celular.
+const semPesoDela = () => { try { return JSON.parse(localStorage.getItem('semPeso') || '[]'); } catch { return []; } };
+export const semCarga = e => e.carga === false || semPesoDela().includes(e.nome) || /prancha|dead ?bug|gato|abdominal|abs |mini ?band|alongamento|mobilidade|cossaco|polichinelo|burpee|90\/90|ponte|hiit|cardio/i.test(e.nome || '');
+export function marcarSemPeso(nome, sem) { const l = semPesoDela().filter(x => x !== nome); if (sem) l.push(nome); try { localStorage.setItem('semPeso', JSON.stringify(l.slice(-80))); } catch {} }
+export const semPesoMarcado = nome => semPesoDela().includes(nome);
 
 export function overlay(html) { const o = $('#overlay'); o.innerHTML = html; return o; }
 export function closeOverlay() { $('#overlay').innerHTML = ''; }
@@ -95,26 +104,30 @@ function pedirAviso() {
 let restAtivo = null;
 // Descanso que acabou com o app escondido: quando ela volta, um aviso fixo diz há quanto tempo acabou.
 function avisoNaVolta(fim) {
-  const mostra = () => { if (document.hidden) return; document.removeEventListener('visibilitychange', mostra); const m = Math.round((Date.now() - fim) / 60000); toast(m >= 1 ? t('Descanso acabou há {n} min · bora a próxima série', { n: m }) : t('Descanso acabou. Bora a próxima!'), false, { fixo: true }); };
-  document.addEventListener('visibilitychange', mostra);
+  const mostra = () => { if (document.hidden) return; document.removeEventListener('visibilitychange', mostra); const m = Math.round((Date.now() - fim) / 60000); const x = m >= 1 ? t('Descanso acabou há {n} min · bora a próxima série', { n: m }) : t('Descanso acabou. Bora a próxima!'), a = avisoRecente(); toast(a && a !== x ? a + ' · ' + x : x, false, { fixo: true }); };
+  if (document.hidden) document.addEventListener('visibilitychange', mostra); else mostra();
 }
 const trouxe = x => t(x === "Bora!" ? "Tempo" : x);
 export const descansoAtivo = () => !!restAtivo;
+// Horário em que acaba o exercício de tempo rodando (cardio, prancha), pra não descontar esse tempo como "fora do app"
+export const trabalhoFim = () => restAtivo?.trabalho ? restAtivo.fim() : null;
 export function pararDescanso() { if (restAtivo) restAtivo.end(false); }
 export function minimizarDescanso() { if (restAtivo && !restAtivo.mini) { restAtivo.minimizar(); return true; } return false; }
 function camada() { let l = document.getElementById('rest-layer'); if (!l) { l = document.createElement('div'); l.id = 'rest-layer'; document.body.appendChild(l); } return l; }
-export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false, aoMudar } = {}) {
+// intervalos [forte, leve] (ex.: HIIT 30s forte / 30s leve): troca o rótulo e apita a cada troca.
+// No exercício de tempo, "Já fiz" antes do fim resolve { parcial: segundos feitos }.
+export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false, aoMudar, intervalos = null } = {}) {
   pararDescanso();
   return new Promise(resolve => {
     let total = segundos, fim = Date.now() + segundos * 1000, iv, trocou = false;
     const trabalho = titulo !== 'Descanso', L = camada();
-    const me = { mini: false, trabalho };
+    const me = { mini: false, trabalho, fim: () => fim }; let fase = -1;
     L.innerHTML = `<div class="ov" id="rest">
-      <button class="back x" id="rest-x" aria-label="${trabalho ? t('Fechar') : t('Minimizar pra anotar')}">${trabalho ? '✕' : '✎ ' + t('anotar')}</button>
+      <button class="back x" id="rest-x" aria-label="${t('Minimizar pra anotar')}">${trabalho ? '▾ ' + t('minimizar') : '✎ ' + t('anotar')}</button>
       <p class="muted" id="rest-t" style="letter-spacing:1px;text-transform:uppercase">${esc(t(titulo))}</p>
       <div class="ring" id="ring"><b id="rest-n"></b></div>
       <p class="muted center" id="rest-p">${esc(proximo || '')}</p>
-      <div class="row"><button class="btn ghost sm" id="rest-skip">${trabalho ? t('Já fiz') : t('Pular')}</button><button class="btn sm" id="rest-add">+15s</button></div></div>`;
+      <div class="row"><button class="btn ghost sm" id="rest-skip">${trabalho ? t('Já fiz') : t('Pular descanso')}</button><button class="btn sm" id="rest-add">+15s</button></div></div>`;
     const q = s => L.querySelector(s);
     const avisar = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }); } catch {} };
     const cancelarAviso = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} };
@@ -123,15 +136,17 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
     const tick = () => {
       const l = left(), n = q('#rest-n'); if (!n) return;
       if (meio && !trocou && l <= total / 2) { trocou = true; beep(); q('#rest-t').textContent = t('Troca de lado!'); toast(t('Troca de lado 🔄')); }
+      if (intervalos && l > 0) { const ciclo = intervalos[0] + intervalos[1], pos = (total - l) % ciclo, f = pos < intervalos[0] ? 0 : 1; if (f !== fase) { if (fase !== -1) beep(); fase = f; q('#rest-t').textContent = f ? t('Leve') : t('Forte!'); } }
       n.textContent = me.mini ? `${trouxe(titulo)} ${fmtMin(l)} · ${t('toca pra abrir')}` : (l >= 60 ? fmtMin(l) : l);
-      q('#ring').style.setProperty('--p', (l / total * 100) + '%'); if (l <= 0) end(true);
+      q('#ring').style.setProperty('--p', (l / total * 100) + '%'); if (l <= 0) end(true, Date.now() - fim > 30000);
     };
-    const end = (r) => { if (restAtivo !== me) return; restAtivo = null; cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden && !trabalho) avisoNaVolta(fim); else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
+    // atrasado: acabou com a tela apagada (o código parado) e só agora ela voltou: aviso fixo com "há N min", sem apito
+    const end = (r, atrasado = false) => { if (restAtivo !== me) return; restAtivo = null; cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden && !trabalho) avisoNaVolta(fim); else if (atrasado && !trabalho) { avisoNaVolta(fim); } else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
     me.end = end;
-    me.minimizar = () => { if (trabalho) return end(null); me.mini = true; q('#rest').classList.add('mini'); tick(); };
+    me.minimizar = () => { me.mini = true; q('#rest').classList.add('mini'); tick(); }; // cardio também só minimiza: um toque sem querer não apaga os minutos
     restAtivo = me;
     iv = setInterval(tick, 250); document.addEventListener('visibilitychange', tick);
-    q('#rest-skip').onclick = e => { e.stopPropagation(); end(trabalho ? true : false); };
+    q('#rest-skip').onclick = e => { e.stopPropagation(); if (!trabalho) return end(false); const feito = total - left(); if (left() > 3 && feito >= 1) { restAtivo === me && end({ parcial: feito }); } else end(true); };
     q('#rest-add').onclick = e => { e.stopPropagation(); fim += 15000; total += 15; avisar(); aoMudar?.(fim); tick(); };
     q('#rest-x').onclick = e => { e.stopPropagation(); me.minimizar(); };
     q('#rest').onclick = () => { if (me.mini) { me.mini = false; q('#rest').classList.remove('mini'); tick(); } };
@@ -161,16 +176,18 @@ export async function cardImagem({ nome, titulo, minutos, exercicios, streak, da
   // "TREINO FEITO ✓" no idioma dela; diminui a letra se a palavra for comprida (francês, espanhol)
   const [l1, l2] = t('TREINO|FEITO').split('|'); let fs = 190;
   x.font = `800 ${fs}px ${DISP}`; while (fs > 90 && Math.max(x.measureText(l1).width, x.measureText(l2 + ' ✓').width) > W - 140) { fs -= 10; x.font = `800 ${fs}px ${DISP}`; }
-  x.fillStyle = '#f4f2ee'; x.fillText(l1, 70, 1040); x.fillText(l2, 70, 1040 + fs * 0.95);
-  x.fillStyle = '#ff6a00'; x.fillText('✓', 70 + x.measureText(l2 + ' ').width, 1040 + fs * 0.95);
-  const stats = [[`${minutos}`, t('min')], [`${exercicios}`, t('exerc.')], [`🔥${streak}`, t('sem.')]];
-  let sx = 70; stats.forEach(([v, l]) => { x.fillStyle = '#f4f2ee'; x.font = `800 96px ${DISP}`; x.fillText(v, sx, 1420); const w = x.measureText(v).width; x.fillStyle = '#9a968f'; x.font = `500 34px ${BODY}`; x.fillText(l, sx + w + 10, 1420); sx += w + x.measureText(l).width + 80; });
+  x.fillStyle = '#f4f2ee'; x.fillText(l1, 70, 880); x.fillText(l2, 70, 880 + fs * 0.95);
+  x.fillStyle = '#ff6a00'; x.fillText("✓", 70 + x.measureText(l2 + " ").width, 880 + fs * 0.95);
+  // Palavras por extenso ("semanas", não "sem."): em duas linhas pra caber
+  const stats = [[`${minutos}`, t('min')], [`${exercicios}`, tp(exercicios, 'exercício', 'exercícios')], [`🔥${streak}`, tp(streak, 'semana seguida', 'semanas seguidas')]];
+    stats.forEach(([v, l], j) => { const yy = 1260 + j * 130; x.fillStyle = j === 2 ? '#ff6a00' : '#f4f2ee'; x.font = `800 96px ${DISP}`; x.fillText(v, 70, yy); const wv = x.measureText(v).width; x.fillStyle = '#9a968f'; let fz = 42; x.font = `500 ${fz}px ${BODY}`; while (fz > 26 && x.measureText(l).width > W - 160 - wv) { fz -= 2; x.font = `500 ${fz}px ${BODY}`; } x.fillText(l, 70 + wv + 20, yy); });
   x.fillStyle = '#9a968f'; x.font = `500 36px ${BODY}`;
   let linha = `${nome} · ${titulo}`; if (x.measureText(linha).width > W - 140) { while (x.measureText(linha + '…').width > W - 140 && linha.length > 4) linha = linha.slice(0, -1); linha = linha.trimEnd() + '…'; }
   x.fillText(linha, 70, 1700);
   x.fillStyle = '#ff6a00'; x.font = `700 48px ${BODY}`; x.fillText(insta, 70, 1775);
-  const blob = await new Promise(r => c.toBlob(r, 'image/png'));
-  const file = new File([blob], 'treino-feito.png', { type: 'image/png' });
+  // JPEG: ~5x mais leve que PNG pra subir no 4G (o Instagram recomprime de qualquer jeito)
+  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+  const file = new File([blob], 'treino-feito.jpg', { type: 'image/jpeg' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: t('Treino feito') }); return 'shared'; } catch { return 'cancel'; } }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'treino-feito.png'; a.click(); return 'download';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'treino-feito.jpg'; a.click(); return 'download';
 }

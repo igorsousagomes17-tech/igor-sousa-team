@@ -21,3 +21,7 @@ Os testes fixam `locale: 'pt-BR'` no navegador (sem isso o Chromium vem em ingl�
 tempo fora não conta, desafio no fuso certo, duas abas, resposta vazia, sugestão de carga salva, carga absurda, toque duplo,
 descanso após prancha, vídeo sem sinal, busca "bumbum", ficha do exercício, anamnese na revisão, sair pergunta, pontos, chat guardado, e-mail no esqueci):
 `W=360 OUT=/tmp/shots node tests/rodada-2410.mjs` (fixa o fuso America/Sao_Paulo).
+
+`tests/rodada-2510.mjs` testa as correções da rodada 25/10 (toque duplo na chave, voltar no pop-up não trava, cardio minimiza e registra
+os minutos feitos, HIIT forte/leve, dúvida no descanso, fotos do mês com voltar no meio, anamnese com data impossível, painel com nota baixa
+e bi-set no editor, Minhas cargas do banco, programa com exercícios, pontos, story em JPEG): `W=360 OUT=/tmp/shots node tests/rodada-2510.mjs`.
