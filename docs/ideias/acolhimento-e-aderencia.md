@@ -10,10 +10,8 @@ Princípio: o app tem que acolher e vender pra quem tá entrando e continuar enc
 - [x] O time: quantas treinaram hoje, ranking do mês (dias com treino, empate = mesma posição, top 5 + posição dela), quem treinou hoje. Só primeiro nome + inicial; opção de sair no Perfil.
 - [x] Indicar amiga pelo WhatsApp com mensagem e código prontos (Perfil, card de treino feito, resumo).
 
-## Igor precisa rodar no Supabase (SQL Editor)
-- supabase/migracao-009-o-time.sql (sem ela, "O time" mostra "sem conexão").
-- supabase/migracao-010-seguranca-cadastro.sql (fecha brecha: conta nova podia se cadastrar como admin).
-- Pendentes de antes: 006, 007, 008.
+## Banco (Supabase)
+- [x] 25/10 10h55: rodado o pacote supabase/rodar-2510.sql (007 que inclui a 006, 008, 009, 010) e conferido: função do time, coluna comunidade, cadastro só pelo admin, pontos protegidos, semana no fuso.
 
 ## Decisões do Igor pendentes
 - Comunidade com fotos: as alunas veem as fotos umas das outras, ou só o Igor vê e escolhe o que aparece?

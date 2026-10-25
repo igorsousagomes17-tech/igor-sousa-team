@@ -250,3 +250,7 @@ Pendente:
 - [ ] Resposta editada pelo Igor não volta a aparecer como "nova" pra aluna (precisaria de coluna "editada_em" no banco): decisão do Igor se vale a migração.
 - [ ] Editor de treino do Igor apaga e recria os exercícios (ids novos): a fila agora se recupera, mas o ideal é atualizar no lugar (mexe no fluxo de publicar treino).
 - [ ] Seguem: migrações 004/006/007 (se ainda não rodaram), publicar função assistente, Kiwify, WhatsApp, vídeos, fotos dos prêmios, drop set por queda, capa do PDF clara, i18n por idioma, regra de troca dos pontos.
+
+
+### 25/10 (manual, com o Igor no Mac)
+- [x] Migrações 006/007/008 + 009 (O time) + 010 (cadastro só pelo admin) rodadas em produção e conferidas.
