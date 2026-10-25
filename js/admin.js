@@ -10,12 +10,16 @@ let db;
 // Precisa da resposta do Igor: comentou, ou deu nota baixa / esforço no limite sem escrever nada
 const precisa = f => !f.resposta_igor && !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
 const DOR = /⚠ dor|\bdor(es)?\b|doeu|doendo|les[aã]o|machuc|\bpain|hurt|dolor|duel|doli|douleur|疼|痛|दर्द/i;
-const selo = f => DOR.test(f.comentario || '') ? ' <span class="pill warn">dor</span>' : !String(f.comentario || '').trim() && f.nota != null && f.nota <= 4 ? ' <span class="pill warn">nota baixa</span>' : !String(f.comentario || '').trim() && f.esforco >= 9 ? ' <span class="pill warn">esforço no limite</span>' : '';
+const parou = f => f.exercicios_total > 0 && (f.exercicios_feitos ?? 0) / f.exercicios_total < 0.6;
+const selo = f => (parou(f) ? ' <span class="pill warn">parou no meio</span>' : '') + seloDor(f);
+const seloDor = f => DOR.test(f.comentario || '') ? ' <span class="pill warn">dor</span>' : !String(f.comentario || '').trim() && f.nota != null && f.nota <= 4 ? ' <span class="pill warn">nota baixa</span>' : !String(f.comentario || '').trim() && f.esforco >= 9 ? ' <span class="pill warn">esforço no limite</span>' : '';
 const pl = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   db = _db;
   let alunas = [], fb = [];
-  try { [alunas, fb] = await Promise.all([db.admin.alunas(), db.admin.feedbacks()]); } catch (e) { toast(e.message, true); }
+  let anam = [];
+  try { [alunas, fb, anam] = await Promise.all([db.admin.alunas(), db.admin.feedbacks(), db.admin.anamneses().catch(() => [])]); } catch (e) { toast(e.message, true); }
+  const fichas = new Map(anam.map(x => [x.id, x]));
   const ativas = alunas.filter(a => a.ativa);
   const dia = d => { d = new Date(d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }; // dia no fuso do celular
   const treinaramHoje = ativas.filter(a => a.ultimo_treino && dia(a.ultimo_treino) === dia(Date.now())).length;
@@ -32,7 +36,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     <p class="muted small mt">Toca em WhatsApp e abre a conversa com a mensagem pronta. Você revisa e envia.</p></div>
 
   <div class="card"><div class="row between"><h3>Feedbacks</h3><span class="muted small">${semResposta.length} sem resposta</span></div>
-    ${fb.length ? fb.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? '<br>↳ você: ' + esc(f.resposta_igor) : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted mt">Nenhum feedback ainda.</p>'}</div>
+    ${fb.length ? fb.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent);padding:6px 4px">editar</button>` : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted mt">Nenhum feedback ainda.</p>'}</div>
 
   <div class="card"><div class="row between"><h3>Dúvidas na IA</h3><span class="muted small">últimas</span></div><div id="duv"><p class="muted mt">Carregando…</p></div><p class="muted small mt">O que as alunas perguntam pro tira-dúvidas. Bom pra pauta de conteúdo e pra ver quem precisa de você.</p></div>
   <div class="card"><div class="row between"><h3>Alunas</h3><input class="input" id="busca" placeholder="buscar" style="width:140px;min-height:36px;padding:6px 10px"></div>
@@ -40,14 +44,17 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   ${semTreino.length ? `<p class="muted small">${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino no app.</p>` : ''}</div>`);
 
   // Botões embaixo do nome (cabe com zoom/fonte grande) e com 44px pra tocar
-  function linhaAluna(a) { return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}</b><span>${a.pontos} pts · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês</span></div><div class="row" style="gap:8px"><button class="btn ghost sm" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="btn ghost sm" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div></div>`; }
+  function linhaAluna(a) { const fi = fichas.get(a.id); return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}${alertaSaude(fi) ? ' <span class="pill warn">⚠ saúde</span>' : ''}</b><span>${a.pontos} pts · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês</span></div><div class="row wrap" style="gap:8px">${fi ? `<button class="btn ghost sm" data-ficha="${a.id}">ficha</button>` : ''}<button class="btn ghost sm" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="btn ghost sm" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div></div>`; }
 
   (db.assistente?.duvidasRecentes?.() || Promise.resolve([])).then(ds => { const el = $('#duv'); if (el) el.innerHTML = ds.length ? ds.map(d => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${esc(d.profiles?.nome || 'Aluna')}</b>${DOR.test(d.texto || '') ? ' <span class="pill warn">dor</span>' : ''} <span class="muted small">· ${new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><p class="muted" style="margin-top:2px">${esc(d.texto)}</p></div>`).join('') : '<p class="muted mt">Nenhuma dúvida ainda.</p>'; }).catch(() => { const el = $('#duv'); if (el) el.innerHTML = '<p class="muted mt">Não deu pra carregar agora.</p>'; });
   $('#out').onclick = async () => { await db.logout(); S.perfil = null; go('entrada'); };
   $('#busca').oninput = () => { const q = $('#busca').value.toLowerCase(); $$('#lista .r').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
-  $$('[data-resp]').forEach(b => b.onclick = () => {
-    overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Responder</h2><textarea class="input" id="t" placeholder="No seu jeito..."></textarea><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Enviar</button></div></div></div>`);
-    $('#c').onclick = closeOverlay; $('#s').onclick = async () => { const tx = $('#t').value.trim(); if (!tx) { toast('Escreve a resposta antes de enviar.', true); $('#t').focus(); return; } try { await db.admin.responder(b.dataset.resp, tx); closeOverlay(); toast('Respondido ✓ (aparece na tela inicial dela)'); go('admin'); } catch (e) { toast(e.message, true); } };
+  $$('[data-ficha]').forEach(b => b.onclick = () => fichaAnamnese(fichas.get(b.dataset.ficha)));
+  // Responder (ou editar a resposta) vendo o que ela escreveu
+  $$('[data-resp],[data-edita]').forEach(b => b.onclick = () => {
+    const id = b.dataset.resp || b.dataset.edita, f = fb.find(x => String(x.id) === String(id)) || {};
+    overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${b.dataset.edita ? 'Editar resposta' : 'Responder'}</h2><div class="card" style="background:#101012"><b>${esc(f.profiles?.nome || '')} · ${esc(f.titulo || '')} · ${fmtData(f.finalizada_em)}</b><p class="muted">esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${Math.round(f.duracao_s / 60)} min` : ''}</p>${f.comentario ? `<p style="margin-top:6px">"${esc(f.comentario)}"</p>` : ''}</div><textarea class="input" id="t" placeholder="No seu jeito...">${esc(b.dataset.edita ? f.resposta_igor || '' : '')}</textarea><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Enviar</button></div></div></div>`);
+    $('#c').onclick = closeOverlay; $('#s').onclick = async () => { const tx = $('#t').value.trim(); if (!tx) { toast('Escreve a resposta antes de enviar.', true); $('#t').focus(); return; } try { await db.admin.responder(id, tx); closeOverlay(); toast('Respondido ✓ (aparece na tela inicial dela)'); go('admin'); } catch (e) { toast(e.message, true); } };
   });
   $$('[data-ac]').forEach(b => b.onclick = async () => {
     const a = alunas.find(x => x.id === b.dataset.ac);
@@ -138,4 +145,14 @@ async function editorTreino(alunaId, nome, go) {
   $('#ex').onclick = () => { $('#t').value = EXEMPLO; };
   $('#c').onclick = closeOverlay;
   $('#s').onclick = async () => { const treinos = parseTreinos($('#t').value); if (!treinos.length) return toast('Nenhum treino reconhecido', true); $('#s').disabled = true; try { await db.admin.salvarPlano(alunaId, $('#mes').value + '-01', treinos); closeOverlay(); toast(`Publicado ✓ ${treinos.length} treinos, ${treinos.reduce((n, t) => n + t.exercicios.length, 0)} exercícios`); go('admin'); } catch (e) { toast(e.message, true); $('#s').disabled = false; } };
+}
+
+// Anamnese com problema de saúde ou gestação: o Igor precisa ver antes de passar HIIT/carga
+const SAUDE_ALERTA = /press[aã]o|card[ií]ac|diabet|cirurgia|medica[cç][aã]o|asma/i;
+const alertaSaude = fi => !!fi && (((fi.saude || []).some(x => x !== 'Nenhuma' && SAUDE_ALERTA.test(x))) || (fi.gestacao && fi.gestacao !== 'nao'));
+function fichaAnamnese(fi) {
+  if (!fi) return;
+  const linhas = [['Objetivo', fi.objetivo], ['Dias por semana', fi.dias_semana], ['Tempo por treino', fi.tempo_treino_min && fi.tempo_treino_min + ' min'], ['Onde treina', fi.local_treino], ['Experiência', fi.experiencia], ['Foco', (fi.foco || []).join(', ')], ['Mais incomoda', fi.incomoda], ['Dor / lesão', fi.limitacoes], ['Saúde', (fi.saude || []).join(', ')], ['Gestação', { nao: 'não', gravida: 'grávida', pos_parto: 'pós-parto' }[fi.gestacao] || fi.gestacao], ['Sono e estresse (1-5)', fi.sono_estresse], ['Dia a dia', fi.atividade], ['Nascimento', fi.nascimento && fmtData(fi.nascimento)], ['Nutricionista', fi.nutri], ['Já desistiu por', fi.desistiu], ['Peso / altura', [fi.peso_kg && fi.peso_kg + ' kg', fi.altura_m && fi.altura_m + ' m'].filter(Boolean).join(' · ')], ['Respondeu em', fi.anamnese_em && fmtData(fi.anamnese_em)]].filter(([, v]) => v != null && v !== '');
+  overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:8px;margin-top:20px"><h2>${esc(fi.nome || 'Anamnese')}</h2>${alertaSaude(fi) ? '<p class="pill warn" style="align-self:flex-start">⚠ pede liberação médica antes de HIIT/carga alta</p>' : ''}${linhas.map(([k, v]) => `<div class="r" style="grid-template-columns:1fr"><div><span>${esc(k)}</span><b style="font-weight:600">${esc(v)}</b></div></div>`).join('')}<button class="btn ghost sm" id="c">Fechar</button></div></div>`);
+  $('#c').onclick = closeOverlay;
 }

@@ -81,7 +81,7 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
 
 // 7. Story: sem compartilhar, avisa onde ficou a imagem; exercício "cada lado" de tempo conta 2x
 { const { ctx, p } = await nova(); await login(p); await abrirTreinoA(p);
-  ok(/2×1:00/.test(await p.innerText('.rest.tm')), 'mobilidade "1 min cada lado" vira 2×1:00');
+  ok(/1.min cada lado/i.test(await p.innerText('.rest.tm')), 'mobilidade "1 min cada lado" mostra "1 min cada lado" (não 2×1:00)');
   await p.click('#sw'); await espera(p, 300); await p.click('#q-s'); await espera(p, 800); await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500);
   await p.click('#esf button >> nth=5'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
   const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#share'); await dl; await espera(p, 700);

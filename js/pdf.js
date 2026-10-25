@@ -88,9 +88,11 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(limpa(T('~{d} min  ·  {n} exercícios', { n: t.exercicios.length, d: t.duracao_min || 40 })), W - M, 31, { align: 'right' });
     let y = 52;
     const exs = [...t.exercicios].sort((a, b) => a.ordem - b.ordem);
-    exs.forEach(e => {
+    exs.forEach((e, idx) => {
       const hiit = /hiit|cardio/i.test(e.nome);
-      const dica = e.dica ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16) : [];
+      let dica = e.dica ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16) : [];
+      // Último item curto (HIIT opcional) que não cabe: encolhe a dica pra 1 linha em vez de gastar uma folha só com ele
+      if (idx === exs.length - 1 && (hiit || /opcional/i.test(e.nome)) && y + 13 + dica.length * 4.4 > H - 16 && y + 17.4 <= H - 16) dica = dica.length ? [doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16)[0] + (dica.length > 1 ? '…' : '')] : [];
       const alt = e.alternativa ? limpa(T('Ou substitua por: {x}', { x: e.alternativa })) : '';
       const anota = !hiit && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || '');
       const h = 13 + dica.length * 4.4 + (alt ? 5 : 0) + (anota ? 6 : 0);

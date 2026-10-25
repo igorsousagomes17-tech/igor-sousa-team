@@ -24,7 +24,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'C');
   await p.click('#pular'); await espera(p, 300); // passo 2 = Supino (o bi-set Dead bug + Abs é o 1)
   await p.click('.set[data-k="0"] .rest'); await espera(p, 500); if (await p.$('#rest:not(.mini)')) await p.click('#rest-skip'); await espera(p, 300);
-  const p0 = (await sessao(p)).p; await p.dblclick('#sw'); await espera(p, 900);
+  const p0 = (await sessao(p)).p; await p.dblclick('#sw'); await espera(p, 500); if (await p.$('#m [data-o="1"]')) { await p.click('#m [data-o="1"]'); await espera(p, 700); } // série pela metade: "Só as que marquei"
   const s = await sessao(p); ok(s.p === p0 + 1 && !s.feito[3], `toque duplo na chave avança 1 exercício só (${p0}→${s.p})`);
   await ctx.close(); }
 
@@ -116,7 +116,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   ok(/Agachamento búlgaro/.test(await txt(p, '.view')), 'programa extra lista os exercícios antes de começar');
   await p.click('.tabs [data-go="pontos"]'); await espera(p, 600); const pv = await txt(p, '.view');
   ok(!/pode trocar!/.test(pv) && /pts pra/.test(pv), 'pontos dizem quanto falta pro próximo prêmio sem "pode trocar!" em todos');
-  await abrirTreino(p, 'A'); await p.click('.rest.tm'); await espera(p, 500); await p.click('#rest-skip'); await espera(p, 900); await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await abrirTreino(p, 'A'); await p.click('.rest.tm'); await espera(p, 500); await p.click('#rest-skip'); await espera(p, 600); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 600); } await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
   const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#share'); const d = await dl;
   ok(d && /\.jpg$/.test(d.suggestedFilename()), `imagem do story em JPEG (${d?.suggestedFilename()})`);
   await ctx.close(); }

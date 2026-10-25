@@ -29,3 +29,8 @@ e bi-set no editor, Minhas cargas do banco, programa com exercícios, pontos, st
 `tests/rodada-2510b.mjs` testa a rodada extra de 25/10 (tira-dúvidas: emergência/192, pergunta que não some ao sair, conversa apagada no logout;
 botão de cardio que envia sozinho e "Começar cardio de 20 min"; cardio que continua depois de recarregar e não recomeça no 2º toque;
 "Senti dor" sem série chega no painel; escolha da semana em 288 px; francês sem pontuação sozinha): `W=360 OUT=/tmp/shots node tests/rodada-2510b.mjs`.
+
+`tests/rodada-2610.mjs` testa a rodada 26/10 (fila com dono e treino pausado da dona ao sair, "Já fiz" cedo pergunta, último exercício não fecha sem avisar,
+contagem igual no topo/pop-up/feedback, chave com séries pela metade, "40kg" e "12+4+4", "Falta enviar" no Início, treino pela metade oferece repetir,
+"Pular descanso" em destaque, lista pra ir direto e +série, foto que não abre, "i" sem vídeo, story que baixa quando o compartilhar falha, painel com ficha e contexto):
+`W=360 OUT=/tmp/shots node tests/rodada-2610.mjs`.

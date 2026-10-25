@@ -13,13 +13,13 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 <div id="app" class="app"><div class="splash"><div style="display:flex;flex-direction:column;align-items:center;gap:18px"><div class="logo big">IGOR<br>SOUSA <b>TEAM</b></div><p id="lento" class="muted" style="text-align:center;max-width:260px;visibility:hidden"></p></div></div></div>
 <script>/* internet lenta na 1ª abertura: avisa em vez de deixar o logo parado */
-setTimeout(function(){var e=document.getElementById('lento');if(!e)return;var l=(navigator.language||'pt').slice(0,2);e.textContent=l==='es'?'Cargando… internet lenta. Solo tarda así la primera vez.':l==='en'?'Loading… slow connection. It only takes this long the first time.':l==='fr'?'Chargement… connexion lente. C’est long seulement la première fois.':'Carregando… internet lenta. Só demora assim na 1ª vez.';e.style.visibility='visible';},4000);</script>
+setTimeout(function(){var e=document.getElementById('lento');if(!e)return;var l=(navigator.language||'pt').slice(0,2),j=0;try{j=!!localStorage.getItem('perfil')}catch(x){}e.textContent=j?(l==='es'?'Internet lenta… ya casi abre.':l==='en'?'Slow connection… almost there.':l==='fr'?'Connexion lente… presque prêt.':'Internet lenta… já já abre.'):(l==='es'?'Cargando… internet lenta. Solo tarda así la primera vez.':l==='en'?'Loading… slow connection. It only takes this long the first time.':l==='fr'?'Chargement… connexion lente. C’est long seulement la première fois.':'Carregando… internet lenta. Só demora assim na 1ª vez.');e.style.visibility='visible';},3000);</script>
 <div id="overlay"></div>
 <div id="toast" class="toast"></div>
 <script src="js/config.js"></script>

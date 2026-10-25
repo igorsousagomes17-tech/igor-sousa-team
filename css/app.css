@@ -51,7 +51,7 @@ a.btn{text-decoration:none;text-align:center}
 .tab{background:none;border:0;color:var(--muted);font-size:0.875rem;font-weight:600;font-family:var(--display);letter-spacing:.2px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 10px;min-width:56px}
 .tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tab.on{color:var(--accent)}
-.input{width:100%;background:#101012;border:1px solid #55555c;border-radius:12px;color:var(--fg);padding:13px 14px;font-size:1rem;min-height:48px}
+.input{width:100%;background:#101012;border:1px solid #75757d;border-radius:12px;color:var(--fg);padding:13px 14px;font-size:1rem;min-height:48px}
 .input:focus{outline:2px solid var(--accent);outline-offset:-1px}
 textarea.input{min-height:90px;resize:vertical}
 label.l{display:block;font-size:0.875rem;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
@@ -70,7 +70,7 @@ label.l{display:block;font-size:0.875rem;font-weight:600;letter-spacing:.6px;tex
 .sw.on::after{left:33px;background:#fff}
 .set{display:grid;grid-template-columns:44px 1fr 1fr 82px;gap:8px;align-items:center;font-variant-numeric:tabular-nums;padding:6px 0;font-size:0.875rem}
 .set .h{color:var(--muted);font-size:0.8125rem;text-transform:uppercase;letter-spacing:0}
-.set input{width:100%;background:#101012;border:1px solid #55555c;border-radius:8px;color:var(--fg);padding:8px;font-size:1rem;text-align:center;min-height:44px}
+.set input{width:100%;background:#101012;border:1px solid #75757d;border-radius:8px;color:var(--fg);padding:8px;font-size:1rem;text-align:center;min-height:44px}
 .set .h.c{text-align:center}
 .set .rest{height:44px;border-radius:10px;background:transparent;border:0;box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent);font-family:var(--display);font-weight:800;font-size:0.9375rem;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;transition:transform .1s}
 .set .rest:active{transform:scale(.94)}
@@ -155,7 +155,7 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .big-pill{min-height:44px;padding:8px 14px;font-size:0.875rem}
 .set.sc{grid-template-columns:44px 1fr 82px}
 .opcoes{display:flex;flex-direction:column;gap:8px}
-.opc{width:100%;min-height:52px;text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid #4a4a50;background:#18181b;color:var(--fg);font-size:1rem;line-height:1.3}
+.opc{width:100%;min-height:52px;text-align:left;padding:12px 16px;border-radius:12px;border:1.5px solid #6e6e76;background:#18181b;color:var(--fg);font-size:1rem;line-height:1.3}
 .opc.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
 .linha{display:flex;justify-content:space-between;align-items:center;width:100%;min-height:48px;padding:10px 0;background:none;border:0;border-bottom:1px solid var(--line);color:var(--fg);font-size:0.9375rem;text-align:left}
 .linha span{color:var(--muted)}
@@ -171,7 +171,7 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .msg.digitando{display:flex;gap:5px;padding:14px}.msg.digitando i{width:8px;height:8px;border-radius:50%;background:var(--muted);animation:dig 1s infinite}.msg.digitando i:nth-child(2){animation-delay:.15s}.msg.digitando i:nth-child(3){animation-delay:.3s}
 @keyframes dig{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 .sug{display:flex;flex-wrap:wrap;gap:8px}.sug .pill{font-size:0.875rem;min-height:44px;padding:9px 13px;text-transform:none;letter-spacing:0}
-.chatbar{position:sticky;bottom:calc(76px + var(--sab));display:flex;gap:8px;align-items:flex-end;background:var(--bg);padding:8px 0}
+.chatbar{position:sticky;bottom:var(--tabsH,calc(76px + var(--sab)));display:flex;gap:8px;align-items:flex-end;background:var(--bg);padding:8px 0}
 .chatbar textarea{resize:none;min-height:48px;max-height:140px;font-size:1rem}
 
 /* idiomas (2026-10-23): seletor, abas que não estouram, alfabetos sem maiúscula */
@@ -208,7 +208,7 @@ details>summary{list-style:none}details>summary::-webkit-details-marker{display:
 .lib b{overflow-wrap:normal;word-break:normal}
 h1{overflow-wrap:normal}
 @media (max-width:340px){.sessao h1,.modal h2{overflow-wrap:break-word}}
-.set input::placeholder{font-style:italic;color:#7d7973}
+.set input::placeholder{font-style:italic;color:#8f8b84}
 details>summary .seta{transition:transform .2s;color:var(--muted)}details[open]>summary .seta{transform:rotate(180deg)}
 details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(--accent);font-size:.875rem;font-weight:600;cursor:pointer}
 .photo.vazia{cursor:pointer;border:1.5px dashed #4a4a50}
@@ -235,3 +235,12 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .chatbar textarea{max-height:40vh}
 .pontos-premios .lib{aspect-ratio:auto;min-height:140px;justify-content:flex-end}
 @media (max-width:300px){.tabs .tab:not(.on) span{display:none}.tabs .tab svg{width:24px;height:24px}.tabs .tab{min-height:48px;justify-content:center}}
+
+/* Lista dos exercícios no topo do treino: toca e vai direto (aparelho ocupado) */
+.passos{display:flex;gap:6px;overflow-x:auto;margin:10px -4px 0;padding:2px 4px;scrollbar-width:none}.passos::-webkit-scrollbar{display:none}
+.passos button{flex:0 0 44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-family:var(--display);font-weight:700;font-size:1rem}
+.passos button.ok{color:var(--accent)}.passos button.on{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.ex .t .explica{display:block;font-size:0.8125rem;color:var(--muted);margin-top:2px;line-height:1.35}
+.play.info{background:#2a2a2e;color:var(--fg);font-family:Georgia,serif;font-style:italic;font-weight:700;font-size:1.25rem}
+/* Sugestões do tira-dúvidas: parecem botão (contorno laranja), não botão desligado */
+.sug .pill{background:transparent;color:var(--fg);border:1px solid #75757d}

@@ -11,7 +11,7 @@ console.log('home:', await txt('.view')); await shot('home');
 await p.click('.tabs [data-go="treino"]'); await p.waitForTimeout(500); console.log('aba treino:', await txt('h1'));
 await p.click('[data-go="treino"][data-arg="A"]'); await p.waitForTimeout(400); await p.click('#ini'); await p.waitForTimeout(600);
 console.log('passo1:', await txt('.restHint')); await shot('mobilidade');
-await p.click('.rest.tm'); await p.waitForTimeout(800); await shot('timer-trabalho'); await p.click('#rest-skip'); await p.waitForTimeout(900);
+await p.click('.rest.tm'); await p.waitForTimeout(800); await shot('timer-trabalho'); await p.click('#rest-skip'); await p.waitForTimeout(500); if (await p.$('#q-s')) { console.log('já fiz cedo pergunta:', await txt('#m h2')); await p.click('#q-s'); await p.waitForTimeout(600); } // "Já fiz" logo no começo: confirma que já tinha feito
 console.log('apos mobilidade:', await txt('.row.between'));
 await shot('biset');
 // bi-set: kg digitado na série 1 do A2 (reps fixas) copia pras próximas; no A1 (pirâmide 12/10/8) não copia
@@ -28,7 +28,7 @@ console.log('retomou, serie feita?', await p.$eval('.set[data-i="1"][data-k="0"]
 await p.goBack(); await p.waitForTimeout(600); console.log('voltar:', await p.evaluate(()=>location.hash), await txt('.view')); await shot('home-retomar');
 await p.click('[data-go="sessao"]'); await p.waitForTimeout(500);
 await p.click('#pular'); await p.waitForTimeout(400); console.log('pulou p/', await txt('h1'));
-const sw=await p.$('.swap'); if(sw){ await sw.click(); await p.waitForTimeout(500); console.log('trocado:', await txt('h1')); await shot('trocado'); await p.click('.swap'); await p.waitForTimeout(500); console.log('desfeito:', await txt('h1')); }
+await p.evaluate(()=>document.querySelectorAll('details.mais').forEach(d=>d.open=true)); const sw=await p.$('.swap'); if(sw){ await sw.click(); await p.waitForTimeout(500); console.log('trocado:', await txt('h1')); await shot('trocado'); await p.click('.swap'); await p.waitForTimeout(500); console.log('desfeito:', await txt('h1')); }
 await p.click('#prev'); await p.waitForTimeout(300); await p.click('#prev'); await p.waitForTimeout(300); console.log('anterior:', await txt('.row.between'));
 await p.click('#fim'); await p.waitForTimeout(400); await shot('confirma-fim'); console.log('confirma:', await txt('#m h2'));
 await p.click('#enc'); await p.waitForTimeout(500); await p.click('#env'); await p.waitForTimeout(300); console.log('sem nota:', await p.isVisible('#e'));

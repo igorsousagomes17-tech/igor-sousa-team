@@ -1,5 +1,5 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v16';
+const CACHE = 'isteam-v17';
 // Só o que a aluna usa ao abrir (painel do Igor, demo e fotos-guia entram no cache no 1º uso).
 const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/igor_s.jpg']; // capas dos programas entram no cache no 1º uso

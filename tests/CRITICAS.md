@@ -202,3 +202,51 @@ Pendente:
 - [ ] Botão "limpar conversa": apagar do banco também tira as perguntas do painel "Dúvidas na IA" do Igor — decisão dele (as datas nas mensagens já entraram).
 - [ ] Cardio de 20 min avulso conta como treino (+50, desafio, semana), igual aos programas extras: regra de pontos do Igor.
 - [ ] Seguem: migração 007 (e 004/006 se ainda não rodaram), Kiwify, WhatsApp, vídeos, fotos dos prêmios, drop set, regra de troca dos pontos.
+
+## 2026-10-26 (rodada automática, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~46 únicos)
+**Júlia (23, iniciante, iPhone):** pular tudo e "Já fiz" no HIIT fechava o treino e gravava 20 min não feitos; card "1 exercício" com 1 série de aquecimento; "Faltam 6" com "0 de 8" atrás; vídeo em gravação sem botão de saída; +15s laranja no descanso; "Ver execução" escondido no bi-set; cronômetro de lado sem "lado 1/2" nem pausa; jargão na lista; "Halter" em máquina; Início mandando treinar com a semana fechada.
+**Carla (34, Android lento):** chave com 1 série marcada jogava fora as outras; "40kg"/"12+4+4" sumiam (NaN no histórico); aparelho ocupado sem ir direto e "concluir" caindo no já feito; toque duplo atravessando o descanso; celular no bolso no descanso descontava tempo; séries atrasadas abrindo descanso; 2× voltar perdia o descanso; sem diário nem +/− série; "1ª vez" depois de marcar, sem recorde, voltar repetindo tela.
+**Márcia (52, fonte grande):** três contagens diferentes; anamnese de saúde que ninguém via; aviso cobrindo o "Fechar"; 1º acesso sem saída; senha com máscara; +15s laranja; contraste de bordas/sugestões; título de programa que não crescia; ▶ prometendo vídeo; "2×1:00", "kg×reps", datas misturadas, erro de data vago, sugestões apagadas, fresta da barra do chat.
+**Renata (29, mãe, Personalizado):** cronômetro acabando escondido contava o tempo fora e fechava o treino; "Boa, registrado!" antes de enviar; foto HEIC travava em "Salvando…"; treino parado no 1º exercício virava "feito" e pulava o B; Igor respondia sem ver o comentário, sem ver que foi parcial e sem poder editar; pontos sem limite no banco; treino de domingo terminado na segunda; demo apagando fotos e dando +80 duas vezes; "pausado há pouco" parado.
+**Bia (19, celular velho, sinal ruim):** boot pendurado com 4G travado; fonte do Google travando a abertura; fila offline subindo na conta de outra pessoa; "Sair" sem sinal virando "Conta sem perfil"; fila parada mesmo online; item ruim travando a fila; PDF quebrado depois de 1 toque sem sinal (erro em inglês); story que não fazia nada quando o compartilhar falhava; Pontos/Perfil 10 s; página do PDF só com o HIIT.
+
+### Corrigido
+- [x] Fila com dono (aluna_id do celular): não sobe na conta de outra; Sair avisa o que não subiu; treino pausado guardado pra dona (`sessao@id`).
+- [x] Sair sem sinal limpa a sessão do celular (signOut local); sem perfil e sem rede: "Sem internet pra carregar sua conta" + tentar de novo.
+- [x] Abertura com 4G travado: com perfil guardado abre em até 4 s; splash não diz mais "só na 1ª vez" pra quem já usa; fonte do Google não bloqueia mais a página.
+- [x] Fila tenta na hora (com sinal), a cada 45 s e ao voltar pro app; erro do banco (id antigo do treino) reenvia sem os ids e segue pros próximos.
+- [x] Último exercício nunca fecha sozinho: se faltou algo, pop-up "Faltam N"; com o app escondido fica na tela. "Já fiz" nos primeiros 10 s pergunta "Já tinha feito?".
+- [x] Mesma conta em todo lugar: "X de 7 exercícios feitos + opcional", "Faltam N (M pela metade)", card com exercícios completos ("Treino registrado · N séries" se nenhum completo).
+- [x] Chave com séries pela metade pergunta "Fiz todas, marcar / Só as que marquei"; chave já ligada avança (não desliga); concluir vai pro próximo que falta (pulado: avisa).
+- [x] Lista 1 2 3… no topo do treino pra ir direto (aparelho ocupado); "+ série / − série".
+- [x] kg com letra vira número na hora; reps "12+4+4" salvas como 20.
+- [x] Cronômetro de exercício que acaba com o app escondido: tempo fora descontado e aviso "acabou há N min"; celular no bolso no descanso conta até o fim do descanso + 3 min.
+- [x] Pausar/voltar 2× não perde o descanso (volta minimizado no Continuar).
+- [x] Feedback: "Boa! Falta só enviar"; Início mostra "Falta enviar · Enviar agora"; depois de 2 h registra sozinho com o que ela marcou.
+- [x] Foto que não abre (HEIC): avisa na hora, não guarda no rascunho, nunca trava em "Salvando…".
+- [x] Treino parado com menos da metade: não vira "Treino de hoje feito"; Início oferece repetir ou "seguir pro próximo".
+- [x] Treino pausado de um dia e terminado no outro conta no dia da maioria das séries (card com a data certa).
+- [x] Descanso: "Pular descanso" em destaque, +15s discreto; toque duplo ignorado ao abrir/fechar; marcar séries atrasadas logo após pular não abre outro descanso.
+- [x] Cronômetro de lado: "Lado 1 de 2 / Lado 2 de 2", botão "▶ 1 min cada lado"; pausar no cronômetro de exercício.
+- [x] Sessão: Ver execução, Dúvida e Dor sempre à vista; dica e trocas em "Dica e opções" (séries sobem na tela); "1ª vez" some depois de marcar; halter x máquina; dica do ⏱ só no começo.
+- [x] Lista do treino explica pirâmide/drop/bi-set; sem vídeo = botão "i" que abre a ficha (com IA); vídeo em gravação tem "Tirar dúvida com a IA" e "Chamar o Igor no WhatsApp"; links de WhatsApp na busca e nos prêmios.
+- [x] Recorde comemorado no card; cardio de 20 min não é oferecido quando nada foi completado; Início com semana fechada diz "só se quiser treinar a mais".
+- [x] Aviso (toast) sobe pro topo com pop-up aberto; "exercício ✓" some em 2,5 s.
+- [x] 1º acesso: "Não é você? Sair", WhatsApp do Igor, "a mesma de cima"; login com senha "(62) 99999-0000" tenta só os números; dica da senha inicial embaixo do campo.
+- [x] Contraste: bordas dos campos/opções e sugestão em itálico acima de 3:1/4,5:1; sugestões do tira-dúvidas com contorno; títulos de programa em rem; barra do chat colada nas abas medidas.
+- [x] Histórico "22 kg, 12 vezes"; datas iguais no gráfico e na lista; erro da data de nascimento diz o que fazer.
+- [x] Anamnese com pressão/coração/diabetes/cirurgia/gravidez: orientação na hora (liberação médica antes de HIIT); painel com selo "⚠ saúde" e botão "ficha" com as respostas; IA do demo responde isso antes da regra do cardio.
+- [x] Painel: Responder mostra aluna, treino, nota e comentário; "X de Y exercícios · N min" e selo "parou no meio"; editar resposta.
+- [x] Evolução › Meus treinos (diário com as séries de cada dia).
+- [x] PDF: import que falhou sem sinal tenta de novo, sem erro em inglês; HIIT opcional não ganha página sozinho.
+- [x] Story: compartilhar que falha (não cancelado) baixa a imagem; "Gerando imagem…".
+- [x] Pontos e Perfil carregam em paralelo e abrem com o que tem no celular em até 3 s.
+- [x] Demo: corrigir a cintura no mesmo dia não apaga fotos; +80 da foto 1x por mês; "pausado há pouco" se atualiza.
+- [x] Voltar do Android na aba Treino não repete a mesma tela. Cache do app v17. Teste novo: `tests/rodada-2610.mjs`.
+
+### Pendente
+- [ ] Rodar supabase/migracao-008-pontos-protegidos.sql (aluna não consegue se dar pontos pelo console; story 30/dia, foto 80/mês). Também está no fim do schema.sql.
+- [ ] Treino com só 1 série marcada ainda vale +50 e conta no desafio/semana no banco (exercicios_feitos = exercícios com 1+ série): regra de pontos do Igor. O app já não chama de "treino feito".
+- [ ] Resposta editada pelo Igor não volta a aparecer como "nova" pra aluna (precisaria de coluna "editada_em" no banco): decisão do Igor se vale a migração.
+- [ ] Editor de treino do Igor apaga e recria os exercícios (ids novos): a fila agora se recupera, mas o ideal é atualizar no lugar (mexe no fluxo de publicar treino).
+- [ ] Seguem: migrações 004/006/007 (se ainda não rodaram), publicar função assistente, Kiwify, WhatsApp, vídeos, fotos dos prêmios, drop set por queda, capa do PDF clara, i18n por idioma, regra de troca dos pontos.

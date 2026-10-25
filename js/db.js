@@ -21,7 +21,8 @@ export async function login(email, senha) {
   if (error) throw error;
   return data.user;
 }
-export async function logout() { await sb.auth.signOut(); LS.del('plano'); LS.del('perfil'); }
+// scope local: limpa a sessão do celular mesmo sem sinal (o signOut normal precisa de internet e deixava ela logada)
+export async function logout() { try { await sb.auth.signOut({ scope: 'local' }); } catch {} LS.del('plano'); LS.del('perfil'); }
 export async function trocarSenha(nova) { const { error } = await sb.auth.updateUser({ password: nova }); if (error) throw error; }
 export async function esqueciSenha(email) {
   const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: location.origin + location.pathname });
@@ -31,7 +32,7 @@ export async function esqueciSenha(email) {
 export async function perfil() {
   const u = await sessionUser(); if (!u) return null;
   const { data, error } = await sb.from('profiles').select('*').eq('id', u.id).single();
-  if (error) { return LS.get('perfil'); }
+  if (error) { const c = LS.get('perfil'); if (!c && /fetch|network|Failed|load failed/i.test(String(error.message))) throw new Error('offline'); return c; } // sem sinal e sem nada guardado: quem chamou avisa "sem internet" (não "conta sem perfil")
   LS.set('perfil', data); return data;
 }
 export async function salvarPerfil(patch) {
@@ -136,6 +137,8 @@ export async function ultimasSeries(alunaId, exercicioNome) {
 }
 // Guarda a última carga no celular; "ant" = a carga do treino anterior (pra mostrar ↑/↓ em Minhas cargas)
 export function guardarCarga(exercicioNome, kg, reps, sessao) { if (!kg) return; const c = LS.get('cargas', {}), v = c[exercicioNome]; const ant = v && v.sessao && v.sessao === sessao ? v.ant : v?.kg; c[exercicioNome] = { kg, reps, data: new Date().toISOString(), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
+// Séries de um treino (Evolução › Meus treinos)
+export async function seriesDe(sessaoId) { const { data, error } = await sb.from('series').select('exercicio_nome,n,kg,reps').eq('sessao_id', sessaoId).order('n'); if (error) throw error; return data || []; }
 export async function minhasSessoes(alunaId, limit = 60) {
   const { data, error } = await sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor,respondida_em')
     .eq('aluna_id', alunaId).not('finalizada_em', 'is', null).order('finalizada_em', { ascending: false }).limit(limit);
@@ -186,7 +189,7 @@ export const admin = {
   // Treinos com comentário dela OU nota baixa (≤ 4) / esforço no limite (≥ 9) sem texto: sem tempo de escrever,
   // a nota é o sinal. Os sem resposta vêm primeiro (nenhum some da lista por ser antigo).
   async feedbacks() {
-    const sel = 'id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,profiles!sessoes_aluna_id_fkey(nome,plano)';
+    const sel = 'id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,exercicios_feitos,exercicios_total,duracao_s,profiles!sessoes_aluna_id_fkey(nome,plano)';
     const sinal = 'comentario.not.is.null,nota.lte.4,esforco.gte.9';
     const [abertos, respondidos] = await Promise.all([
       sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).or(sinal).is('resposta_igor', null).order('finalizada_em', { ascending: true }).limit(200),
@@ -195,7 +198,7 @@ export const admin = {
     return [...(abertos.data || []), ...(respondidos.data || [])].filter(precisaVer);
   },
   async responder(sessaoId, texto) { const { error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId); if (error) throw error; },
-  async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,dias_semana,local_treino,limitacoes,peso_kg,altura_m,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(50); return data || []; },
+  async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,dias_semana,tempo_treino_min,local_treino,experiencia,foco,incomoda,limitacoes,saude,gestacao,sono_estresse,atividade,nascimento,nutri,desistiu,peso_kg,altura_m,anamnese_em,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(500); return data || []; },
   async planoDe(alunaId) {
     const { data } = await sb.from('planos').select('id,mes,titulo,treinos(id,letra,nome,ordem,exercicios(*))').eq('aluna_id', alunaId).order('mes', { ascending: false }).limit(1);
     return data?.[0] || null;
