@@ -36,7 +36,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
   await p.click('[data-go="programa"][data-arg="abdomen"]'); await espera(p, 500); await p.click('[data-pt]'); await espera(p, 500);
   const ov = await p.innerText('#overlay'); ok(/Registrar .*e começar este|Voltar pra ele/i.test(ov) && /Treino A pela metade/i.test(ov) && /Descartar/.test(ov), 'pop-up oferece registrar / voltar / descartar'); await shot(p, 'pausado-3-opcoes');
   await p.click('#m [data-o]:has-text("Registrar")'); await espera(p, 900);
-  const st = await estado(p); ok(st.sessoes.some(x => x.titulo === 'Treino A' && x.finalizada_em && x.exercicios_feitos >= 1 && new Date(x.finalizada_em).toDateString() === new Date().toDateString()), 'Treino A pausado foi registrado');
+  const st = await estado(p); ok(st.sessoes.some(x => x.titulo === 'Treino A' && x.finalizada_em && x.exercicios_total >= 1 && new Date(x.finalizada_em).toDateString() === new Date().toDateString()), 'Treino A pausado foi registrado');
   ok(/Abdômen/i.test(await txt(p, '.view')), 'programa começou'); await ctx.close(); }
 
 // 3. App escondido 40 min (criança chamou): não conta no tempo do treino

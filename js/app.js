@@ -132,7 +132,7 @@ routes.login = () => {
 // Treinos feitos sem sinal entram na contagem na hora (sequência, meta, treino de hoje), antes de subir pro banco.
 // Cada item da fila tem dono: treino feito sem sinal nunca sobe na conta de outra pessoa que entrar no mesmo celular.
 const daFila = it => !it.dono || it.dono === S.perfil?.id;
-const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && it.patch?.exercicios_feitos > 0).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.s.total, duracao_s: it.patch.duracao_s, pendente: true }));
+const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && (it.series || []).length > 0).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.patch.exercicios_total ?? it.s.total, duracao_s: it.patch.duracao_s, pendente: true }));
 async function sessoesComFila(p, lim) { const ss = await rapido(db.minhasSessoes(p.id, lim), db.LS.get('sessoes', [])); return [...pendentesDaFila(), ...ss].sort((a, b) => b.finalizada_em.localeCompare(a.finalizada_em)); }
 const seriesFeitas = s => Object.values(s.sets).flat().filter(x => x.done).length;
 const pillPausa = sa => sa.pausadoEm ? (haQuanto(sa.pausadoEm) ? t('Treino pausado há {t}', { t: haQuanto(sa.pausadoEm) }) : t('Treino pausado há pouco')) : t('Treino em andamento');
@@ -150,9 +150,9 @@ routes.home = async () => {
   S.plano = plano; S.programas = programas; S.sessoes = sessoes;
   const st = streakDias(sessoes);
   const sa = S.sessao, resp = respostaNova(sessoes);
-  const mesCount = sessoes.filter(s => mesLocal(s.finalizada_em) === mesLocal()).length;
+  const mesCount = sessoes.filter(s => mesLocal(s.finalizada_em) === mesLocal() && treinoCompleto(s)).length;
   const feitoHoje = !sa && sessoes.find(s => /^Treino [A-Z]$/.test(s.titulo || '') && diaLocal(s.finalizada_em) === diaLocal() && !pelaMetade(s));
-  const wk = isoWeek(new Date()); const semCount = sessoes.filter(s => isoWeek(new Date(s.finalizada_em)) === wk).length;
+  const wk = isoWeek(new Date()); const semCount = sessoes.filter(s => isoWeek(new Date(s.finalizada_em)) === wk && treinoCompleto(s)).length;
   const meta = p.dias_semana || 4; const dmeta = desafio?.meta_treinos || 16;
   const prox = proximoTreino(plano, sessoes);
   const sf = sa ? seriesFeitas(sa) : 0;
@@ -203,6 +203,10 @@ function subProg(pr) {
   return /^\s*\d+\s*(treinos?|rotinas?)/i.test(sub) ? sub.replace(/^\s*\d+\s*(treinos?|rotinas?)/i, tx) : sub || tx;
 }
 // Treino que parou bem no começo (menos da metade dos exercícios): não "fecha" o dia nem pula pro próximo sozinho
+// Decisão do Igor (26/10): só treino completo pontua e conta no desafio/meta (todos os exercícios, menos o opcional).
+// Treinos de antes de 26/10 seguem a regra antiga (1 exercício com série já valia).
+const CORTE_COMPLETO = '2026-10-26';
+const treinoCompleto = x => x && (String(x.finalizada_em || '') < CORTE_COMPLETO ? (x.exercicios_feitos == null || x.exercicios_feitos > 0) : !(x.exercicios_total > 0) || (x.exercicios_feitos ?? 0) >= x.exercicios_total);
 const pelaMetade = x => x && x.exercicios_total > 0 && x.exercicios_feitos != null && x.exercicios_feitos / x.exercicios_total < 0.5;
 function proximoTreino(plano, sessoes) {
   if (!plano?.treinos?.length) return null;
@@ -797,7 +801,7 @@ routes.fim = () => {
   const escala = (id, a, b) => `<div class="scale" id="${id}">${Array.from({ length: 11 }, (_, i) => `<button type="button" class="${s.fb[id] === i ? 'on' : ''}">${i}</button>`).join('')}</div><div class="row between muted small" style="margin-top:4px"><span>${a}</span><span>${b}</span></div>`;
   render(`<div class="view noTabs fx" style="padding-top:16px"><button class="back" id="volta" style="align-self:flex-start">‹ ${t('Voltar pro treino')}</button>
   ${s.dor?.length ? `<div class="card" style="border:1px solid var(--warn)"><b>⚠ ${t('Você anotou dor em {x}.', { x: esc(s.dor.join(', ')) })}</b><p class="muted">${t('Vai junto com o seu recado pro Igor. Se quiser, conta mais embaixo.')}</p></div>` : ''}
-  <div><p class="muted">${esc(nomeCurto(s.titulo))} · ${fmtMin(dur)} · ${t('{a} de {b}', { a: nObr, b: obr.length })}${n > nObr ? ' + ' + t('opcional') : ''}</p><h1>${nObr >= obr.length ? t('Mandou bem!') : t('Boa! Falta só enviar')}</h1>${nObr >= obr.length ? '' : `<p class="muted small">${t('Só fica registrado quando você tocar em Enviar, lá embaixo.')}</p>`}</div>
+  <div><p class="muted">${esc(nomeCurto(s.titulo))} · ${fmtMin(dur)} · ${t('{a} de {b}', { a: nObr, b: obr.length })}${n > nObr ? ' + ' + t('opcional') : ''}</p><h1>${nObr >= obr.length ? t('Mandou bem!') : t('Boa! Falta só enviar')}</h1>${nObr >= obr.length ? '' : `<p class="muted small">${t('Só fica registrado quando você tocar em Enviar, lá embaixo.')} ${t('Treino incompleto fica no seu histórico, mas não soma pontos nem conta no desafio. Dá pra voltar e terminar.')}</p>`}</div>
   <div><label class="l">${t('Quanto esforço foi?')}</label>${escala('esf', t('0 · muito leve'), t('10 · no limite'))}</div>
   <div><label class="l">${t('Que nota você dá pro treino?')}</label>${escala('nota', t('0 · não curti'), t('10 · amei'))}</div>
   <div class="field"><label class="l" for="fb">${t('Quer falar algo pro Igor? (opcional)')}</label><textarea class="input" id="fb" placeholder="${t('Senti a lombar no búlgaro... / Tá leve, pode subir carga...')}">${esc(s.fb.txt || '')}</textarea></div>
@@ -813,7 +817,7 @@ routes.fim = () => {
     // Recorde: carga maior que a melhor da última vez (a gente comemora no card)
     const recordes = s.exs.map((e, i) => { const mx = Math.max(0, ...s.sets[i].filter(x => x.done).map(x => numero(x.kg) || 0)); return !semCarga(e) && e.ultima?.kg && mx > +e.ultima.kg ? `${e.nome} ${dec(mx)} kg` : null; }).filter(Boolean).slice(0, 3);
     const pontos = await enviarSessao(s, { esforco: +$('#esf .on').textContent, nota: +$('#nota .on').textContent, comentario: [$('#fb').value.trim(), dor].filter(Boolean).join(' · ') || null });
-    go('card', JSON.stringify({ titulo: s.titulo, min: Math.max(1, Math.round(dur / 60)), ex: completosCount(s), series: seriesFeitas(s), quando: s.registrarEm || diaDoTreino(s, s.fimEm || Date.now()), recordes, pontos, hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }));
+    go('card', JSON.stringify({ titulo: s.titulo, min: Math.max(1, Math.round(dur / 60)), ex: completosCount(s), series: seriesFeitas(s), completo: nObr >= obr.length, quando: s.registrarEm || diaDoTreino(s, s.fimEm || Date.now()), recordes, pontos, hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }));
     if (!pontos) toast(navigator.onLine === false ? t('Sem internet agora, mas tá guardado no celular. Envio sozinha quando o sinal voltar.') : t('Internet lenta: tá guardado no celular e eu confirmo o envio sozinha.'));
   };
 };
@@ -828,7 +832,8 @@ function diaDoTreino(s, fim) {
 async function enviarSessao(s, fb) {
   s.enviada = true; salvaSessao();
   const fim = s.fimEm || s.pausadoEm || s.ult || Date.now();
-  const patch = { duracao_s: Math.max(0, Math.floor((fim - s.inicio) / 1000)), exercicios_feitos: feitosCount(s), esforco: fb.esforco ?? null, nota: fb.nota ?? null, comentario: fb.comentario || null, finalizada_em: new Date(s.registrarEm || diaDoTreino(s, fim)).toISOString() };
+  const obr = obrigatorios(s), obrT = obr.length ? obr : s.exs.map((e, i) => i);
+  const patch = { duracao_s: Math.max(0, Math.floor((fim - s.inicio) / 1000)), exercicios_feitos: obrT.filter(i => completo(s, i)).length, exercicios_total: obrT.length, esforco: fb.esforco ?? null, nota: fb.nota ?? null, comentario: fb.comentario || null, finalizada_em: new Date(s.registrarEm || diaDoTreino(s, fim)).toISOString() };
   const series = seriesDaSessao(s); let pontos = true, seriesOk = false;
   const item = () => ({ s: { titulo: s.titulo, treino_id: s.treino_id, programa_treino_id: s.programa_treino_id || null, total: s.exs.length }, sid: s.local ? null : s.id, seriesOk, series, patch });
   try {
@@ -884,7 +889,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 routes.card = async (arg) => {
   const d = JSON.parse(arg || '{}'); const sessoes = await sessoesComFila(S.perfil); const st = streakDias(sessoes);
   const data = dataLocal(d.quando || Date.now(), { day: 'numeric', month: 'short' }); // treino registrado depois: a data do dia em que ela treinou
-  render(`<div class="view fx"><div class="topbar"><button class="back" data-go="home">‹ ${t('Início')}</button>${d.pontos === false ? `<span class="pill quebra">${t('pontos quando a internet voltar')}</span>` : `<span class="pill on">${t('+{n} pts', { n: 50 })}</span>`}</div>
+  render(`<div class="view fx"><div class="topbar"><button class="back" data-go="home">‹ ${t('Início')}</button>${d.completo === false ? `<span class="pill quebra">${t('incompleto: sem pontos')}</span>` : d.pontos === false ? `<span class="pill quebra">${t('pontos quando a internet voltar')}</span>` : `<span class="pill on">${t('+{n} pts', { n: 50 })}</span>`}</div>
   <div class="share"><div class="row between"><div class="logo sm">IGOR SOUSA <b>TEAM</b></div><span class="pill">${data}</span></div>
     <div><div class="logo" style="font-size:2.5rem">${d.ex === 0 ? t('Treino<br>registrado') : t('Treino<br>feito')} <b>✓</b></div><div class="row wrap" style="gap:6px 18px;margin-top:14px"><div class="big" style="font-size:1.875rem">${d.min}<small> ${t('min')}</small></div>${d.ex === 0 && d.series ? `<div class="big" style="font-size:1.875rem">${d.series}<small> ${tp(d.series, 'série', 'séries')}</small></div>` : `<div class="big" style="font-size:1.875rem">${d.ex}<small> ${tp(d.ex, 'exercício', 'exercícios')}</small></div>`}<div class="big" style="font-size:1.875rem;color:var(--accent)">🔥${st.semanas}<small> ${tp(st.semanas, 'semana seguida', 'semanas seguidas')}</small></div></div>
     <p class="muted mt small">${esc(primeiroNome(S.perfil.nome))} · ${esc(nomeCurto(d.titulo))} · ${esc(C.INSTAGRAM)}</p></div></div>
@@ -941,11 +946,11 @@ routes.pontos = async () => {
   const [p0, log0] = await Promise.all([rapido(db.perfil(), null, 3000), rapido(db.meusPontos(S.perfil.id), null, 3000)]);
   const p = p0 || S.perfil; S.perfil = p; const log = log0 || db.LS.get('pontosLog', []); if (log0) db.LS.set('pontosLog', log0.slice(0, 30));
   if (rotaAtual !== 'pontos') return;
-  const nomes = { treino: 'Treino concluído', semana: 'Semana completa', desafio: 'Desafio do mês', story: 'Card no story', checkin: 'Check-in com foto', evolucao: 'Foto de evolução', indicacao: 'Amiga indicada', renovacao: 'Mês renovado' };
+  const nomes = { treino: 'Treino completo', semana: 'Semana completa', desafio: 'Desafio do mês', story: 'Card no story', checkin: 'Check-in com foto', evolucao: 'Foto de evolução', indicacao: 'Amiga indicada', renovacao: 'Mês renovado' };
   render(`<div class="view fx"><div class="topbar"><h2>${t('Meus pontos')}</h2><span class="pill on">${t('{n} pts', { n: num(p.pontos) })}</span></div>
   <div class="card"><h3>${t('Como ganhar')}</h3><div style="display:grid;gap:8px;margin-top:8px;font-size:0.875rem">
-    ${[['Treino concluído', 50], ['Semana completa', 100], ['Desafio do mês', 200], ['Card no story', 30], ['Foto de evolução (1x/mês)', 80], ['Amiga indicada assinou', 300]].map(([a, b]) => `<div class="row between" style="gap:8px"><span>${t(a)}</span><b style="color:var(--accent)">+${b}</b></div>`).join('')}</div>
-    <p class="muted mt small">${t('Não precisa mandar comprovante dos treinos: os pontos entram sozinhos.')}</p></div>
+    ${[['Treino completo', 50], ['Semana completa', 100], ['Desafio do mês', 200], ['Card no story', 30], ['Foto de evolução (1x/mês)', 80], ['Amiga indicada assinou', 300]].map(([a, b]) => `<div class="row between" style="gap:8px"><span>${t(a)}</span><b style="color:var(--accent)">+${b}</b></div>`).join('')}</div>
+    <p class="muted mt small">${t('Não precisa mandar comprovante dos treinos: os pontos entram sozinhos.')} ${t('Vale o treino completo (o HIIT opcional não precisa).')}</p></div>
   <div class="row between"><h3>${t('Prêmios do trimestre')}</h3><span class="muted small">${t('vale até {d}', { d: dataLocal(new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3 + 3, 0), { day: 'numeric', month: 'short' }) })}</span></div>
   ${(() => { const PR = [[900, 'Strap'], [1200, 'Elástico'], [1800, 'Luva'], [3000, 'Bag']], prox = PR.find(([v]) => v > p.pontos), ja = PR.some(([v]) => p.pontos >= v);
     return (ja ? `<p style="font-weight:600">${t('Você já pode escolher um prêmio! Chama o Igor no WhatsApp pra trocar.')}</p><a class="btn sm" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}?text=${encodeURIComponent('Oi Igor! Quero trocar meus pontos por um prêmio 🎁')}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a>` : '') + (prox ? `<p class="muted">${t('Faltam <b style="color:var(--fg)">{n} pts</b> pra {x}.', { n: num(prox[0] - p.pontos), x: t(prox[1]) })}</p>` : ''); })()}

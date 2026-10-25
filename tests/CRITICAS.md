@@ -250,3 +250,8 @@ Pendente:
 - [ ] Resposta editada pelo Igor não volta a aparecer como "nova" pra aluna (precisaria de coluna "editada_em" no banco): decisão do Igor se vale a migração.
 - [ ] Editor de treino do Igor apaga e recria os exercícios (ids novos): a fila agora se recupera, mas o ideal é atualizar no lugar (mexe no fluxo de publicar treino).
 - [ ] Seguem: migrações 004/006/007 (se ainda não rodaram), publicar função assistente, Kiwify, WhatsApp, vídeos, fotos dos prêmios, drop set por queda, capa do PDF clara, i18n por idioma, regra de troca dos pontos.
+
+## 2026-10-26 (decisão do Igor: só treino completo pontua)
+- [x] +50, meta da semana e desafio do mês só contam treino completo (todos os exercícios obrigatórios; o HIIT opcional não precisa). Treinos de antes de 26/10 seguem a regra antiga.
+- [x] App: Início conta só completos no desafio/meta; feedback avisa antes de enviar que incompleto não pontua; card mostra "incompleto: sem pontos"; Pontos diz "Vale o treino completo". O banco recebe exercicios_feitos = exercícios completos e exercicios_total = obrigatórios.
+- [ ] Rodar supabase/migracao-011-so-treino-completo-pontua.sql (também no fim do schema.sql). Sem ela o banco ainda dá +50 pra treino incompleto (o app já mostra a regra nova).

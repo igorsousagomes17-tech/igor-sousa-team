@@ -61,9 +61,10 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   const ab = (await st(p)).series.filter(x => x.reps === 20); ok(ab.length >= 1, `reps "12+4+4" salvas como 20 (${ab.length})`); await ctx.close(); }
 
 // 4. Treino parado bem no começo: Início oferece repetir (não diz "feito" nem pula pro próximo)
-{ const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'B'); await p.click('.set[data-k="0"] .rest'); await espera(p, 500); await fecharDescanso(p);
+{ const { ctx, p } = await nova(); await login(p); const pts0 = (await st(p)).perfil.pontos; await abrirTreino(p, 'B'); await p.click('.set[data-k="0"] .rest'); await espera(p, 500); await fecharDescanso(p);
   await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
   ok(/Treino registrado/i.test(await txt(p, '.view')), 'card com nada completo diz "Treino registrado" (não "1 exercício")');
+  ok(/incompleto: sem pontos/i.test(await txt(p, '.view')) && (await st(p)).perfil.pontos === pts0, 'só treino completo pontua: incompleto não ganha +50 (decisão do Igor)');
   await p.click('.topbar [data-go="home"]'); await espera(p, 900); const v = await txt(p, '.view');
   ok(/ficou pela metade/i.test(v) && /TREINO B/i.test(v) && !/Treino de hoje feito/i.test(v), 'Início oferece repetir o B'); await shot(p, 'repetir-b');
   await p.click('#seguirMeia'); await espera(p, 600); ok(/TREINO C/i.test(await txt(p, '.view')), '"seguir pro próximo" vai pro C'); await ctx.close(); }
