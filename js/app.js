@@ -150,11 +150,11 @@ routes.home = async () => {
   <div><p class="muted">${hoje()}${p.plano === 'personalizado' ? ` <span class="pill" style="vertical-align:middle">${t('Personalizado')}</span>` : ''}</p><h1>${t('Bora, {nome}?', { nome: esc(primeiroNome(p.nome)) })}</h1></div>
   ${!p.objetivo ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1rem">${t('Falta me contar de você')}</b><p class="muted">${t('{n} perguntas rápidas (uns 3 min) pro Igor montar o seu treino.', { n: Q.length })}</p><button class="btn sm mt" id="anam" style="width:100%">${t('Responder agora')}</button></div>` : ''}
   ${sa ? `<div class="card hero"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${sa.pausadoEm ? (haQuanto(sa.pausadoEm) ? t('Treino pausado há {t}', { t: haQuanto(sa.pausadoEm) }) : t('Treino pausado há pouco')) : t('Treino em andamento')}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${tp(sf, '{n} série feita', '{n} séries feitas')} · ${t('{a} de {b} exercícios · tudo salvo', { a: feitosCount(sa), b: sa.exs.length })}</p><button class="btn dark" style="margin-top:8px" data-go="sessao">${t('Continuar de onde parei')}</button><button class="back" id="desc" style="color:#1a0d00;margin-top:4px;text-decoration:underline">${t('descartar esse treino')}</button></div>`
-    : feitoHoje && prox ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1.0625rem">${t('Treino de hoje feito ✓')}</b><p class="muted">${t('{x} registrado. Descansa e volta amanhã: o próximo é o {y}.', { x: esc(nomeTreino(feitoHoje.titulo)), y: t('Treino {l}', { l: esc(prox.letra) }) })}</p><button class="btn ghost sm mt" style="width:100%" data-go="treino" data-arg="${esc(prox.letra)}">${t('Ver o Treino {l}', { l: esc(prox.letra) })}</button></div>`
+    : perguntaSemana(plano, sessoes) || (feitoHoje && prox ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1.0625rem">${t('Treino de hoje feito ✓')}</b><p class="muted">${t('{x} registrado. Descansa e volta amanhã: o próximo é o {y}.', { x: esc(nomeTreino(feitoHoje.titulo)), y: t('Treino {l}', { l: esc(prox.letra) }) })}</p><button class="btn ghost sm mt" style="width:100%" data-go="treino" data-arg="${esc(prox.letra)}">${t('Ver o Treino {l}', { l: esc(prox.letra) })}</button></div>`
     : prox ? `<div class="card hero"><div class="row between"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Treino de hoje')}</span><span class="small" style="font-weight:600">~${t('{n} min', { n: prox.duracao_min || 40 })}</span></div>
     <div class="logo" style="font-size:1.875rem;margin:8px 0 4px;color:#1a0d00">${t('Treino {l}', { l: esc(prox.letra) })}<br><span style="font-weight:600;font-size:1.0625rem;font-family:var(--body);text-transform:none">${esc(prox.nome)}</span></div>
     <button class="btn dark" style="margin-top:8px" data-go="treino" data-arg="${esc(prox.letra)}">${t('Abrir treino')}</button></div>`
-    : `<div class="card"><b>${t('Seu treino do mês tá chegando.')}</b><p class="muted">${t('O Igor tá montando com base na sua anamnese. Enquanto isso, os programas extras já estão liberados.')}</p></div>`}
+    : `<div class="card"><b>${t('Seu treino do mês tá chegando.')}</b><p class="muted">${t('O Igor tá montando com base na sua anamnese. Enquanto isso, os programas extras já estão liberados.')}</p></div>`)}
   ${resp ? `<button class="card" id="resp" style="text-align:left;border:1px solid var(--accent);color:var(--fg);width:100%"><b style="font-size:0.9375rem">💬 ${t('O Igor te respondeu')}</b><p class="muted">"${esc(resp.resposta_igor)}"</p><p class="small mt" style="color:var(--accent)">${t('toca pra ver')}</p></button>` : ''}
   ${recado ? `<${recado.midia_url ? `a href="${esc(recado.midia_url)}" target="_blank" rel="noopener"` : 'div'} class="card row" style="gap:12px;color:var(--fg);text-decoration:none"><div style="width:44px;height:44px;border-radius:50%;background:${recado.midia_url ? 'var(--accent)' : '#2a2a2e'};display:grid;place-items:center;flex-shrink:0;color:${recado.midia_url ? 'var(--accent-ink)' : 'var(--accent)'};font-size:1.125rem">${recado.midia_url ? '▶' : '💬'}</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('Recado do Igor')}</b><p class="muted">${esc(recado.texto || '')}${recado.midia_url ? ' · ' + t('toca pra ouvir') : ''}</p></div></${recado.midia_url ? 'a' : 'div'}>` : ''}
   <div class="grid2">
@@ -169,6 +169,8 @@ routes.home = async () => {
   if ($('#desc')) $('#desc').onclick = async () => { if (await perguntar(t('Descartar treino?'), t('O que você marcou nesse treino vai ser apagado.'), t('Descartar'), t('Manter'))) { pararDescanso(); S.sessao = null; db.LS.del('sessao'); routes.home(); } };
   if ($('#resp')) $('#resp').onclick = () => { db.LS.set('respLidas', [...db.LS.get('respLidas', []), resp.id].slice(-50)); go('perfil'); };
   if ($('#anam')) $('#anam').onclick = () => anamneseForm(S.perfil, () => go('home'));
+  $$('.semop').forEach(b => b.onclick = () => { db.LS.set('inicioSemana', { semana: isoWeek(new Date()), letra: b.dataset.letra }); routes.home(); });
+  if ($('#semPula')) $('#semPula').onclick = () => { db.LS.set('inicioSemanaPulou', isoWeek(new Date())); routes.home(); };
 };
 // "N treinos" sempre bate com o que tem de verdade no programa
 function subProg(pr) {
@@ -179,10 +181,36 @@ function subProg(pr) {
 }
 function proximoTreino(plano, sessoes) {
   if (!plano?.treinos?.length) return null;
-  const ultimo = sessoes.find(s => /^Treino [A-Z]$/.test(s.titulo || '')); // só o treino do mês (programa extra não mexe na ordem)
+  const doMes = sessoes.filter(s => /^Treino [A-Z]$/.test(s.titulo || '')); // só o treino do mês (programa extra não mexe na ordem)
+  // Semana flexível: ela escolheu por qual treino começar essa semana → a semana segue a partir dele, sem mudar o treino.
+  const esc_ = inicioDaSemana(plano);
+  if (esc_) {
+    const wk = isoWeek(new Date()), n = plano.treinos.length;
+    const i0 = plano.treinos.findIndex(t => t.letra === esc_);
+    const ordem = Array.from({ length: n }, (_, k) => plano.treinos[(i0 + k) % n]);
+    const feitas = new Set(doMes.filter(s => isoWeek(new Date(s.finalizada_em)) === wk).map(s => s.titulo));
+    const falta = ordem.find(t => !feitas.has(`Treino ${t.letra}`));
+    if (falta) return falta;
+  }
+  const ultimo = doMes[0];
   if (!ultimo) return plano.treinos[0];
   const i = plano.treinos.findIndex(t => ultimo.titulo === `Treino ${t.letra}`);
   return plano.treinos[(i + 1) % plano.treinos.length];
+}
+// Escolha da semana fica no celular: { semana: '2026-43', letra: 'C' }. Só vale na semana em que foi feita.
+function inicioDaSemana(plano) {
+  const e = db.LS.get('inicioSemana', null);
+  return e && e.semana === isoWeek(new Date()) && plano?.treinos?.some(t => t.letra === e.letra) ? e.letra : null;
+}
+// Pergunta no começo de toda semana (antes do 1º treino do mês na semana), se o plano tem 2+ treinos.
+function perguntaSemana(plano, sessoes) {
+  if (!plano?.treinos || plano.treinos.length < 2 || S.sessao || inicioDaSemana(plano)) return '';
+  const wk = isoWeek(new Date());
+  if (sessoes.some(s => /^Treino [A-Z]$/.test(s.titulo || '') && isoWeek(new Date(s.finalizada_em)) === wk)) return '';
+  if (db.LS.get('inicioSemanaPulou', null) === wk) return '';
+  return `<div class="card" id="semana" style="border:1px solid var(--accent)"><b style="font-size:1.0625rem">${t('Por qual treino você quer começar a semana?')}</b><p class="muted">${t('Escolhe o grupo que você quer priorizar. O treino é o mesmo, só muda a ordem da semana.')}</p>
+  <div class="semopts">${plano.treinos.map(x => `<button class="semop" data-letra="${esc(x.letra)}"><b>${esc(x.letra)}</b><span>${esc(x.nome)}</span></button>`).join('')}</div>
+  <button class="back" id="semPula" style="margin-top:6px;text-decoration:underline">${t('seguir a ordem normal')}</button></div>`;
 }
 
 // TREINO MENSAL ---------------------------------------------------------------

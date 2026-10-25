@@ -214,3 +214,9 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .photo.vazia{cursor:pointer;border:1.5px dashed #4a4a50}
 .r .row .btn.sm{min-height:44px}
 .lib.mini{min-width:150px}
+/* Escolha do treino que abre a semana */
+.semopts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.semop{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:#1c1c1f;color:var(--fg);text-align:left;font:inherit}
+.semop b{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex-shrink:0;font-size:0.9375rem}
+.semop span{font-size:0.875rem;font-weight:600;line-height:1.2}
+.semop:active{border-color:var(--accent)}

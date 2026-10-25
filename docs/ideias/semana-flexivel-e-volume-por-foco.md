@@ -34,3 +34,8 @@ Proposta técnica (motor de adaptação):
 - Motor (determinístico, sem IA, testável): meta de séries/semana por grupamento (foco vs demais) → divide nos N dias da aluna → preenche com exercícios do base por prioridade (base > acessório > isolador) → ajusta séries → checa tempo (≤ tempo dela; usa bi-set agonista/antagonista, com halter, nunca 2 máquinas) → aplica limitações.
 - Resultado salvo como plano da aluna (o Igor vê e pode editar no painel antes/depois).
 - Personalizado: sai como rascunho pro Igor aprovar; Básico: direto (decisão anterior dele).
+
+## Status (24/10, decisões do Igor)
+- [x] Grupo que abre a semana: a aluna escolhe **toda semana** (card no início, antes do 1º treino da semana). Escolha fica no celular; "seguir a ordem normal" pula a pergunta naquela semana. Teste: tests/semana-flexivel.mjs.
+- [ ] Volume do foco: Igor pediu pra perguntar depois (lembrete agendado pra 25/10 à noite).
+- [ ] Check-in com dor (2 exercícios de alívio): esperar o Igor gravar os exercícios (mapa de filmagem) e aí montar.

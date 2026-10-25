@@ -165,7 +165,7 @@ Corrigido e no ar:
 - [x] Dados: 1ª instalação reaproveita o que a página baixou (não baixa 2×), capas dos programas fora do pacote inicial; story em JPEG (~90 KB em vez de ~560 KB) com "exercícios"/"semanas seguidas" por extenso e nome curto do programa.
 - [x] PDF: mesma regra de "sem peso" do app (sem "Carga (kg)" em Dead bug, Mini band, Gato-camelo…); "Como usar" só com o que existe no treino; página nova repete "Treino D (continuação)".
 - [x] Pendentes antigos resolvidos: bi-set com "Dica e opções ▾" (tela mais curta); calendário do nascimento abre na faixa de idade certa.
-- [x] Traduções das ~60 frases novas nos 5 idiomas; cache v14; teste novo tests/rodada-2510.mjs; rodada-2410 ajustado aos textos novos.
+- [x] Traduções das ~60 frases novas nos 5 idiomas; cache v15; teste novo tests/rodada-2510.mjs; rodada-2410 ajustado aos textos novos.
 Pendente:
 - [ ] Rodar supabase/migracao-007-semana-no-fuso.sql (+100 da semana no fuso de SP; também acrescentada no fim do schema.sql). Sem ela, treino de domingo à noite pode não dar o bônus.
 - [ ] Pontos zeram no fim do trimestre? Trocar um prêmio gasta os pontos? Regra do Igor (o app só diz "o Igor te explica").
