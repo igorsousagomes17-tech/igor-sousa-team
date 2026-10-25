@@ -9,7 +9,8 @@ const wa = (num, txt) => `https://wa.me/55${String(num || '').replace(/\D/g, '')
 let db;
 // Precisa da resposta do Igor: comentou, ou deu nota baixa / esforço no limite sem escrever nada
 const precisa = f => !f.resposta_igor && !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
-const selo = f => /\bdor|doeu|doendo|les[aã]o|machuc/i.test(f.comentario || '') ? ' <span class="pill warn">dor</span>' : !String(f.comentario || '').trim() && f.nota != null && f.nota <= 4 ? ' <span class="pill warn">nota baixa</span>' : !String(f.comentario || '').trim() && f.esforco >= 9 ? ' <span class="pill warn">esforço no limite</span>' : '';
+const DOR = /⚠ dor|\bdor(es)?\b|doeu|doendo|les[aã]o|machuc|\bpain|hurt|dolor|duel|doli|douleur|疼|痛|दर्द/i;
+const selo = f => DOR.test(f.comentario || '') ? ' <span class="pill warn">dor</span>' : !String(f.comentario || '').trim() && f.nota != null && f.nota <= 4 ? ' <span class="pill warn">nota baixa</span>' : !String(f.comentario || '').trim() && f.esforco >= 9 ? ' <span class="pill warn">esforço no limite</span>' : '';
 const pl = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   db = _db;
@@ -41,7 +42,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   // Botões embaixo do nome (cabe com zoom/fonte grande) e com 44px pra tocar
   function linhaAluna(a) { return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}</b><span>${a.pontos} pts · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês</span></div><div class="row" style="gap:8px"><button class="btn ghost sm" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="btn ghost sm" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div></div>`; }
 
-  (db.assistente?.duvidasRecentes?.() || Promise.resolve([])).then(ds => { const el = $('#duv'); if (el) el.innerHTML = ds.length ? ds.map(d => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${esc(d.profiles?.nome || 'Aluna')}</b> <span class="muted small">· ${new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><p class="muted" style="margin-top:2px">${esc(d.texto)}</p></div>`).join('') : '<p class="muted mt">Nenhuma dúvida ainda.</p>'; }).catch(() => { const el = $('#duv'); if (el) el.innerHTML = '<p class="muted mt">Não deu pra carregar agora.</p>'; });
+  (db.assistente?.duvidasRecentes?.() || Promise.resolve([])).then(ds => { const el = $('#duv'); if (el) el.innerHTML = ds.length ? ds.map(d => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${esc(d.profiles?.nome || 'Aluna')}</b>${DOR.test(d.texto || '') ? ' <span class="pill warn">dor</span>' : ''} <span class="muted small">· ${new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><p class="muted" style="margin-top:2px">${esc(d.texto)}</p></div>`).join('') : '<p class="muted mt">Nenhuma dúvida ainda.</p>'; }).catch(() => { const el = $('#duv'); if (el) el.innerHTML = '<p class="muted mt">Não deu pra carregar agora.</p>'; });
   $('#out').onclick = async () => { await db.logout(); S.perfil = null; go('entrada'); };
   $('#busca').oninput = () => { const q = $('#busca').value.toLowerCase(); $$('#lista .r').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
   $$('[data-resp]').forEach(b => b.onclick = () => {

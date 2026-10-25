@@ -25,3 +25,7 @@ descanso após prancha, vídeo sem sinal, busca "bumbum", ficha do exercício, a
 `tests/rodada-2510.mjs` testa as correções da rodada 25/10 (toque duplo na chave, voltar no pop-up não trava, cardio minimiza e registra
 os minutos feitos, HIIT forte/leve, dúvida no descanso, fotos do mês com voltar no meio, anamnese com data impossível, painel com nota baixa
 e bi-set no editor, Minhas cargas do banco, programa com exercícios, pontos, story em JPEG): `W=360 OUT=/tmp/shots node tests/rodada-2510.mjs`.
+
+`tests/rodada-2510b.mjs` testa a rodada extra de 25/10 (tira-dúvidas: emergência/192, pergunta que não some ao sair, conversa apagada no logout;
+botão de cardio que envia sozinho e "Começar cardio de 20 min"; cardio que continua depois de recarregar e não recomeça no 2º toque;
+"Senti dor" sem série chega no painel; escolha da semana em 288 px; francês sem pontuação sozinha): `W=360 OUT=/tmp/shots node tests/rodada-2510b.mjs`.

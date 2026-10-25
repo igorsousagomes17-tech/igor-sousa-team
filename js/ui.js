@@ -8,7 +8,7 @@ let tt, ttEm = 0;
 // Aviso embaixo (não cobre o título), fica mais tempo e fecha com um toque.
 // fixo: fica até ela tocar (ex.: "descanso acabou há 2 min" quando ela volta pro app).
 export function toast(msg, err = false, { fixo = false } = {}) {
-  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + (err ? ' err' : '') + (fixo ? ' fixo' : '');
+  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + (err ? ' err' : '') + (fixo ? ' fixo' : '') + (location.hash === '#fim' ? ' topo' : ''); // no feedback do fim fica em cima (não cobre o "Enviar")
   t.onclick = () => t.classList.remove('on');
   clearTimeout(tt); if (!fixo) tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : 4500);
 }
@@ -47,7 +47,7 @@ export const fmtMin = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '
 export const hoje = () => { const d = dataLocal(Date.now(), { weekday: 'long', day: 'numeric', month: 'short' }); return d.charAt(0).toUpperCase() + d.slice(1); };
 export const primeiroNome = n => (n || '').trim().split(' ')[0];
 // Data só (AAAA-MM-DD) é lida como meio-dia local, pra não voltar um dia no fuso do Brasil.
-export const fmtData = d => d ? dataLocal(/^\d{4}-\d{2}-\d{2}$/.test(d) ? d + 'T12:00' : d, { day: '2-digit', month: 'short' }) : '';
+export const fmtData = d => d ? dataLocal(/^\d{4}-\d{2}-\d{2}$/.test(d) ? d + 'T12:00' : d, { day: 'numeric', month: 'short' }) : '';
 
 const redeFraca = () => { const c = navigator.connection; return !!(c && (c.saveData || /(^|-)(2g|3g)$/.test(c.effectiveType || ''))); };
 export function youtubeEmbed(url) {
@@ -78,13 +78,17 @@ export function videoModal(nome, url, dica) {
   $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });
 }
 
-// Apito curto (dois tons) ao fim do descanso
-export function beep() {
+// Apito: um só AudioContext (celular fraco não fica sem som depois de 40 apitos).
+// 'fim' = dois tons (descanso/série acabou) · 'forte' = três agudos curtos · 'leve' = um grave longo
+let ac = null;
+const SONS = { fim: [[880, 0, .18], [1100, .22, .4]], forte: [[1200, 0, .1], [1200, .15, .1], [1200, .3, .1]], leve: [[440, 0, .6]] };
+const VIBRA = { fim: [150, 80, 250], forte: [80, 60, 80, 60, 80], leve: [400] };
+export function beep(tipo = 'fim') {
   try {
-    const a = new (window.AudioContext || window.webkitAudioContext)();
-    const g = a.createGain(); g.gain.value = .18; g.connect(a.destination);
-    [[880, 0, .18], [1100, .22, .4]].forEach(([f, t, d]) => { const o = a.createOscillator(); o.frequency.value = f; o.connect(g); o.start(a.currentTime + t); o.stop(a.currentTime + t + d); });
-    if (navigator.vibrate) navigator.vibrate([150, 80, 250]);
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume();
+    const g = ac.createGain(); g.gain.value = .18; g.connect(ac.destination);
+    (SONS[tipo] || SONS.fim).forEach(([f, t, d]) => { const o = ac.createOscillator(); o.frequency.value = f; o.connect(g); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + d); });
+    if (navigator.vibrate) navigator.vibrate(VIBRA[tipo] || VIBRA.fim);
   } catch {}
 }
 
@@ -111,23 +115,28 @@ const trouxe = x => t(x === "Bora!" ? "Tempo" : x);
 export const descansoAtivo = () => !!restAtivo;
 // Horário em que acaba o exercício de tempo rodando (cardio, prancha), pra não descontar esse tempo como "fora do app"
 export const trabalhoFim = () => restAtivo?.trabalho ? restAtivo.fim() : null;
+// Abre o cronômetro minimizado (tocou de novo no ▶ do cardio que já está rodando: não recomeça)
+export function abrirTimer() { if (restAtivo?.mini) restAtivo.abrir(); }
+// Saiu do treino com o cardio rodando: registra os minutos feitos (não joga fora)
+export function encerrarTrabalho() { if (restAtivo?.trabalho) { restAtivo.parcial(); return true; } return false; }
 export function pararDescanso() { if (restAtivo) restAtivo.end(false); }
 export function minimizarDescanso() { if (restAtivo && !restAtivo.mini) { restAtivo.minimizar(); return true; } return false; }
 function camada() { let l = document.getElementById('rest-layer'); if (!l) { l = document.createElement('div'); l.id = 'rest-layer'; document.body.appendChild(l); } return l; }
 // intervalos [forte, leve] (ex.: HIIT 30s forte / 30s leve): troca o rótulo e apita a cada troca.
 // No exercício de tempo, "Já fiz" antes do fim resolve { parcial: segundos feitos }.
-export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false, aoMudar, intervalos = null } = {}) {
+// jaFeito: segundos que já tinham passado (recarregou o app no meio do cardio: continua de onde estava)
+export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false, aoMudar, intervalos = null, jaFeito = 0 } = {}) {
   pararDescanso();
   return new Promise(resolve => {
-    let total = segundos, fim = Date.now() + segundos * 1000, iv, trocou = false;
+    let total = segundos + jaFeito, fim = Date.now() + segundos * 1000, iv, trocou = jaFeito > total / 2;
     const trabalho = titulo !== 'Descanso', L = camada();
     const me = { mini: false, trabalho, fim: () => fim }; let fase = -1;
     L.innerHTML = `<div class="ov" id="rest">
-      <button class="back x" id="rest-x" aria-label="${t('Minimizar pra anotar')}">${trabalho ? '▾ ' + t('minimizar') : '✎ ' + t('anotar')}</button>
-      <p class="muted" id="rest-t" style="letter-spacing:1px;text-transform:uppercase">${esc(t(titulo))}</p>
+      <button class="back x" id="rest-x" aria-label="${trabalho ? t('minimizar') : t('Minimizar pra anotar')}">${trabalho ? '▾ ' + t('minimizar') : '✎ ' + t('anotar')}</button>
+      <p class="muted ${intervalos ? 'fase' : ''}" id="rest-t" style="letter-spacing:1px;text-transform:uppercase">${esc(t(titulo))}</p>
       <div class="ring" id="ring"><b id="rest-n"></b></div>
       <p class="muted center" id="rest-p">${esc(proximo || '')}</p>
-      <div class="row"><button class="btn ghost sm" id="rest-skip">${trabalho ? t('Já fiz') : t('Pular descanso')}</button><button class="btn sm" id="rest-add">+15s</button></div></div>`;
+      <div class="row">${trabalho ? `<button class="btn sm" id="rest-skip">✓ ${t('Já fiz')}</button><button class="btn ghost sm" id="rest-add">+15s</button>` : `<button class="btn ghost sm" id="rest-skip">${t('Pular descanso')}</button><button class="btn sm" id="rest-add">+15s</button>`}</div></div>`;
     const q = s => L.querySelector(s);
     const avisar = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }); } catch {} };
     const cancelarAviso = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} };
@@ -136,20 +145,24 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
     const tick = () => {
       const l = left(), n = q('#rest-n'); if (!n) return;
       if (meio && !trocou && l <= total / 2) { trocou = true; beep(); q('#rest-t').textContent = t('Troca de lado!'); toast(t('Troca de lado 🔄')); }
-      if (intervalos && l > 0) { const ciclo = intervalos[0] + intervalos[1], pos = (total - l) % ciclo, f = pos < intervalos[0] ? 0 : 1; if (f !== fase) { if (fase !== -1) beep(); fase = f; q('#rest-t').textContent = f ? t('Leve') : t('Forte!'); } }
-      n.textContent = me.mini ? `${trouxe(titulo)} ${fmtMin(l)} · ${t('toca pra abrir')}` : (l >= 60 ? fmtMin(l) : l);
+      let resta = 0; // segundos que faltam no intervalo atual (forte/leve)
+      if (intervalos && l > 0) { const ciclo = intervalos[0] + intervalos[1], pos = (total - l) % ciclo, f = pos < intervalos[0] ? 0 : 1; resta = f ? ciclo - pos : intervalos[0] - pos; if (f !== fase) { if (fase !== -1) beep(f ? 'leve' : 'forte'); fase = f; q('#rest').classList.toggle('leve', !!f); } q('#rest-t').textContent = `${f ? t('Leve') : t('Forte!')} · ${resta}s`; }
+      const rot = intervalos && fase >= 0 ? (fase ? t('Leve') : t('Forte!')) : trouxe(titulo);
+      n.textContent = me.mini ? `${rot} ${fmtMin(l)} · ${t('toca pra abrir')}` : (l >= 60 ? fmtMin(l) : l);
       q('#ring').style.setProperty('--p', (l / total * 100) + '%'); if (l <= 0) end(true, Date.now() - fim > 30000);
     };
     // atrasado: acabou com a tela apagada (o código parado) e só agora ela voltou: aviso fixo com "há N min", sem apito
     const end = (r, atrasado = false) => { if (restAtivo !== me) return; restAtivo = null; cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden && !trabalho) avisoNaVolta(fim); else if (atrasado && !trabalho) { avisoNaVolta(fim); } else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
     me.end = end;
-    me.minimizar = () => { me.mini = true; q('#rest').classList.add('mini'); tick(); }; // cardio também só minimiza: um toque sem querer não apaga os minutos
+    me.minimizar = () => { me.mini = true; q('#rest').classList.add('mini'); tick(); };
+    me.abrir = () => { me.mini = false; q('#rest').classList.remove('mini'); tick(); };
+    me.parcial = () => { const feito = total - left(); if (left() > 3 && feito >= 10) end({ parcial: feito }); else end(true); }; // tocou logo no começo = já tinha feito // cardio também só minimiza: um toque sem querer não apaga os minutos
     restAtivo = me;
     iv = setInterval(tick, 250); document.addEventListener('visibilitychange', tick);
-    q('#rest-skip').onclick = e => { e.stopPropagation(); if (!trabalho) return end(false); const feito = total - left(); if (left() > 3 && feito >= 1) { restAtivo === me && end({ parcial: feito }); } else end(true); };
+    q('#rest-skip').onclick = e => { e.stopPropagation(); if (!trabalho) return end(false); me.parcial(); };
     q('#rest-add').onclick = e => { e.stopPropagation(); fim += 15000; total += 15; avisar(); aoMudar?.(fim); tick(); };
     q('#rest-x').onclick = e => { e.stopPropagation(); me.minimizar(); };
-    q('#rest').onclick = () => { if (me.mini) { me.mini = false; q('#rest').classList.remove('mini'); tick(); } };
+    q('#rest').onclick = () => { if (me.mini) me.abrir(); };
     tick();
   });
 }
@@ -159,7 +172,7 @@ export function tabs(active) {
     ['videos', 'Vídeos', 'M4 5h16v14H4zM10 9l5 3-5 3z'],
     ['pontos', 'Pontos', 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z'], ['evolucao', 'Evolução', 'M4 19V5M4 19h16M7 15l4-5 3 3 5-7'],
     ['perfil', 'Perfil', 'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM4 21a8 8 0 0 1 16 0']];
-  return `<nav class="tabs">${abas.map(([id, l, d]) => `<button class="tab ${active === id ? 'on' : ''}" data-go="${id}"><svg viewBox="0 0 24 24"><path d="${d}"/></svg><span>${t(l)}</span></button>`).join('')}</nav>`;
+  return `<nav class="tabs">${abas.map(([id, l, d]) => `<button class="tab ${active === id ? 'on' : ''}" data-go="${id}" aria-label="${t(l)}"><svg viewBox="0 0 24 24"><path d="${d}"/></svg><span>${t(l)}</span></button>`).join('')}</nav>`;
 }
 
 // Card compartilhável → imagem PNG (canvas) → Web Share ou download

@@ -68,10 +68,21 @@ export const assistente = {
   async perguntar(texto) {
     await wait(900);
     const t = texto.toLowerCase();
-    const resposta = tr(/dor|doeu|machuc|pain|hurt|dolor|douleur|疼|दर्द/.test(t) ? 'Se doeu durante o exercício, para esse movimento agora, tá? Dor não é sinal de treino bom. Se for leve e passar em 1-2 dias, segue com carga menor. Se continuar, limitar o movimento ou for forte, procura avaliação e avisa o Igor no recado do fim do treino pra ele ajustar seu treino.'
-      : /carga|subir|peso|weight|load|poids|重量|वजन/.test(t) ? 'Sobe quando você bater o topo das repetições com boa técnica em todas as séries. Ex.: no Agachamento Smith (3 x 12/10/8) sua última foi 28 kg x 10. Fechou as reps com folga? Na próxima tenta 30 kg e volta pro começo da faixa.'
-      : /bi-?set|superset|biserie|超级组|सुपरसेट/.test(t) ? 'Bi-set é fazer dois exercícios em sequência, sem descanso entre eles. No app aparece A1 e A2: faz uma série do A1, emenda no A2 e só aí descansa. Economiza tempo e mantém o volume.'
-      : 'Boa pergunta! (Modo demonstração: aqui a IA de verdade responde com base no seu treino, nas suas cargas e na sua anamnese, seguindo as regras do Igor.)'); // demo: responde no idioma do app, como a IA de verdade
+    // Respostas prontas do demo (a de verdade vem da IA no servidor). Emergência sempre primeiro.
+    const R = [
+      [/peito|falta de ar|desmai|tontura|chest|breath|faint|dizz|pecho|aire|mareo|poitrine|souffle|évanou|vertige|胸|呼吸|晕|सीने|सांस|चक्कर/, 'Para o treino agora. Dor no peito, falta de ar forte, tontura ou desmaio não são normais: liga 192 (SAMU) ou vai pro pronto-socorro. Depois avisa o Igor.'],
+      [/\bdor(es)?\b|doeu|doendo|\bd[oó]i\b|pain|hurt|dolor|duel|dol[ií]|douleur|mal au|疼|痛|दर्द/, 'Se doeu durante o exercício, para esse movimento agora, tá? Dor não é sinal de treino bom. Se for leve e passar em 1-2 dias, segue com carga menor. Se continuar, limitar o movimento ou for forte, procura avaliação e avisa o Igor no recado do fim do treino pra ele ajustar seu treino.'],
+      [/medo|trem|insegur|nunca trein|n[aã]o consigo|scared|afraid|shak|miedo|tiembl|peur|trembl|害怕|发抖|डर|कांप/, 'Normal no começo, tá? Perna tremendo é o corpo aprendendo o movimento. Usa um peso que você faz todas as reps com folga (pode começar até sem peso) e vai subindo devagar. Na ficha de cada exercício tem como fazer.'],
+      [/cardio|hiit|aer[oó]bi|corrida|esteira|treadmill|有氧|कार्डियो/, 'Bora! Cardio de 20 min: 30s forte / 30s leve (bike, esteira, escada ou corrida parada em casa). No forte você quase não consegue falar; no leve recupera. Toca em "Começar cardio de 20 min" que eu conto e apito a cada troca.'],
+      [/comer|dieta|alimenta|emagre|perder peso|\beat\b|diet|lose weight|comida|adelgaz|manger|régime|maigrir|吃|饮食|减肥|खाना|डाइट/, 'Comida quem prescreve é nutricionista, tá? Do lado do treino, o que ajuda: fazer os treinos da semana, um cardio de 20 min nos dias livres e dormir bem. Se quiser, te passo um cardio agora.'],
+      [/b[uú]lgar|保加利亚|बल्गेरियन/, 'Búlgaro: pé de trás apoiado no banco e o da frente longe o bastante pro joelho não passar muito da ponta do pé. Desce reto, tronco um pouco à frente pra pegar mais glúteo. Começa sem peso até pegar o equilíbrio.'],
+      [/bi-?set|superset|biserie|超级组|सुपरसेट/, 'Bi-set é fazer dois exercícios em sequência, sem descanso entre eles. No app aparece A1 e A2: faz uma série do A1, emenda no A2 e só aí descansa. Economiza tempo e mantém o volume.'],
+      [/(sub|aument|increas|augment).{0,20}(carga|peso|load|weight|charge)|quando (eu )?subo|subo a carga|加重|वज़न बढ़ा/, 'Sobe quando você bater o topo das repetições com boa técnica em todas as séries. Ex.: no Agachamento Smith (3 x 12/10/8) sua última foi 28 kg x 10. Fechou as reps com folga? Na próxima tenta 30 kg e volta pro começo da faixa.'],
+      [/primeiro|\bfirst\b|primero|d'abord|先|पहले/, 'Musculação primeiro, cardio depois: assim você chega com energia nos exercícios de força. O cardio de 20 min no fim do treino fecha bem.'],
+      [/resultado|result|résultat|效果|नतीजा|रिज़ल्ट/, 'Resultado vem da soma: fazer os treinos da semana, subir a carga aos poucos, comer e dormir bem. Olha em Evolução se a carga tá subindo e manda as fotos do mês. Se travou, conta pro Igor no recado do fim do treino que ele ajusta.']
+    ];
+    const achou = R.find(([rx]) => rx.test(t));
+    const resposta = tr(achou ? achou[1] : 'Boa pergunta! No app de verdade a IA responde com base no seu treino, nas suas cargas e na sua anamnese. Aqui é uma demonstração com algumas respostas prontas.'); // demo: responde no idioma do app, como a IA de verdade
     state.chat = [...(state.chat || []), { papel: 'user', texto }, { papel: 'assistant', texto: resposta }]; save();
     return { resposta, restantes: 27 };
   },

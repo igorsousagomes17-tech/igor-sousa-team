@@ -220,3 +220,18 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .semop b{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex-shrink:0;font-size:0.9375rem}
 .semop span{font-size:0.875rem;font-weight:600;line-height:1.2}
 .semop:active{border-color:var(--accent)}
+
+/* rodada extra 25/10 */
+.semopts{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}.semop{min-width:0}.semop span{overflow-wrap:anywhere}
+.toast.topo{top:calc(12px + var(--sat));bottom:auto}
+.ov .fase{font-size:2rem;font-weight:800;color:var(--accent);letter-spacing:.5px}
+.ov.leve .fase{color:#f4f2ee}.ov.leve:not(.mini) .ring{background:conic-gradient(#ffb27a var(--p,100%),#2a2a2e 0)}
+.msg.ia::before{content:"🤖 IA";display:block;font-size:.8125rem;color:var(--muted);margin-bottom:2px}
+.msg.ia.digitando::before{content:none}
+.msg.eu.falhou{opacity:.6}
+.aviso-chat{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;font-size:.9375rem}
+.chat.noTabs .chatbar{bottom:calc(64px + var(--sab))}
+.chat-top{position:sticky;top:0;z-index:3;background:var(--bg);margin:calc(-12px - var(--sat)) -16px 0;padding:calc(6px + var(--sat)) 16px 6px}
+.chatbar textarea{max-height:40vh}
+.pontos-premios .lib{aspect-ratio:auto;min-height:140px;justify-content:flex-end}
+@media (max-width:300px){.tabs .tab:not(.on) span{display:none}.tabs .tab svg{width:24px;height:24px}.tabs .tab{min-height:48px;justify-content:center}}

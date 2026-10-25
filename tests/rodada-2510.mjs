@@ -55,7 +55,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await espera(p, 400); const rel = await p.innerText('#clock'); ok(+rel.split(':')[0] >= 11, `12 min de cardio com a tela apagada contam no tempo (${rel})`);
   await p.click('#rest-skip'); await espera(p, 500);
   const s = await sessao(p), st = s.sets[7][0]; ok(st.done && st.seg >= 700 && st.seg <= 800, `"Já fiz" no meio registra os minutos (${st.seg}s)`);
-  ok(/Registrei 1[23] min de 20 min/.test(await p.innerText('#toast')), 'avisa "Registrei 12 min de 20 min" (ou 13)');
+  ok(/Registrei 1[23]:\d\d de 20:00/.test(await p.innerText('#toast')), 'avisa "Registrei 12 min de 20 min" (ou 13)');
   await espera(p, 800); if (await p.$('#fin')) await p.click('#fin'); await espera(p, 400); if (await p.$('#enc')) await p.click('#enc'); await espera(p, 500);
   ok(/de 7/.test(await txt(p, '.view')) && /\+ opcional/.test(await txt(p, '.view')), 'feedback conta só os obrigatórios ("de 7 + opcional")');
   await ctx.close(); }
