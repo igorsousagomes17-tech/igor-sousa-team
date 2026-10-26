@@ -322,3 +322,27 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .versao button{flex:1;min-height:44px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-weight:700;font-size:0.9375rem}
 .versao button small{font-weight:500;font-size:0.75rem;opacity:.85}
 .versao button.on{background:var(--accent);color:var(--accent-ink)}
+
+/* Spinning guiado */
+.spin-filtro{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:2px -2px}
+.spin-filtro::-webkit-scrollbar{display:none}
+.spin-filtro button{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-weight:700;font-size:0.875rem}
+.spin-filtro button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.spin-lista{display:flex;flex-direction:column;gap:10px}
+.spin-aula{width:100%;text-align:left;color:var(--fg);border:1px solid var(--line)}
+.spin-int{font-size:0.8125rem;white-space:nowrap}
+.spin-trilha{display:flex;gap:2px;align-items:flex-end;margin-top:10px;height:34px}
+.spin-trilha.grande{height:40px;margin-top:4px}
+.spin-trilha i{background:#3a3a40;border-radius:3px;min-width:2px;position:relative}
+.spin-trilha i.pe{background:#a84a0a}
+.spin-trilha i.feito{opacity:.35}
+.spin-trilha i.agora{background:var(--accent);box-shadow:0 0 0 2px rgba(255,106,0,.35)}
+.spin-palco{position:relative;border-radius:22px;overflow:hidden;background:radial-gradient(70% 60% at 50% 35%,#3a1a05 0%,#141416 60%,#0b0b0c 100%);border:1px solid var(--line)}
+.spin-svg{display:block;width:100%;height:auto}
+.spin-selo{position:absolute;left:12px;top:12px;font-family:var(--display);font-size:1rem;letter-spacing:1px;text-transform:uppercase;background:#2a2a2e;color:var(--fg);padding:6px 12px;border-radius:10px;font-weight:800}
+.spin-selo.pe{background:var(--accent);color:var(--accent-ink)}
+.spin-rpm{position:absolute;right:12px;top:10px;text-align:right}
+.spin-rpm b{display:block;font-family:var(--display);font-size:2rem;line-height:1}.spin-rpm span{font-size:0.75rem;color:var(--muted)}
+.spin-big{font-family:var(--display);font-size:2rem;line-height:1.1}
+.spin-esf{display:flex;gap:3px;margin-top:6px}.spin-esf i{flex:1;height:7px;border-radius:3px;background:#2a2a2e}.spin-esf i.on{background:var(--accent)}
+.spin-barra{height:8px;background:#2a2a2e;border-radius:6px;overflow:hidden}.spin-barra i{display:block;height:100%;width:0;background:var(--accent)}

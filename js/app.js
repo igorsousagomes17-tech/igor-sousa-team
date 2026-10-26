@@ -1,7 +1,7 @@
 const C0 = window.ISTEAM_CONFIG;
 const DEMO = !!(C0.DEMO || new URLSearchParams(location.search).has('demo'));
 const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
-import { $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho } from './ui.js';
+import { beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho } from './ui.js';
 import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma } from './i18n.js';
 import * as A from './acolhe.js'; // T = t, pra quando "t" já é nome de variável
 
@@ -15,6 +15,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => setTim
 
 // ROTEADOR ----------------------------------------------------------------
 const routes = {};
+let pararSpin = null; // aula de spinning rodando (para quando ela sai da tela)
 // Cada tela entra no histórico do navegador: o "voltar" do celular volta pra tela anterior em vez de fechar o app.
 let rotaAtual = null, argAtual = null, voltarOverlay = null, duvidaNoTreino = false, cancelarPopup = null;
 // Resposta rápida no 4G ruim: se o banco demorar, segue com o que tem guardado no celular.
@@ -25,7 +26,7 @@ const rapido = (p, fb, ms = 5000) => Promise.race([Promise.resolve(p).catch(() =
 function go(name, arg, { hist = true } = {}) {
   if (!routes[name]) name = 'home';
   if (!S.perfil && !['entrada', 'login'].includes(name)) name = 'entrada';
-  fecharToast(); A.fecharPasseio();
+  fecharToast(); A.fecharPasseio(); if (name !== 'spinAula') { pararSpin?.(); pararSpin = null; }
   // "? Dúvida" no meio do treino: abre o tira-dúvidas sem pausar o treino nem matar o descanso (só minimiza)
   if (rotaAtual === 'sessao' && name === 'assistente' && S.sessao) { duvidaNoTreino = true; clearInterval(clockIv); minimizarDescanso(); }
   else if ((['sessao', 'fim'].includes(rotaAtual) || duvidaNoTreino) && !['sessao', 'fim'].includes(name)) { duvidaNoTreino = false; sairDaSessao(); }
@@ -186,7 +187,7 @@ routes.home = async () => {
   <button class="card row home-ia" data-go="assistente" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex-shrink:0;color:var(--accent-ink);font-size:1.25rem">💬</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('Tira-dúvidas 24h')}</b><p class="muted">${t('Pergunta sobre seu treino, execução, carga, cardio... a IA do time responde na hora.')}</p></div></button>
   <button class="card row home-time" data-go="comunidade" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:#2a2a2e;display:grid;place-items:center;flex-shrink:0;font-size:1.25rem">🔥</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('O time')}</b><p class="muted" id="timeHoje">${t('Veja quem já treinou hoje e o ranking do mês.')}</p></div></button>
   <div class="row between"><h3>${t('Programas extras')}</h3><button class="back" style="color:var(--accent)" data-go="lib">${t('ver todos')}</button></div>
-  <div class="hscroll">${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" style="background-image:url(${esc(pr.capa_url)})"><b style="font-size:${tamTitulo(pr.titulo, 126, 17)}">${esc(pr.titulo)}</b><span>${esc(subProg(pr))}</span></button>`).join('')}</div></div>`, 'home');
+  <div class="hscroll">${cardSpin(true)}${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" style="background-image:url(${esc(pr.capa_url)})"><b style="font-size:${tamTitulo(pr.titulo, 126, 17)}">${esc(pr.titulo)}</b><span>${esc(subProg(pr))}</span></button>`).join('')}</div></div>`, 'home');
   // Desafio batido: só fala dos pontos quando eles já entraram de verdade
   if (mesCount >= dmeta) rapido(db.meusPontos(p.id), []).then(log => { const el = $('#desaf'); const d = log.find(l => l.motivo === 'desafio' && (l.ref === mesLocal() || mesLocal(l.created_at) === mesLocal())); if (el && d) el.textContent = t('Batido! +{n} pts', { n: d.pontos }); });
   if ($('#desc')) $('#desc').onclick = async () => { if (await perguntar(t('Descartar treino?'), t('O que você marcou nesse treino vai ser apagado.'), t('Descartar'), t('Manter'))) { pararDescanso(); S.sessao = null; db.LS.del('sessao'); routes.home(); } };
@@ -432,7 +433,7 @@ routes.videos = async () => {
 routes.lib = async () => {
   const programas = S.programas || await rapido(db.programas(), db.LS.get('programas', []));
   render(`<div class="view fx"><div class="topbar"><h2>${t('Programas extras')}</h2></div><p class="muted">${t('Liberado pra todas as alunas, além do seu treino.')}</p>
-  <div class="grid2">${programas.map(pr => `<button class="lib" data-go="programa" data-arg="${pr.slug}" style="background-image:url(${esc(pr.capa_url)})"><b style="font-size:${tamTitulo(pr.titulo, (Math.min(innerWidth, 480) - 42) / 2 - 24, 17)}">${esc(pr.titulo)}</b><span>${esc(subProg(pr))}</span></button>`).join('')}</div></div>`, 'home');
+  <div class="grid2">${cardSpin()}${programas.map(pr => `<button class="lib" data-go="programa" data-arg="${pr.slug}" style="background-image:url(${esc(pr.capa_url)})"><b style="font-size:${tamTitulo(pr.titulo, (Math.min(innerWidth, 480) - 42) / 2 - 24, 17)}">${esc(pr.titulo)}</b><span>${esc(subProg(pr))}</span></button>`).join('')}</div></div>`, 'home');
 };
 routes.programa = async (slug) => {
   const programas = S.programas || await rapido(db.programas(), db.LS.get('programas', [])); const pr = programas.find(p => p.slug === slug); if (!pr) return go('lib');
@@ -992,6 +993,35 @@ function amigaBtn(p, soBotao = false) {
   return `<a class="btn ghost sm ${soBotao ? 'mt' : ''}" style="width:100%;border-color:var(--wa);color:var(--fg)" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 ${t('Chamar minha amiga no WhatsApp')}</a>`;
 }
 const msgLembrete = r => r === 'negado' ? t('Sem permissão. Dá pra ligar nos ajustes do celular.') : r === 'ok' ? t('Lembretes ligados ✓') : r === 'instalar' ? t('Quase lá: adiciona o app à tela inicial pra o aviso funcionar.') : t('Seu navegador não suporta. No iPhone: Compartilhar → Adicionar à Tela de Início.');
+// SPINNING GUIADO ---------------------------------------------------------------------
+const cardSpin = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="spin" style="background-image:url(icons/spin_s.jpg)"><b>${t('Spinning')}</b><span>${t('Aulas guiadas · 10 a 30 min')}</span></button>`;
+routes.spin = async (filtro) => {
+  const SP = await import('./spin.js'); if (rotaAtual !== 'spin') return;
+  render(`<div class="view fx"><div class="topbar"><button class="back" data-go="lib">‹ ${t('Programas')}</button><h2>${t('Spinning')}</h2></div>${SP.htmlLista(filtro)}</div>`, 'home');
+  $$('[data-dur]').forEach(b => b.onclick = () => go('spin', b.dataset.dur || '', { hist: false }));
+  $$('[data-spin]').forEach(b => b.onclick = e => { e.stopPropagation(); go('spinAula', b.dataset.spin); });
+};
+routes.spinAula = async (id) => {
+  const SP = await import('./spin.js'); if (rotaAtual !== 'spinAula') return;
+  const a = SP.AULAS.find(x => x.id === id); if (!a) return go('spin');
+  pararSpin?.();
+  render(`<div class="view fx spin-view"><div class="topbar"><button class="back" id="sVolta">‹ ${t('Aulas')}</button><span class="pill">${t('Spinning')} · ${t('{n} min', { n: SP.duracaoAula(a) })}</span></div>${SP.htmlPlayer(a)}</div>`);
+  const registra = seg => {
+    if (seg < 60) return false; // menos de 1 min pedalando não vira treino
+    const titulo = `Spinning · ${a.nome}`, fim = new Date().toISOString();
+    novaFila({ s: { titulo, total: 1 }, sid: null, seriesOk: true, series: [], patch: { duracao_s: seg, exercicios_feitos: 1, exercicios_total: 1, finalizada_em: fim } });
+    S.sessoes = null; return true;
+  };
+  const feitoTela = (seg, completa) => render(`<div class="view fx"><div class="card hero" style="color:#1a0d00;text-align:center"><div class="logo" style="font-size:2.4rem;color:#1a0d00">${completa ? t('Aula feita!') : t('Boa, registrado!')} 🔥</div><p style="font-weight:700;font-size:1.1rem">${t('{n} min pedalando', { n: Math.max(1, Math.round(seg / 60)) })}</p><p style="font-weight:600">${esc(t(a.nome))}</p></div>
+    <p class="muted center">${t('Bebe água e alonga a panturrilha e o quadril. Conta como treino da semana.')}</p>
+    <button class="btn" data-go="home">${t('Voltar pro início')}</button><button class="btn ghost" data-go="spin">${t('Ver outras aulas')}</button></div>`, 'home');
+  pararSpin = SP.iniciarPlayer(a, {
+    manterTela: manterTelaAcesa, soltarTela,
+    aoTerminar: ({ seg }) => { pararSpin = null; registra(seg); feitoTela(seg, true); beep('fim'); },
+    aoSair: async ({ seg }) => { pararSpin = null; if (seg >= 60 && await perguntar(t('Registrar o que você pedalou?'), t('Você pedalou {n} min dessa aula.', { n: Math.round(seg / 60) }), t('Registrar'), t('Não registrar'))) { registra(seg); return feitoTela(seg, false); } go('spin'); },
+  });
+  $('#sVolta').onclick = () => $('#sSair').click();
+};
 // O TIME (comunidade) -----------------------------------------------------------------
 routes.comunidade = async () => {
   render(`<div class="view fx"><div class="topbar"><button class="back" data-go="home">‹ ${t('Início')}</button><h2>${t('O time')}</h2></div><div class="card"><p class="muted">${t('Carregando…')}</p></div></div>`, 'home');
