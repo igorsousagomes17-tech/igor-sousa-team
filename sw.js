@@ -1,5 +1,5 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v22';
+const CACHE = 'isteam-v23';
 const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
 // Gerador de PDF, capas, fotos e fontes: não mudam com a versão do app, então ficam de uma versão pra outra
 // (antes cada atualização apagava e o PDF/capas paravam de abrir sem sinal até baixar tudo de novo)
@@ -46,7 +46,7 @@ self.addEventListener('fetch', e => {
 });
 self.addEventListener('push', e => {
   const d = e.data ? e.data.json() : { title: 'Igor Sousa Team', body: 'Bora treinar hoje?' };
-  e.waitUntil(self.registration.showNotification(d.title, { body: d.body, icon: './icons/icon-192.png', badge: './icons/icon-192.png' }));
+  e.waitUntil(self.registration.showNotification(d.title, { body: d.body, icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: d.tag || 'aviso', renotify: true, data: { url: d.url || './#home' } }));
 });
 
 // Aviso de fim do descanso com o app em segundo plano / tela apagada.

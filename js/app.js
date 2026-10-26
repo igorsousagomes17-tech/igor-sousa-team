@@ -2,7 +2,7 @@ const C0 = window.ISTEAM_CONFIG;
 const DEMO = !!(C0.DEMO || new URLSearchParams(location.search).has('demo'));
 const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
 import { beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho } from './ui.js';
-import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma } from './i18n.js';
+import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma, loc } from './i18n.js';
 import * as A from './acolhe.js';
 import * as K from './kcal.js'; // T = t, pra quando "t" já é nome de variável
 
@@ -524,7 +524,7 @@ async function iniciarSessao({ titulo, treino_id = null, programa_treino_id = nu
     const chave = 'local-' + Date.now();
     S.sessao = { id: chave, chave, local: true, dono: S.perfil.id, titulo, treino_id, programa_treino_id, express, exs, passos: montarPassos(exs), p: 0, feito: {}, sets: {}, inicio: Date.now() };
     exs.forEach((e, i) => { S.sessao.sets[i] = Array.from({ length: e.series || 1 }, () => ({ kg: '', reps: '', done: false })); });
-    salvaSessao(); go('sessao');
+    salvaSessao(); go('sessao'); setTimeout(ativarPush, 60000);
     db.iniciarSessao(S.perfil.id, { treino_id, programa_treino_id, titulo, total: exs.length }).then(sess => { const s = S.sessao; if (sess?.id && s?.chave === chave && !s.enviada) { s.id = sess.id; s.local = false; salvaSessao(); } }).catch(() => {});
     exs.forEach((e, i) => { if (piramide(e.reps)) rapido(db.ultimasSeries(S.perfil.id, e.nome), null, 8000).then(ps => { const s = S.sessao; if (ps && s?.chave === chave && s.exs[i].nome === e.nome) { s.exs[i].porSerie = ps; salvaSessao(); if (rotaAtual === 'sessao' && !document.activeElement?.matches('input')) routes.sessao(); } }); });
     Promise.all(exs.map(e => tempo(e.reps) ? null : rapido(db.ultimaCarga(S.perfil.id, e.nome), null, 8000))).then(us => {
@@ -998,6 +998,29 @@ function amigaBtn(p, soBotao = false) {
 const msgLembrete = r => r === 'negado' ? t('Sem permissão. Dá pra ligar nos ajustes do celular.') : r === 'ok' ? t('Lembretes ligados ✓') : r === 'instalar' ? t('Quase lá: adiciona o app à tela inicial pra o aviso funcionar.') : t('Seu navegador não suporta. No iPhone: Compartilhar → Adicionar à Tela de Início.');
 // " · ~210 kcal" (vazio se faltar peso)
 const kcalTxt = k => k ? ` · ~${t('{n} kcal', { n: num(k) })}` : '';
+// TREINO ESQUECIDO ABERTO ------------------------------------------------------------
+// 1h30 depois de começar sem finalizar: o servidor manda um aviso no celular (função push) e, quando ela abre o app,
+// pergunta se já terminou. Uma vez por treino. (Mais de 12 h: o boot já trata como "treino pela metade".)
+async function perguntaTreinoAberto() {
+  const s = S.sessao; if (!s || s.fimEm || s.perguntouFim || document.querySelector('#overlay .modal')) return;
+  const comecou = +String(s.chave || '').replace('local-', '') || s.inicio; const passou = Date.now() - comecou;
+  if (!(passou > 90 * 60000 && passou < 12 * 3600000)) return;
+  s.perguntouFim = true; salvaSessao();
+  const hora = new Date(comecou).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' });
+  const o = await escolher(t('Terminou o treino? 💪'), t('Seu {x} tá aberto desde as {h}. Se já acabou, finaliza pra registrar e ganhar os pontos.', { x: nomeTreino(s.titulo), h: hora }), [t('Já terminei, finalizar'), t('Ainda tô treinando')]);
+  if (o === 0) { if (!s.fimEm) { s.fimEm = s.ult || Date.now(); s.pausadoEm = null; salvaSessao(); } go('fim'); }
+}
+// Inscreve o celular pros avisos com o app fechado (só se ela já liberou notificação). 1x por dia, em silêncio.
+async function ativarPush() {
+  try {
+    if (DEMO || !('serviceWorker' in navigator) || !('PushManager' in window) || Notification.permission !== 'granted' || !S.perfil || S.perfil.role === 'admin') return;
+    const hoje = diaLocal(); if (db.LS.get('pushEm') === hoje) return;
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) { const k = await db.push.chave(); const raw = Uint8Array.from(atob(k.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((k.length + 3) % 4)), c => c.charCodeAt(0)); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw }); }
+    await db.push.inscrever(sub.toJSON()); db.LS.set('pushEm', hoje);
+  } catch { /* função ainda não publicada ou sem sinal: tenta de novo amanhã/no próximo treino */ }
+}
 // SPINNING GUIADO ---------------------------------------------------------------------
 const cardSpin = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="spin" style="background-image:url(icons/spin_s.jpg)"><b>${t('Spinning')}</b><span>${t('Aulas guiadas · 10 a 30 min')}</span></button>`;
 routes.spin = async (filtro) => {
@@ -1404,8 +1427,10 @@ async function boot() {
     else { S.sessao = null; db.LS.del('sessao'); toast(t('Treino descartado')); routes.home(); }
     return;
   }
-  if (S.sessao && ['sessao', 'fim'].includes(h)) return go(h);
+  if (S.sessao && ['sessao', 'fim'].includes(h)) { go(h); setTimeout(perguntaTreinoAberto, 900); return; }
   if (A.lembreteLigado()) A.ligarLembrete({ silencioso: true });
+  ativarPush();
+  setTimeout(perguntaTreinoAberto, 900);
   if (A.boasVindasPendente(S.perfil)) await A.boasVindas(S.perfil);
   go(['treino', 'videos', 'pontos', 'evolucao', 'perfil', 'lib', 'assistente', 'comunidade'].includes(h) ? h : 'home');
   if (!S.perfil.objetivo) anamneseForm(S.perfil, () => go('home'), 'Me conta de você');
