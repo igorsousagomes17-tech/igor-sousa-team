@@ -132,7 +132,9 @@ export async function ultimasSeries(alunaId, exercicioNome) {
     .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
     .order('sessoes(finalizada_em)', { ascending: false }).limit(12);
   if (!data?.length) return null;
-  const sid = data[0].sessao_id, por = {}; data.filter(r => r.sessao_id === sid).forEach(r => { por[r.n] = +r.kg; });
+  // Último dia em que ela fez todas as séries (dia que parou no meio não apaga a sugestão das séries 2 e 3)
+  const cont = {}; data.forEach(r => { cont[r.sessao_id] = (cont[r.sessao_id] || 0) + 1; }); const mx = Math.max(...Object.values(cont));
+  const sid = (data.find(r => cont[r.sessao_id] >= mx) || data[0]).sessao_id, por = {}; data.filter(r => r.sessao_id === sid).forEach(r => { por[r.n] = +r.kg; });
   return por;
 }
 // Guarda a última carga no celular; "ant" = a carga do treino anterior (pra mostrar ↑/↓ em Minhas cargas)

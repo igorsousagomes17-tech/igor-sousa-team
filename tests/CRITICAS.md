@@ -258,3 +258,45 @@ Pendente:
 - [x] +50, meta da semana e desafio do mês só contam treino completo (todos os exercícios obrigatórios; o HIIT opcional não precisa). Treinos de antes de 26/10 seguem a regra antiga.
 - [x] App: Início conta só completos no desafio/meta; feedback avisa antes de enviar que incompleto não pontua; card mostra "incompleto: sem pontos"; Pontos diz "Vale o treino completo". O banco recebe exercicios_feitos = exercícios completos e exercicios_total = obrigatórios.
 - [ ] Rodar supabase/migracao-011-so-treino-completo-pontua.sql (também no fim do schema.sql). Sem ela o banco ainda dá +50 pra treino incompleto (o app já mostra a regra nova).
+
+## 2026-10-26 (2ª rodada automática do dia, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~44 únicos)
+**Júlia (23, iniciante, iPhone):** Início "7 de 8" com treino completo; "indique uma amiga" prometia pontos sem caminho; aviso "Semana começa pelo A" cobrindo o Iniciar (1º toque perdido); "Lado 1 de 2" começando em 2:00; "anota a placa" no Leg Press/Smith e "halter" no Goblet com anilha; passeio da segunda apontando o treino do dia em cima da escolha da semana; aba Treino ignorando a escolha da semana; números da lista ≠ quadradinhos da sessão; HIIT sem explicação; story com metade vazia e "Treino A".
+**Carla (34, Android lento):** card/story "TREINO FEITO" em treino incompleto (+ oferta de cardio); 🔥 subindo com 1 série; descanso apontando a série errada quando marca fora de ordem; recorde e "Última" com 29 kg × 3; "Fácil? Sobe a carga" sem bater as reps; "0 de 8" no Início/Continuar; "Recomeçar do zero" oferecendo registrar; aviso cobrindo a próxima série; sugestão da pirâmide vinda de dia parcial (suspeita); voltar do Android passando por A, B…
+**Márcia (52, fonte grande):** anamnese apagando dor/peso/altura no Voltar; Evolução estourando a tela com letra grande; "+ opcional" sem ter feito o HIIT; senha de 6 espaços aceita; feedback sem dizer qual escala falta; aviso vermelho com contraste 3,3:1; fim incompleto comemorando com aviso de pontos miúdo; opções da semana sem cara de botão; abas só com ícone em 300 px; ▶ apagado nos vídeos em gravação e textos cortados.
+**Renata (29, mãe, Personalizado):** ⏸ no cronômetro + Pausar marcava a série inteira; Pausar com cronômetro rodando registrava em vez de pausar; saídas de 4,5 min contavam inteiras; celular largado com a tela acesa pra sempre; tempo na "? Dúvida" não descontado; cronômetro retomado ainda "PAUSADO" e "min fora" errado; 🔥 subindo com incompleto; "‹ Pausar" sumindo ao rolar; contagens diferentes no Início; refazer 1 foto do mês exigia as 3.
+**Bia (19, celular velho, sinal ruim):** atualização do app apagava PDF/capas guardados; "Gerando PDF…" travado pra sempre no 4G parado; página do PDF só com o HIIT; fonte do Google nunca guardada; Início baixando tudo a cada toque; splash eterno sem sinal ("só na 1ª vez"); story do resumo da semana sem +30; "internet lenta" quando é Wi-Fi sem internet; story demorando 8 s pra avisar; treino de academia pra quem treina em casa sem aviso.
+
+### Corrigido
+- [x] Pausar o treino com o cronômetro de exercício rodando ou parado no ⏸: congela onde estava (não marca a série); no Continuar ele volta parado com "Seu cronômetro ficou parado em 0:20". Cronômetro parado não perde tempo.
+- [x] "1 min cada lado": mostra o tempo do lado (1:00 → 0:00, duas vezes); retomar volta a dizer "Lado 1 de 2"; botão Pausar não quebra linha.
+- [x] Tempo fora: desconta tudo que passar de 2 min (ou do fim do descanso/cronômetro + 3 min), não só acima de 5 min; vale também na "? Dúvida" no meio do treino. Aviso: "tirei N min de tempo parado".
+- [x] 10 min sem toque e nada rodando: pausa sozinho, solta a tela e não conta o tempo parado.
+- [x] Card e story de treino incompleto: "Treino registrado" com "2/7 exercícios", sem oferta de cardio. Sequência 🔥 só conta semana com treino completo (igual meta e desafio).
+- [x] Recorde e "Última" só com série que bateu o mínimo de reps da meta; dica "Fez as 12: tenta subir" / "Mantém o peso e busca as 15" no lugar de "Fácil? Sobe a carga". Sugestão da pirâmide vem do último dia com todas as séries.
+- [x] Série marcada fora de ordem: o descanso aponta a 1ª que falta.
+- [x] Contagem igual em todo lugar ("0 de 7" no Início, "Continuar (0/7)", topo "· 1 opcional" e "+ opcional ✓" só quando fez o HIIT). Lista do treino e quadradinhos com o mesmo número (bi-set "2-3", opcional "+").
+- [x] "Recomeçar do zero" o mesmo treino só pergunta se apaga as séries (não grava treino pela metade).
+- [x] Fim incompleto: título "Treino incompleto (1 de 7)" e aviso de pontos num card; confirmação diz "sem pontos". Feedback diz qual escala falta, rola até ela e contorna.
+- [x] Anamnese guarda o que ela digitou também no Voltar, no Depois e no voltar do celular.
+- [x] Senha com espaço no começo/fim (ou só espaços) recusada; campo sem maiúscula/corretor automático.
+- [x] Indique uma amiga: texto honesto (ela fala o código pro Igor no WhatsApp e os +300 entram pra quem indicou).
+- [x] Avisos deixam o toque passar pro botão de baixo; na sessão ficam em cima. Aviso de erro com contraste 5,6:1. "Esqueci a senha" fica na tela e lembra do spam.
+- [x] Dica da 1ª vez: "Anilhas: soma das anilhas" no Leg Press/Smith/Hack e com anilha; halter só pra halter.
+- [x] Segunda-feira: passeio explica a escolha da semana; iniciar um treino pela aba Treino vira o começo da semana (com aviso); repetir treino pela metade vale também na semana escolhida.
+- [x] HIIT explicado na lista e na sessão. Voltar do Android na aba Treino sai da aba.
+- [x] Evolução/abas com letra grande em 300 px sem estourar; abas sempre com nome; opções da semana com borda e "›"; ▶ visível; cabeçalho das séries quebra em vez de cortar; títulos de programa quebram; "‹ Pausar" fixo no topo da sessão.
+- [x] Refazer 1 foto do mês quando já mandou as 3; cintura mostra a data da medida.
+- [x] SW v20: PDF, capas e fontes ficam guardados entre versões; o que a 1ª abertura baixou (demo, capas) também; fonte do Google agora entra no cache. Splash sem sinal avisa e tem "Tentar de novo".
+- [x] PDF: desiste em 25 s com aviso ("internet muito lenta"), nova tentativa funciona; HIIT opcional não ganha folha sozinho (6 → 5 páginas).
+- [x] Início e "Última" da aba Treino não baixam tudo a cada toque (no máximo a cada 3 min).
+- [x] Story do resumo da semana dá +30 (mesmo limite do dia); aviso da imagem sai na hora e os pontos depois. "Sem conexão com o servidor" no lugar de "internet lenta".
+- [x] Story: nome do grupo ("Treino A · Quadríceps"), recorde ou "Nº treino da semana" em cima, @ acima da barra do Instagram, espera a fonte da marca.
+- [x] Quem treina em casa com treino de academia: card "Chamar o Igor" pra adaptar (some no Ok).
+- [x] Menores: descanso recarregado volta em tela cheia se estava em tela cheia; dica do ⏱ não volta depois de usar; "Senha criada" curto; botões do pop-up de senha quebram linha; demo sem "· 0:32" e responder o feedback fictício funciona.
+- [x] Teste novo: `tests/rodada-2610b.mjs`.
+
+### Pendente
+- [ ] Descanso diferente por exercício ajustado pela aluna (como no Mfit): regra de treino do Igor (hoje ele define no editor; ela só tem +15s).
+- [ ] Pontos da indicação continuam manuais (o Igor dá os +300). Automático precisaria de campo "código de quem indicou" no cadastro do painel + gatilho no banco: decisão do Igor.
+- [ ] "Sou nova, quero começar" segue com o link provisório da Kiwify; treino adaptado pra casa (dado do Igor).
+- [ ] Seguem: migração 011 (só treino completo pontua, se ainda não rodou), publicar função assistente, WhatsApp, vídeos, fotos dos prêmios, drop set por queda, capa do PDF clara, i18n por idioma.

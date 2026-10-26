@@ -18,7 +18,7 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
 const estado = p => p.evaluate(() => JSON.parse(localStorage.getItem('demo:state')));
 async function login(p, email = 'ana@demo.com') { await p.goto('http://app.local/?demo'); await espera(p, 600); await p.click('text=ENTRAR'); await p.fill('#em', email); await p.press('#pw', 'Enter'); await espera(p, 1000); }
 async function abrirTreino(p, l = 'A') { await p.click('.tabs [data-go="treino"]'); await espera(p); await p.click(`[data-go="treino"][data-arg="${l}"]`); await espera(p); await p.click('#ini'); await espera(p, 700); }
-async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); if (await p.$('#toast.on')) await p.click('#toast'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900); }
+async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); if (await p.$('#toast.on')) await p.evaluate(() => document.querySelector('#toast').classList.remove('on')); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900); }
 
 // 1. Treino esquecido: "Registrar" → "Voltar pro treino" não vira 840 min e fica no dia em que ela parou; tem "Continuar"
 { const T = new Date('2026-10-23T19:00:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p); await abrirTreino(p, 'B');
@@ -77,7 +77,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
   await p.fill('.set[data-i="2"][data-k="0"] input[data-f="kg"]', '80'); await p.click('.set[data-i="2"][data-k="0"] .rest'); await espera(p, 600); if (await p.$('#rest-x')) await p.click('#rest-x');
   await encerrar(p); const st = await estado(p); const sm = st.series.filter(x => x.exercicio_nome === 'Agachamento Smith');
   ok(sm.length >= 2 && sm.every(x => x.kg != null), `séries da pirâmide salvas com kg (${sm.map(x => x.kg)})`);
-  await p.click('.tabs [data-go="home"]'); await espera(p, 700); ok(/Treino de hoje feito|ficou pela metade/i.test(await txt(p, '.view')), 'Início mostra "Treino de hoje feito ✓" (ou, se parou bem no começo, oferece repetir)'); await shot(p, 'home-feito'); await ctx.close(); }
+  await p.click('.tabs [data-go="home"]'); await espera(p, 700); ok(/Treino de hoje feito|ficou pela metade|só no começo/i.test(await txt(p, '.view')), 'Início mostra "Treino de hoje feito ✓" (ou, se parou bem no começo, oferece repetir)'); await shot(p, 'home-feito'); await ctx.close(); }
 
 // 8. Prancha (tempo): depois da série abre o descanso
 { const { ctx, p } = await nova(); await login(p); await p.click('[data-go="programa"][data-arg="abdomen"]'); await espera(p, 500); await p.click('[data-pt]'); await espera(p, 700);

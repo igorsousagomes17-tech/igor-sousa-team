@@ -34,3 +34,7 @@ botão de cardio que envia sozinho e "Começar cardio de 20 min"; cardio que con
 contagem igual no topo/pop-up/feedback, chave com séries pela metade, "40kg" e "12+4+4", "Falta enviar" no Início, treino pela metade oferece repetir,
 "Pular descanso" em destaque, lista pra ir direto e +série, foto que não abre, "i" sem vídeo, story que baixa quando o compartilhar falha, painel com ficha e contexto):
 `W=360 OUT=/tmp/shots node tests/rodada-2610.mjs`.
+
+`tests/rodada-2610b.mjs` testa a 2ª rodada de 26/10 (Pausar com cronômetro não marca a série e volta parado, "cada lado" em 1:00, card incompleto "registrado" e sem cardio, 🔥 só com treino completo,
+recorde/Última só com a meta de reps, próxima série fora de ordem, anamnese que não apaga no Voltar, senha com espaço, aviso que deixa o toque passar, recomeçar do zero, "0/7 · 1 opcional",
+voltar na aba Treino, feedback que diz o que falta, pausa sozinha com 10 min parado, Evolução com letra grande em 300 px, story do resumo +30): `W=360 OUT=/tmp/shots node tests/rodada-2610b.mjs`.

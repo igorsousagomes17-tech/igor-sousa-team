@@ -45,7 +45,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
 
 // 3. Contagem igual em todo lugar + chave com séries pela metade pergunta + "40kg" e "12+4+4"
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'B');
-  ok(/0 de 7 exercícios feitos \+ opcional/.test(await txt(p, '.view')), 'topo do treino: "0 de 7 + opcional" (igual ao feedback)');
+  ok(/0 de 7 exercícios feitos · 1 opcional/.test(await txt(p, '.view')), 'topo do treino: "0 de 7 · 1 opcional" (opcional não parece feito)');
   const kgSel = '.set[data-k="0"] input[data-f="kg"]';
   if (await p.$(kgSel)) { await p.fill(kgSel, '40kg'); ok(await p.inputValue(kgSel) === '40', '"40kg" vira 40 no campo'); }
   const rp = '.set[data-k="0"] input[data-f="reps"]'; if (await p.$(rp)) { await p.fill(rp, '12+4+4'); }
@@ -54,7 +54,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   await p.click('#m [data-o="0"]'); await espera(p, 800);
   const s = await sessao(p); ok(s.sets[0].every(x => x.done) && s.p === 1, '"Fiz todas" marca as que faltavam e segue');
   await p.click('#fim'); await espera(p); ok(/Faltam 6 exercícios/i.test(await txt(p, '#overlay')), 'pop-up conta como o topo (Faltam 6 com 1 de 7 feito)');
-  await p.click('#enc'); await espera(p, 600); ok(/Falta só enviar/i.test(await txt(p, '.view')), 'feedback pela metade diz "Falta só enviar" (não "registrado")');
+  await p.click('#enc'); await espera(p, 600); ok(/Treino incompleto \(1 de 7\)/i.test(await txt(p, '.view')) && /Só fica registrado quando você tocar em Enviar/i.test(await txt(p, '.view')), 'feedback pela metade: "Treino incompleto (1 de 7)" e avisa que falta tocar em Enviar');
   await p.click('#esf button >> nth=5'); await p.click('.tabs [data-go="home"]').catch(() => {}); await p.goto('http://app.local/?demo#home'); await espera(p, 1200);
   ok(/Falta enviar/i.test(await txt(p, '.view')), 'saiu do feedback sem enviar: Início avisa "Falta enviar"'); await shot(p, 'falta-enviar');
   await p.click('[data-go="fim"]'); await espera(p, 600); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 1000);
@@ -66,7 +66,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   ok(/Treino registrado/i.test(await txt(p, '.view')), 'card com nada completo diz "Treino registrado" (não "1 exercício")');
   ok(/incompleto: sem pontos/i.test(await txt(p, '.view')) && (await st(p)).perfil.pontos === pts0, 'só treino completo pontua: incompleto não ganha +50 (decisão do Igor)');
   await p.click('.topbar [data-go="home"]'); await espera(p, 900); const v = await txt(p, '.view');
-  ok(/ficou pela metade/i.test(v) && /TREINO B/i.test(v) && !/Treino de hoje feito/i.test(v), 'Início oferece repetir o B'); await shot(p, 'repetir-b');
+  ok(/ficou pela metade|ficou só no começo/i.test(v) && /TREINO B/i.test(v) && !/Treino de hoje feito/i.test(v), 'Início oferece repetir o B'); await shot(p, 'repetir-b');
   await p.click('#seguirMeia'); await espera(p, 600); ok(/TREINO C/i.test(await txt(p, '.view')), '"seguir pro próximo" vai pro C'); await ctx.close(); }
 
 // 5. Descanso: "Pular descanso" é o botão principal; lista de exercícios leva direto; +/− série

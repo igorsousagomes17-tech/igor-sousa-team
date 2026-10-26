@@ -39,7 +39,8 @@ export function boasVindas(perfil) {
 
 // 2) PASSEIO GUIADO ------------------------------------------------------------------------
 const PASSOS = [
-  ['#semana, .card.hero', 'Treino de hoje', 'Aqui aparece o treino do dia. Toca em abrir e é só seguir: o app mostra o exercício, a sua última carga e o cronômetro do descanso.'],
+  ['#semana', 'Começo da semana', 'Toda segunda você escolhe por qual treino começar a semana. Na dúvida, toca em "seguir a ordem normal" e eu mostro o treino do dia.'],
+  ['.card.hero', 'Treino de hoje', 'Aqui aparece o treino do dia. Toca em abrir e é só seguir: o app mostra o exercício, a sua última carga e o cronômetro do descanso.'],
   ['.home-ia', 'Tira-dúvidas 24h', 'Ficou com dúvida no meio do treino? Pergunta aqui. A IA do time responde na hora, com base no seu treino.'],
   ['.home-time', 'O time', 'Você não treina sozinha: aqui você vê quem do time já treinou hoje e o ranking do mês.'],
   ['.tabs [data-go="perfil"]', 'Perfil', 'Pontos, evolução e prêmios ficam nas abas aqui embaixo. No Perfil tem sua anamnese, as respostas do Igor e este passeio, se quiser ver de novo.'],

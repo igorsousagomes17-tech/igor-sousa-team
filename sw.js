@@ -1,6 +1,10 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v19';
+const CACHE = 'isteam-v20';
 const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
+// Gerador de PDF, capas, fotos e fontes: não mudam com a versão do app, então ficam de uma versão pra outra
+// (antes cada atualização apagava e o PDF/capas paravam de abrir sem sinal até baixar tudo de novo)
+const EXTRAS = 'isteam-extras';
+const ehExtra = u => /\/js\/vendor\/|\/icons\/|\.(png|jpe?g|webp|gif|svg|woff2?)$/i.test(u.pathname) || /fonts\.(googleapis|gstatic)\.com$/.test(u.hostname);
 // Só o que a aluna usa ao abrir (painel do Igor, demo e fotos-guia entram no cache no 1º uso).
 const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/acolhe.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/igor_s.jpg']; // capas dos programas entram no cache no 1º uso
@@ -11,7 +15,19 @@ self.addEventListener('install', e => {
   e.waitUntil(caches.keys().then(ks => caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: ks.length ? 'reload' : 'force-cache' }))))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE && k !== DADOS).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil((async () => {
+    const keys = (await caches.keys()).filter(k => k !== CACHE && k !== DADOS && k !== EXTRAS), novo = await caches.open(CACHE), ex = await caches.open(EXTRAS);
+    const shell = new Set(SHELL.map(u => new URL(u, self.location).href));
+    for (const k of keys) { // o que ela já tinha usado (PDF, demo, capas) continua guardado na versão nova
+      const c = await caches.open(k);
+      for (const req of await c.keys()) {
+        if (shell.has(req.url)) continue; const u = new URL(req.url);
+        try { if (ehExtra(u)) { if (!(await ex.match(req))) { const r = await c.match(req); if (r) await ex.put(req, r); } } else if (u.origin === location.origin) { const r = await fetch(req, { cache: 'reload' }); if (r.ok) await novo.put(req, r); } } catch {}
+      }
+      await caches.delete(k);
+    }
+    await self.clients.claim();
+  })());
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
@@ -23,7 +39,7 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request, { ignoreSearch: e.request.mode === 'navigate' }).then(cached => cached || fetch(e.request).then(res => {
       // arquivos do app (inclui o gerador de PDF, guardado no 1º uso) e as fontes: ficam pra abrir sem sinal
-      if (res.ok && (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname))) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(e.request, cp)); }
+      if (res.ok && (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname))) { const cp = res.clone(); caches.open(ehExtra(url) ? EXTRAS : CACHE).then(c => c.put(e.request, cp)); }
       return res;
     }))
   );
@@ -40,6 +56,8 @@ let agendado = null;
 self.addEventListener('message', e => {
   const d = e.data || {};
   if (d.tipo === 'lembreteDados') { e.waitUntil(lerDados().then(old => gravarDados({ ...old, ultimo: d.ultimo, nome: d.nome, proximo: d.proximo, textos: d.textos }))); return; }
+  // A página manda o que já baixou antes do SW assumir (1ª abertura: demo, capas): guarda sem baixar de novo
+  if (d.tipo === 'guardar') { e.waitUntil(Promise.all((d.urls || []).slice(0, 60).map(async x => { try { const u = new URL(x); if (u.origin !== location.origin && !/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return; if (await caches.match(x, { ignoreSearch: false })) return; const r = await fetch(x, { cache: 'force-cache', mode: u.origin === location.origin ? 'same-origin' : 'cors' }); if (r.ok) await (await caches.open(ehExtra(u) ? EXTRAS : CACHE)).put(x, r); } catch {} }))); return; }
   if (d.tipo === 'cancelar') { if (agendado) { clearTimeout(agendado.t); agendado.ok(); agendado = null; } return; }
   if (d.tipo !== 'agendar') return;
   if (agendado) { clearTimeout(agendado.t); agendado.ok(); }

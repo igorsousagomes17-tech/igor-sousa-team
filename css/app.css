@@ -42,7 +42,7 @@ a.btn{text-decoration:none;text-align:center}
 .row{display:flex;align-items:center;gap:10px}
 .between{justify-content:space-between}
 .wrap{flex-wrap:wrap}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .pill{font-size:0.8125rem;font-weight:600;letter-spacing:.6px;text-transform:uppercase;padding:5px 9px;border-radius:999px;background:#2a2a2e;color:var(--muted);border:0;white-space:nowrap}
 .pill.on{background:var(--accent);color:var(--accent-ink)}
 .pill.warn{color:var(--warn)}
@@ -63,7 +63,7 @@ label.l{display:block;font-size:0.875rem;font-weight:600;letter-spacing:.6px;tex
 .ex .t b{display:block;font-weight:600;font-size:0.9375rem}
 .ex .t span{font-size:0.8125rem;color:var(--muted)}
 .play{width:44px;height:44px;border-radius:50%;background:var(--accent);border:0;display:grid;place-items:center;flex-shrink:0}
-.play svg{width:14px;height:14px;fill:var(--accent-ink);margin-left:2px}
+.play{color:var(--accent-ink)}.play svg{width:14px;height:14px;fill:currentColor;margin-left:2px}
 .sw{width:72px;height:44px;border-radius:999px;background:#2a2a2e;position:relative;flex-shrink:0;transition:background .2s;border:0}
 .sw::after{content:"";position:absolute;top:5px;left:5px;width:34px;height:34px;border-radius:50%;background:#9a968f;transition:left .2s,background .2s}
 .sw.on{background:var(--accent)}
@@ -115,7 +115,7 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .modal .area iframe,.modal .area video{width:100%;height:100%;border:0}
 .toast{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:#0b0b0c;border-radius:12px;padding:13px 16px;font-size:0.9375rem;line-height:1.35;font-weight:600;display:none;z-index:12;max-width:448px;margin:0 auto;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 .toast.on{display:block}
-.toast.err{background:var(--bad);color:#fff}
+.toast.err{background:#c62828;color:#fff}.toast:not(.fixo){pointer-events:none} /* toque passa pro botão de baixo (Iniciar, próxima série) */
 .r{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:0.8125rem}
 .r:last-child{border-bottom:0}
 .r b{display:block;font-weight:600}
@@ -216,7 +216,7 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .lib.mini{min-width:150px}
 /* Escolha do treino que abre a semana */
 .semopts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-.semop{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:#1c1c1f;color:var(--fg);text-align:left;font:inherit}
+.semop{display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 12px;border-radius:14px;border:1.5px solid #5c5c63;background:#232327;color:var(--fg);text-align:left;font:inherit}
 .semop b{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex-shrink:0;font-size:0.9375rem}
 .semop span{font-size:0.875rem;font-weight:600;line-height:1.2}
 .semop:active{border-color:var(--accent)}
@@ -234,7 +234,7 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .chat-top{position:sticky;top:0;z-index:3;background:var(--bg);margin:calc(-12px - var(--sat)) -16px 0;padding:calc(6px + var(--sat)) 16px 6px}
 .chatbar textarea{max-height:40vh}
 .pontos-premios .lib{aspect-ratio:auto;min-height:140px;justify-content:flex-end}
-@media (max-width:300px){.tabs .tab:not(.on) span{display:none}.tabs .tab svg{width:24px;height:24px}.tabs .tab{min-height:48px;justify-content:center}}
+@media (max-width:300px){.tabs .tab span{font-size:clamp(10px,3.5vw,.8125rem);letter-spacing:-.2px}.tabs .tab{min-height:48px;justify-content:center;padding:0 1px}} /* nome embaixo de todas (estrela sozinha não diz "Pontos") */
 
 /* Lista dos exercícios no topo do treino: toca e vai direto (aparelho ocupado) */
 .passos{display:flex;gap:6px;overflow-x:auto;margin:10px -4px 0;padding:2px 4px;scrollbar-width:none}.passos::-webkit-scrollbar{display:none}
@@ -301,3 +301,18 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .rk b{flex:1;min-width:0;font-size:0.9375rem;overflow-wrap:anywhere}.rk .n{color:var(--muted);font-size:0.8125rem;white-space:nowrap}
 .av{width:36px;height:36px;border-radius:50%;background:#2a2a2e;color:var(--accent);display:grid;place-items:center;font-weight:800;font-size:0.8125rem;flex-shrink:0}
 .fd{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:0.9375rem}.fd:last-child{border-bottom:0}
+
+/* rodada 26/10 (2ª): legibilidade com letra grande e sessão com criança chamando */
+.card .big{font-size:clamp(1.75rem,9vw,2.75rem);overflow-wrap:anywhere}
+.big small{white-space:normal}
+.set .h{min-width:0;overflow-wrap:anywhere;line-height:1.1}
+.scale.falta{outline:2px solid var(--accent);outline-offset:4px;border-radius:10px}
+#rest-pausa{white-space:nowrap}
+.semop::after{content:"›";margin-left:auto;color:var(--muted);font-size:1.25rem;line-height:1}
+.sessao>.topbar{position:sticky;top:0;z-index:6;background:var(--bg);margin:calc(-12px - var(--sat)) -16px 0;padding:calc(8px + var(--sat)) 16px 8px}
+.pills-wrap,.row.fotos{flex-wrap:wrap}
+.lib.mini b{overflow-wrap:anywhere;hyphens:auto}
+.grid2>.field{display:flex;flex-direction:column;justify-content:flex-end}
+.hiit-explica{color:var(--fg)}
+.passos button{flex:0 0 auto;min-width:44px;padding:0 6px}
+#ang{flex-wrap:wrap}

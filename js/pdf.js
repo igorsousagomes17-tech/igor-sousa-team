@@ -8,11 +8,16 @@ const T = (pt, v) => tl(LP(), pt, v);
 const JSPDF = new URL('./vendor/jspdf.umd.min.js', import.meta.url).href;
 const LARANJA = [255, 106, 0], PRETO = [11, 11, 12], CINZA = [110, 110, 115], CLARO = [245, 245, 245];
 
+let tentativas = 0;
 function carregar() {
   if (window.jspdf) return Promise.resolve(window.jspdf);
+  // 4G parado (conecta e não chega nada): desiste em 25 s em vez de deixar "Gerando PDF…" pra sempre; a nova tentativa vai com outro endereço
+  document.querySelectorAll('script[data-jspdf]').forEach(x => x.remove());
   return new Promise((ok, erro) => {
-    const s = document.createElement('script'); s.src = JSPDF;
-    s.onload = () => ok(window.jspdf); s.onerror = () => erro(new Error('Sem internet pra gerar o PDF agora. Depois da 1ª vez ele funciona sem sinal.')) /* a tela traduz */;
+    const s = document.createElement('script'); s.dataset.jspdf = '1'; s.src = JSPDF + (tentativas++ ? '?r=' + Date.now() : '');
+    const falha = () => { clearTimeout(lim); s.remove(); erro(new Error('lento')); };
+    const lim = setTimeout(falha, 25000);
+    s.onload = () => { clearTimeout(lim); window.jspdf ? ok(window.jspdf) : falha(); }; s.onerror = falha;
     document.head.appendChild(s);
   });
 }
@@ -88,12 +93,18 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(limpa(T('~{d} min  ·  {n} exercícios', { n: t.exercicios.length, d: t.duracao_min || 40 })), W - M, 31, { align: 'right' });
     let y = 52;
     const exs = [...t.exercicios].sort((a, b) => a.ordem - b.ordem);
+    // Só o último (HIIT opcional) não cabe na folha: aperta o espaço entre os exercícios e tira a dica dele (não gasta uma folha só com ele)
+    const altura = (e, semDica) => { const d = e.dica && !semDica ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16).length : 0, an = !/hiit|cardio/i.test(e.nome) && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || ''); return 13 + d * 4.4 + (e.alternativa && !semDica ? 5 : 0) + (an ? 6 : 0); };
+    const ultOpc = exs.length > 1 && /hiit|cardio|opcional/i.test(exs[exs.length - 1].nome);
+    const somaAntes = exs.slice(0, -1).reduce((a, e) => a + altura(e) + 3, 52);
+    const aperta = ultOpc && somaAntes + altura(exs[exs.length - 1]) > H - 16 && somaAntes <= H - 16 && exs.slice(0, -1).reduce((a, e) => a + altura(e) + 1, 52) + altura(exs[exs.length - 1], true) <= H - 16;
+    const gap = aperta ? 1 : 3;
     exs.forEach((e, idx) => {
       const hiit = /hiit|cardio/i.test(e.nome);
-      let dica = e.dica ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16) : [];
+      let dica = e.dica && !(aperta && idx === exs.length - 1) ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16) : [];
       // Último item curto (HIIT opcional) que não cabe: encolhe a dica pra 1 linha em vez de gastar uma folha só com ele
       if (idx === exs.length - 1 && (hiit || /opcional/i.test(e.nome)) && y + 13 + dica.length * 4.4 > H - 16 && y + 17.4 <= H - 16) dica = dica.length ? [doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16)[0] + (dica.length > 1 ? '…' : '')] : [];
-      const alt = e.alternativa ? limpa(T('Ou substitua por: {x}', { x: e.alternativa })) : '';
+      const alt = e.alternativa && !(aperta && idx === exs.length - 1) ? limpa(T('Ou substitua por: {x}', { x: e.alternativa })) : '';
       const anota = !hiit && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || '');
       const h = 13 + dica.length * 4.4 + (alt ? 5 : 0) + (anota ? 6 : 0);
       if (y + h > H - 16) { rodape(); doc.addPage(); y = 20; // página nova repete de qual treino é
@@ -113,7 +124,7 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
       if (dica.length) { doc.setTextColor(...CINZA); doc.setFontSize(9.5); doc.text(dica, M + 12, yy); yy += dica.length * 4.4; }
       if (alt) { doc.setTextColor(140, 140, 145); doc.setFontSize(8.5); doc.setFont('helvetica', 'italic'); doc.text(alt, M + 12, yy); doc.setFont('helvetica', 'normal'); yy += 5; }
       if (anota) { doc.setTextColor(...CINZA); doc.setFontSize(8.5); doc.text(limpa(T('Carga (kg):')) + '   ' + Array.from({ length: Math.min(e.series || 3, 5) }, () => '______').join('   '), M + 12, yy + 1); }
-      y += h + 3;
+      y += h + gap;
     });
     rodape();
   });

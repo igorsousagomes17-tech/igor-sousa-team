@@ -36,7 +36,10 @@ const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env
 
 // 2. Botão de cardio do fim do treino: envia sozinho e oferece "Começar cardio de 20 min" com cronômetro
 { const T = new Date('2026-10-25T09:00:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p); await abrirTreino(p, 'C');
-  await p.click('#pular'); await espera(p, 300); await p.click('#sw'); await espera(p, 400); await p.click('#q-s'); await espera(p, 700); await terminar(p); // exercício inteiro feito (com nada completo o card não oferece cardio)
+  // treino completo (sem o HIIT opcional): só treino completo oferece o cardio de 20 min no card
+  for (let k = 0; k < 14; k++) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); if (!(await p.$('#sw'))) break; if (/opcional/i.test(await txt(p, '.bloco h1'))) { await p.click('#fin'); await espera(p, 600); break; } await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 800); } }
+  if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); }
+  await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
   await p.click('[data-go="assistente"]:has-text("cardio")'); await espera(p, 1800);
   const m = await txt(p, '.view'); ok(/cardio de 20 minutos pra fazer agora/.test(m) && /30s forte/.test(m), 'botão do card envia sozinho e a resposta traz o cardio');
   ok(!!(await p.$('#cardioJa')), 'resposta tem "▶ Começar cardio de 20 min"');
