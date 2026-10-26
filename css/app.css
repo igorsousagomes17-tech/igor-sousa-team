@@ -316,3 +316,9 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .hiit-explica{color:var(--fg)}
 .passos button{flex:0 0 auto;min-width:44px;padding:0 6px}
 #ang{flex-wrap:wrap}
+
+/* Completo / Express */
+.versao{display:flex;gap:6px;margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:4px}
+.versao button{flex:1;min-height:44px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-weight:700;font-size:0.9375rem}
+.versao button small{font-weight:500;font-size:0.75rem;opacity:.85}
+.versao button.on{background:var(--accent);color:var(--accent-ink)}

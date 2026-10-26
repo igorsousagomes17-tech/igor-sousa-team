@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Time IS — Treino feminino com o Igor Sousa</title>
+<meta name="description" content="Treino feminino com método, no seu celular. Treino novo todo mês, casa ou academia, versão express de 25 min, vídeo de cada exercício e tira-dúvidas 24h. Com o personal Igor Sousa.">
+<meta property="og:title" content="Time IS — Treino feminino com o Igor Sousa">
+<meta property="og:description" content="Treino novo todo mês no app, casa ou academia, versão express, tira-dúvidas 24h e um time treinando junto com você.">
+<meta property="og:image" content="img/app-home.webp">
+<meta name="theme-color" content="#0b0b0c">
+<link rel="icon" href="../icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b0c;--panel:#151517;--panel2:#1e1e21;--line:#2a2a2e;--fg:#f4f2ee;--muted:#a8a49c;--accent:#ff6a00;--accent2:#ff8a33;--ink:#1a0d00;--wa:#25D366;
+  --disp:"Barlow Condensed",Impact,"Arial Narrow",sans-serif;--body:"Barlow","Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.5;-webkit-text-size-adjust:100%}
+img{max-width:100%;display:block}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+h1,h2,h3{font-family:var(--disp);text-transform:uppercase;line-height:.95;margin:0;letter-spacing:.3px}
+h1{font-size:clamp(2.75rem,10vw,4.75rem)}h2{font-size:clamp(2.1rem,7vw,3.25rem)}h3{font-size:1.5rem}
+h1 b,h2 b{color:var(--accent)}
+p{margin:0}
+.muted{color:var(--muted)}
+.tag{display:inline-block;font-family:var(--disp);font-size:.95rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 28px;border-radius:16px;background:var(--accent);color:var(--ink);font-family:var(--disp);font-size:clamp(1.05rem,4.6vw,1.35rem);letter-spacing:.5px;text-transform:uppercase;text-decoration:none;font-weight:800;box-shadow:0 10px 30px rgba(255,106,0,.25);transition:transform .15s}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:transparent;color:var(--fg);border:2px solid var(--line);box-shadow:none}
+.btn svg{width:22px;height:22px}
+section{padding:72px 0}
+/* topo */
+.bar{position:sticky;top:0;z-index:5;background:rgba(11,11,12,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{white-space:nowrap;font-family:var(--disp);font-weight:800;font-size:1.35rem;letter-spacing:.5px}.logo b{color:var(--accent)}
+.bar a.mini{white-space:nowrap;font-family:var(--disp);font-size:1rem;text-transform:uppercase;text-decoration:none;background:var(--accent);color:var(--ink);padding:8px 14px;border-radius:10px;font-weight:800}
+/* hero */
+.hero{padding:40px 0 56px;background:radial-gradient(90% 60% at 85% 0%,rgba(255,106,0,.28),transparent 60%)}
+.hero .wrap{display:grid;gap:36px;align-items:center}
+.hero p.lead{font-size:1.15rem;margin:18px 0 26px;max-width:34em}
+.hero .sub{font-size:.95rem;margin-top:12px}
+.igor{position:relative;max-width:360px;margin:0 auto}
+.igor img{border-radius:28px;border:3px solid var(--accent);aspect-ratio:1/1;object-fit:cover;width:100%}
+.selo{position:absolute;left:-10px;bottom:18px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 14px;font-weight:600;font-size:.9rem;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.selo b{display:block;font-family:var(--disp);font-size:1.6rem;color:var(--accent);line-height:1}
+@media(min-width:860px){.hero .wrap{grid-template-columns:1.2fr .8fr}.hero{padding:72px 0 80px}}
+/* faixa */
+.faixa{overflow:hidden;border-block:1px solid var(--line);background:var(--panel);padding:14px 0}
+.faixa div{display:flex;gap:36px;width:max-content;animation:roda 28s linear infinite;font-family:var(--disp);text-transform:uppercase;font-size:1.15rem;letter-spacing:.6px}
+.faixa span::before{content:"●";color:var(--accent);margin-right:12px;font-size:.7rem;vertical-align:.2em}
+@keyframes roda{to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.faixa div{animation:none;flex-wrap:wrap;width:auto;padding:0 20px;gap:10px 24px}}
+/* passos */
+.passos{display:grid;gap:14px;margin-top:28px}
+.passo{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px;display:flex;gap:16px}
+.passo .n{flex-shrink:0;width:44px;height:44px;border-radius:50%;background:var(--accent);color:var(--ink);display:grid;place-items:center;font-family:var(--disp);font-size:1.5rem;font-weight:800}
+.passo b{display:block;font-size:1.1rem;margin-bottom:4px}
+@media(min-width:860px){.passos{grid-template-columns:repeat(3,1fr)}.passo{flex-direction:column}}
+.destaque{margin-top:22px;border-left:4px solid var(--accent);padding:6px 0 6px 16px;font-size:1.15rem;font-weight:600}
+/* app */
+.telas{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 20px 20px;margin:28px -20px 0;scrollbar-width:none}
+.telas::-webkit-scrollbar{display:none}
+.tela{flex:0 0 220px;scroll-snap-align:center}
+.tela .cel{border-radius:30px;border:6px solid #26262a;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.5);background:#000}
+.tela p{margin-top:12px;font-weight:600;font-size:.95rem}.tela p span{display:block;font-weight:400;color:var(--muted);font-size:.875rem}
+@media(min-width:1000px){.telas{justify-content:center;overflow:visible}}
+/* diferenciais */
+.dif{display:grid;gap:12px;margin-top:28px}
+.d{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 18px 18px 64px;position:relative}
+.d i{position:absolute;left:16px;top:16px;width:36px;height:36px;border-radius:10px;background:rgba(255,106,0,.14);display:grid;place-items:center;font-style:normal;font-size:1.2rem}
+.d b{display:block;font-size:1.05rem}
+@media(min-width:760px){.dif{grid-template-columns:1fr 1fr}}
+/* muda */
+.muda{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:12px}
+.muda li{padding-left:34px;position:relative;font-size:1.08rem}
+.muda li::before{content:"✓";position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--ink);font-weight:800;display:grid;place-items:center;font-size:.85rem}
+.muda strong{color:var(--accent)}
+/* sobre */
+.sobre .wrap{display:grid;gap:28px;align-items:center}
+.sobre img{border-radius:24px;max-height:520px;object-fit:cover;width:100%}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px}
+.nums div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.nums b{display:block;font-family:var(--disp);font-size:2rem;color:var(--accent);line-height:1}
+.nums span{font-size:.8rem;color:var(--muted)}
+@media(min-width:860px){.sobre .wrap{grid-template-columns:.8fr 1.2fr}}
+/* planos */
+.planos{display:grid;gap:16px;margin-top:28px}
+.plano{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.plano.top{border:2px solid var(--accent);background:linear-gradient(160deg,#24140a,var(--panel) 55%)}
+.plano .rot{align-self:flex-start;background:var(--accent);color:var(--ink);font-family:var(--disp);text-transform:uppercase;padding:4px 10px;border-radius:8px;font-size:.95rem;font-weight:800}
+.preco{font-family:var(--disp);font-size:3.25rem;line-height:1;font-weight:800}.preco small{font-size:1.1rem;color:var(--muted);font-family:var(--body);font-weight:500}
+.plano ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.plano li{padding-left:26px;position:relative;font-size:.98rem}.plano li::before{content:"✓";position:absolute;left:0;color:var(--accent);font-weight:800}
+.plano .btn{width:100%;margin-top:auto}
+@media(min-width:860px){.planos{grid-template-columns:1fr 1fr}}
+.seguro{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:center;margin-top:20px;color:var(--muted);font-size:.95rem}
+.seguro span::before{content:"✓ ";color:var(--accent);font-weight:800}
+/* garantia */
+.garantia{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:26px;display:grid;gap:16px;align-items:center}
+.garantia .selo7{width:132px;height:132px;font-size:.95rem;border-radius:50%;border:3px dashed var(--accent);display:grid;place-items:center;text-align:center;font-family:var(--disp);text-transform:uppercase;line-height:.9;margin:0 auto}
+.garantia .selo7 b{display:block;font-size:2.6rem;color:var(--accent)}
+@media(min-width:760px){.garantia{grid-template-columns:auto 1fr}}
+/* faq */
+details{background:var(--panel);border:1px solid var(--line);border-radius:16px;margin-top:10px}
+summary{cursor:pointer;list-style:none;padding:18px 52px 18px 18px;font-weight:700;font-size:1.05rem;position:relative;min-height:56px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:1.6rem;font-weight:400}
+details[open] summary::after{content:"–"}
+details p{padding:0 18px 18px;color:var(--muted)}
+.final{text-align:center;background:radial-gradient(80% 70% at 50% 100%,rgba(255,106,0,.25),transparent 70%)}
+.final p{max-width:36em;margin:16px auto 26px}
+footer{border-top:1px solid var(--line);padding:28px 0 calc(110px + env(safe-area-inset-bottom));color:var(--muted);font-size:.9rem;text-align:center}
+footer a{color:var(--fg)}
+/* botão fixo no celular */
+.fixo{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:6;display:flex;transition:transform .25s,opacity .25s}
+.fixo .btn{width:100%}
+.fixo.esconde{transform:translateY(140%);opacity:0;pointer-events:none}
+@media(min-width:860px){.fixo{display:none}footer{padding-bottom:28px}}
+:focus-visible{outline:3px solid var(--accent2);outline-offset:3px}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap"><div class="logo">IGOR SOUSA <b>TEAM</b></div><a class="mini wa-link" href="#planos">Quero entrar</a></div></header>
+
+<main>
+<section class="hero" id="topo"><div class="wrap">
+  <div>
+    <span class="tag">Treino feminino · Casa ou academia</span>
+    <h1>Treino com método,<br><b>no seu celular.</b></h1>
+    <p class="lead">Sou o <strong>Igor Sousa</strong>, personal trainer. Monto o seu treino todo mês e o app te guia em cada série: exercício, carga, cronômetro do descanso e vídeo. Você só segue.</p>
+    <a class="btn wa-link" href="#planos" data-msg="Oi Igor! Vim pelo site e quero entrar no Time IS 🧡"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5-4.5-.2-.2-1.2-1.6-1.2-3s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .6l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.7-.1l1-1.2c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.5.3.1.2.1.7-.1 1.4z"/></svg>Quero entrar no time</a>
+    <p class="sub muted">Treino novo todo mês · cancele quando quiser · 7 dias de garantia</p>
+  </div>
+  <div class="igor"><img src="img/igor.webp" alt="Igor Sousa, personal trainer" width="640" height="640"><div class="selo"><b>+1.000</b>pessoas já treinaram comigo</div></div>
+</div></section>
+
+<div class="faixa" aria-hidden="true"><div>
+  <span>Treino novo todo mês</span><span>Casa ou academia</span><span>Versão express de 25 min</span><span>Vídeo de cada exercício</span><span>Tira-dúvidas 24h</span><span>Garantia de 7 dias</span>
+  <span>Treino novo todo mês</span><span>Casa ou academia</span><span>Versão express de 25 min</span><span>Vídeo de cada exercício</span><span>Tira-dúvidas 24h</span><span>Garantia de 7 dias</span>
+</div></div>
+
+<section id="como"><div class="wrap">
+  <span class="tag">Como funciona</span>
+  <h2>Simples assim. <b>3 passos.</b></h2>
+  <div class="passos">
+    <div class="passo"><div class="n">1</div><div><b>Você me conta de você</b><p class="muted">Uma anamnese rápida no app: objetivo, rotina, quantos dias treina, dores e limitações.</p></div></div>
+    <div class="passo"><div class="n">2</div><div><b>Recebe o treino do mês</b><p class="muted">Pra academia ou pra casa, no seu nível. Todo mês tem treino novo, com progressão.</p></div></div>
+    <div class="passo"><div class="n">3</div><div><b>Treina com o app te guiando</b><p class="muted">Vídeo de cada exercício, sua última carga, cronômetro do descanso e o feedback que chega direto pra mim.</p></div></div>
+  </div>
+  <p class="destaque">Os treinos são por letra, não por dia. Pulou um dia? É só continuar de onde parou: faltar não vira desistir.</p>
+</div></section>
+
+<section id="app" style="background:var(--panel);border-block:1px solid var(--line)"><div class="wrap">
+  <span class="tag">O app do time</span>
+  <h2>Chega de ficha de papel <b>e de treinar perdida.</b></h2>
+  <div class="telas">
+    <div class="tela"><div class="cel"><img src="img/app-home.webp" alt="Tela inicial do app com o treino de hoje" loading="lazy" width="585" height="1266"></div><p>Treino de hoje<span>Abre e já sabe o que fazer.</span></p></div>
+    <div class="tela"><div class="cel"><img src="img/app-sessao.webp" alt="Tela do treino com séries, cargas e cronômetro" loading="lazy" width="585" height="1266"></div><p>Série por série<span>Carga anotada e descanso cronometrado.</span></p></div>
+    <div class="tela"><div class="cel"><img src="img/app-resumo.webp" alt="Resumo da semana com treinos e cargas que subiram" loading="lazy" width="585" height="1266"></div><p>Resumo da semana<span>Pra ver (e postar) a sua evolução.</span></p></div>
+    <div class="tela"><div class="cel"><img src="img/app-time.webp" alt="Ranking do mês do time" loading="lazy" width="585" height="1266"></div><p>O time<span>Você não treina sozinha.</span></p></div>
+  </div>
+</div></section>
+
+<section id="diferenciais"><div class="wrap">
+  <span class="tag">O que você tem no Time IS</span>
+  <h2>Tudo que você precisa <b>pra não parar.</b></h2>
+  <div class="dif">
+    <div class="d"><i>📅</i><b>Treino novo todo mês</b><p class="muted">Montado por mim, com progressão pra você sempre evoluir.</p></div>
+    <div class="d"><i>🏠</i><b>Casa ou academia</b><p class="muted">Os dois inclusos. Viajou? Usa o de casa e volta pro da academia depois.</p></div>
+    <div class="d"><i>⚡</i><b>Versão express de 25 min</b><p class="muted">Dia corrido? Mesmos exercícios, menos séries. Sem culpa.</p></div>
+    <div class="d"><i>▶️</i><b>Vídeo de cada exercício</b><p class="muted">Gravado por mim, curtinho, mostrando a execução certa.</p></div>
+    <div class="d"><i>💬</i><b>Tira-dúvidas 24h</b><p class="muted">Dúvida no meio do treino? A IA do time responde na hora, com base no seu treino.</p></div>
+    <div class="d"><i>📈</i><b>Sua carga guardada</b><p class="muted">O app lembra quanto você pegou em cada série, mesmo quando o treino muda.</p></div>
+    <div class="d"><i>🏆</i><b>Pontos e prêmios</b><p class="muted">Cada treino vale pontos pra trocar por prêmios do time.</p></div>
+    <div class="d"><i>🧡</i><b>Eu de perto</b><p class="muted">Seu feedback de cada treino chega pra mim, e eu te respondo no app.</p></div>
+  </div>
+</div></section>
+
+<section id="muda" style="background:var(--panel);border-block:1px solid var(--line)"><div class="wrap">
+  <span class="tag">Sua transformação</span>
+  <h2>O que vai mudar <b>de verdade.</b></h2>
+  <ul class="muda">
+    <li>Você vai <strong>parar de recomeçar do zero</strong> toda segunda-feira.</li>
+    <li>Vai entrar na academia <strong>sabendo exatamente o que fazer</strong>, sem ficar perdida.</li>
+    <li>Vai ver a <strong>carga subindo</strong> mês a mês, registrada no app.</li>
+    <li>Vai manter o ritmo <strong>mesmo nas semanas corridas</strong>, com a versão express.</li>
+    <li>Vai ter <strong>um time treinando junto</strong> e alguém de verdade acompanhando você.</li>
+  </ul>
+</div></section>
+
+<section class="sobre" id="sobre"><div class="wrap">
+  <img src="img/igor-corrida.webp" alt="Igor Sousa correndo" loading="lazy" width="867" height="1200">
+  <div>
+    <span class="tag">Quem vai te treinar</span>
+    <h2>Prazer, <b>Igor Sousa.</b></h2>
+    <p class="mt" style="margin-top:16px">Sou personal trainer em Anápolis há quase 8 anos. Escolhi essa profissão por paixão: treinar e ver a evolução das pessoas. Hoje treino alunas do Brasil, dos Estados Unidos, da Irlanda e da Austrália, e criei o app do time pra estar perto de cada uma, em cada treino.</p>
+    <div class="nums"><div><b>+1.000</b><span>pessoas treinadas</span></div><div><b>~8</b><span>anos de profissão</span></div><div><b>4</b><span>países</span></div></div>
+  </div>
+</div></section>
+
+<section id="planos" style="background:var(--panel);border-block:1px solid var(--line)"><div class="wrap">
+  <span class="tag">Comece hoje</span>
+  <h2>Escolha como <b>você quer começar.</b></h2>
+  <div class="planos">
+    <div class="plano">
+      <span class="rot">Time IS</span>
+      <p class="muted">O treino mensal do time no app.</p>
+      <div class="preco">R$ 29,90<small> /mês</small></div>
+      <ul><li>Treino novo todo mês, montado pelo Igor</li><li>Casa e academia, sem pagar a mais</li><li>Versões completa e express</li><li>Vídeo de todos os exercícios</li><li>Tira-dúvidas 24h no app</li><li>Pontos, prêmios e o ranking do time</li></ul>
+      <a class="btn wa-link" href="#" data-msg="Oi Igor! Vim pelo site e quero o plano Time IS (R$ 29,90) 🧡">Quero o Time IS</a>
+    </div>
+    <div class="plano top">
+      <span class="rot">Personalizado</span>
+      <p class="muted">Treino 100% seu, comigo de perto.</p>
+      <div class="preco">R$ 49,90<small> no 1º mês</small></div>
+      <p class="muted" style="margin-top:-8px">Depois, R$ 99,90 por mês.</p>
+      <ul><li>Tudo do Time IS</li><li>Treino montado só pra você, a partir da sua anamnese</li><li>Ajuste todo mês pelo seu feedback</li><li>Suporte comigo no WhatsApp</li></ul>
+      <a class="btn wa-link" href="#" data-msg="Oi Igor! Vim pelo site e quero o plano Personalizado 🧡">Quero o Personalizado</a>
+    </div>
+  </div>
+  <div class="seguro"><span>7 dias de garantia</span><span>Cancele quando quiser</span><span>Cartão ou Pix</span></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="garantia"><div class="selo7"><div><b>7</b>dias<br>de garantia</div></div>
+  <div><h3>Risco zero pra você</h3><p class="muted" style="margin-top:8px">Entrou e sentiu que não é pra você? Me avisa nos primeiros 7 dias e eu devolvo 100% do valor. Sem pergunta, sem burocracia.</p></div></div>
+</div></section>
+
+<section id="faq" style="padding-top:0"><div class="wrap">
+  <span class="tag">Se você ainda tá em dúvida</span>
+  <h2>Perguntas <b>de verdade.</b></h2>
+  <details><summary>"Eu não consigo manter constância."</summary><p>É exatamente por isso que o time existe. Os treinos são por letra, não por dia: pulou, continua de onde parou. E quando você some uns dias, o app te chama de volta, sem cobrança.</p></details>
+  <details><summary>"Não tenho tempo pra treinar todo dia."</summary><p>Você escolhe quantos dias treina na semana, e todo treino tem a versão express de uns 25 minutos pra dia corrido.</p></details>
+  <details><summary>"Já tentei várias vezes e parei."</summary><p>Treinar sozinha, sem saber o que fazer, cansa. Aqui você tem o treino pronto no seu nível, vídeo de cada exercício, tira-dúvidas na hora e eu acompanhando o seu feedback.</p></details>
+  <details><summary>"Sou iniciante, nunca treinei."</summary><p>Pode vir. O treino é montado no seu nível, cada exercício tem vídeo e explicação, e na dúvida você pergunta no app.</p></details>
+  <details><summary>"Não tenho academia."</summary><p>Tem treino de casa incluso, sem pagar nada a mais. Dá pra misturar: casa numa semana, academia na outra.</p></details>
+  <details><summary>Como eu recebo o acesso?</summary><p>Depois do pagamento, você recebe o link do app no WhatsApp. É só entrar, criar sua senha e responder a anamnese. Funciona em iPhone e Android, sem precisar baixar nada da loja.</p></details>
+  <details><summary>Como funciona o cancelamento?</summary><p>Sem fidelidade e sem multa. Você cancela quando quiser e o acesso continua até o fim do período já pago.</p></details>
+  <details><summary>Tem desconto indicando amiga?</summary><p>Tem! Dentro do app você tem um código seu. Sua amiga entra com ele e vocês duas ganham pontos.</p></details>
+</div></section>
+
+<section class="final"><div class="wrap">
+  <h2>Bora treinar <b>junto?</b></h2>
+  <p class="muted">Constância não é dom, é método. E com o time do lado fica bem mais fácil. Me chama no WhatsApp que eu te explico tudo.</p>
+  <a class="btn wa-link" href="#" data-msg="Oi Igor! Vim pelo site e quero entrar no Time IS 🧡">Quero entrar no time</a>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <p><strong style="color:var(--fg)">Igor Sousa Team</strong> · Anápolis, GO</p>
+  <p style="margin-top:6px"><a href="https://instagram.com/igorsousa.personal" target="_blank" rel="noopener">@igorsousa.personal</a> · <a href="https://instagram.com/isousa.team" target="_blank" rel="noopener">@isousa.team</a> · <a class="wa-link" href="#" data-msg="Oi Igor! Vim pelo site 🧡">WhatsApp</a></p>
+</div></footer>
+
+<div class="fixo" id="fixo"><a class="btn wa-link" href="#" data-msg="Oi Igor! Vim pelo site e quero entrar no Time IS 🧡">Quero entrar no time</a></div>
+
+<script>
+// Número do WhatsApp do Igor (troca aqui se mudar)
+const WHATS = '556292017064';
+document.querySelectorAll('.wa-link').forEach(a => {
+  const msg = a.dataset.msg || 'Oi Igor! Vim pelo site e quero entrar no Time IS 🧡';
+  a.href = 'https://wa.me/' + WHATS + '?text=' + encodeURIComponent(msg);
+  a.target = '_blank'; a.rel = 'noopener';
+});
+// Botão fixo some no topo e quando os planos estão na tela
+const fixo = document.getElementById('fixo'), alvos = [document.getElementById('topo'), document.getElementById('planos')];
+const vis = new Set();
+new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? vis.add(e.target) : vis.delete(e.target)); fixo.classList.toggle('esconde', vis.size > 0); }, { threshold: 0.15 }).observe(alvos[0]);
+const io2 = new IntersectionObserver(es => { es.forEach(e => e.isIntersecting ? vis.add(e.target) : vis.delete(e.target)); fixo.classList.toggle('esconde', vis.size > 0); }, { threshold: 0.15 }); io2.observe(alvos[1]);
+</script>
+</body>
+</html>

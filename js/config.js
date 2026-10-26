@@ -5,6 +5,6 @@ window.ISTEAM_CONFIG = {
   SUPABASE_URL: 'https://wwajmwrtobowmheadssv.supabase.co',
   SUPABASE_ANON_KEY: 'sb_publishable_jomZTtZm0CKmNYtAd9DT7Q_pE3uqRmz',
   KIWIFY_CHECKOUT: 'https://pay.kiwify.com.br/SEU-LINK',
-  WHATSAPP_IGOR: '5562999999999',
+  WHATSAPP_IGOR: '556292017064',
   INSTAGRAM: '@igorsousa.personal'
 };
