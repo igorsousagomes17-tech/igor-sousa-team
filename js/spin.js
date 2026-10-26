@@ -2,7 +2,11 @@
 // Cada aula é uma lista de blocos: nome, segundos, posição (sentada / em pé), cadência (rpm), esforço (0–10) e dica.
 import { $, $$, esc, toast, beep } from './ui.js';
 import { t, tp } from './i18n.js';
-import { AULAS } from './spin-aulas.js';
+import { AULAS, DICAS } from './spin-aulas.js';
+const dicaDe = b => DICAS[b.dica] || b.dica;
+export const nomeAula = a => `${t(a.nome)} ${a.min}`;
+import { kcalSpin } from './kcal.js';
+const kc = (p, a, seg) => { const k = kcalSpin(p, a.blocos, seg); return k ? ` · ~${t('{n} kcal', { n: k })}` : ''; };
 export { AULAS };
 
 export const DURACOES = [10, 15, 20, 25, 30];
@@ -14,14 +18,15 @@ const fmt = s => { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':
 const ESTILO = { intervalado: 'Intervalado', subida: 'Subidas', piramide: 'Pirâmide', ritmo: 'Ritmo', sprint: 'Sprints' };
 
 // LISTA ---------------------------------------------------------------------------------------
-export function htmlLista(filtro) {
+export function htmlLista(filtro, perfil) {
   const dm = aulaDoMes(), lista = AULAS.filter(a => !filtro || a.min === +filtro);
-  const card = a => `<button class="card spin-aula" data-spin="${esc(a.id)}"><div class="row between" style="gap:10px"><div style="min-width:0"><b>${esc(t(a.nome))}</b><p class="muted small">${t(ESTILO[a.estilo])} · ${t('{n} min', { n: minDe(a) })} · ${t('em pé {n}%', { n: Math.round(a.blocos.filter(b => b.pe).reduce((s, b) => s + b.seg, 0) / a.blocos.reduce((s, b) => s + b.seg, 0) * 100) })}</p></div><span class="spin-int" aria-label="${t('Intensidade')}">${'🔥'.repeat(a.nivel)}</span></div>${miniTrilha(a)}</button>`;
+  const card = a => `<button class="card spin-aula" data-spin="${esc(a.id)}"><div class="row between" style="gap:10px"><div style="min-width:0"><b>${esc(nomeAula(a))}</b><p class="muted small">${t(ESTILO[a.estilo])} · ${t('{n} min', { n: minDe(a) })}${kc(perfil, a)} · ${t('em pé {n}%', { n: Math.round(a.blocos.filter(b => b.pe).reduce((s, b) => s + b.seg, 0) / a.blocos.reduce((s, b) => s + b.seg, 0) * 100) })}</p></div><span class="spin-int" aria-label="${t('Intensidade')}">${'🔥'.repeat(a.nivel)}</span></div>${miniTrilha(a)}</button>`;
   return `<div class="card hero spin-mes" style="color:#1a0d00"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Aula do mês')}</span>
-    <div class="logo" style="font-size:1.9rem;margin:8px 0 2px;color:#1a0d00">${esc(t(dm.nome))}</div><p style="font-weight:600">${t(ESTILO[dm.estilo])} · ${t('{n} min', { n: minDe(dm) })}</p>
+    <div class="logo" style="font-size:1.9rem;margin:8px 0 2px;color:#1a0d00">${esc(nomeAula(dm))}</div><p style="font-weight:600">${t(ESTILO[dm.estilo])} · ${t('{n} min', { n: minDe(dm) })}${kc(perfil, dm)}</p>
     <button class="btn dark" style="margin-top:8px" data-spin="${esc(dm.id)}">▶ ${t('Começar')}</button></div>
   <div class="spin-filtro" role="group" aria-label="${t('Duração')}">${['', ...DURACOES].map(d => `<button class="${String(filtro || '') === String(d) ? 'on' : ''}" data-dur="${d}">${d ? t('{n} min', { n: d }) : t('Todas')}</button>`).join('')}</div>
   <div class="spin-lista">${lista.map(card).join('')}</div>
+  <div class="card" style="border:1px solid var(--accent)"><b>⚠ ${t('Primeira vez no spinning?')}</b><p class="muted">${t('Começa pelas aulas "Pedal no ritmo" (🔥) e não passa do esforço 7 nas primeiras semanas. Se a urina ficar escura ou a dor muscular for muito forte 1 a 3 dias depois, procura um médico. Tem pressão alta? Evita os tiros e nunca prende a respiração.')}</p></div>
   <div class="card"><b>${t('Antes de subir na bike')}</b><p class="muted">${t('Selim na altura do quadril (em pé ao lado da bike). Joelho levemente dobrado com o pedal embaixo. Garrafinha de água por perto. A carga quem controla é você: o app diz o esforço, você gira o botão até chegar nele.')}</p></div>`;
 }
 export const miniTrilha = a => `<div class="spin-trilha" aria-hidden="true">${a.blocos.map(b => `<i style="flex:${b.seg};height:${6 + b.esf * 2.4}px" class="${b.pe ? 'pe' : ''}"></i>`).join('')}</div>`;
@@ -43,14 +48,14 @@ const SVG = `<svg class="spin-svg" viewBox="0 0 400 300" role="img" aria-label="
 <circle id="sCab" r="13" fill="url(#sPele)"/><path id="sRabo" fill="#2a2a2e"/>
 <line id="sCxF" stroke="#111" stroke-width="17" stroke-linecap="round"/><line id="sCaF" stroke="url(#sPele)" stroke-width="11" stroke-linecap="round"/><line id="sPeF" stroke="#111" stroke-width="9" stroke-linecap="round"/></svg>`;
 
-export function htmlPlayer(a) {
+export function htmlPlayer(a, perfil) {
   return `<div class="spin-palco">${SVG}<div class="spin-selo" id="sSelo">${t('Sentada')}</div><div class="spin-rpm"><b id="sRpm">0</b><span>${t('pedaladas/min')}</span></div></div>
-  <div><h1 id="sNome" style="font-size:2.3rem">${esc(t(a.nome))}</h1><p class="muted" id="sDica">${t('Ajusta a bike, pega a água e toca em começar. O app conduz o resto.')}</p></div>
+  <div><h1 id="sNome" style="font-size:2.3rem">${esc(nomeAula(a))}</h1><p class="muted" id="sDica">${t('Ajusta a bike, pega a água e toca em começar. O app conduz o resto.')}</p></div>
   <div class="row" style="gap:10px"><div class="card" style="flex:1;padding:10px 12px"><p class="muted small">${t('Tempo do bloco')}</p><b class="spin-big" id="sTempo">0:00</b></div><div class="card" style="flex:1;padding:10px 12px"><p class="muted small">${t('Esforço')}</p><b class="spin-big" id="sEsf">—</b><div class="spin-esf" id="sEsfB"></div></div></div>
   <div class="spin-barra"><i id="sProg"></i></div>
   <p class="muted small" id="sProx"></p>
   <div class="spin-trilha grande" id="sTrilha">${a.blocos.map(b => `<i style="flex:${b.seg};height:${8 + b.esf * 2.6}px" class="${b.pe ? 'pe' : ''}"></i>`).join('')}</div>
-  <p class="muted small center" id="sTotal">${t('Aula de {n} min', { n: minDe(a) })} · ${tp(a.blocos.length, '{n} bloco', '{n} blocos')}</p>
+  <p class="muted small center" id="sTotal">${t('Aula de {n} min', { n: minDe(a) })}${kc(perfil, a)} · ${tp(a.blocos.length, '{n} bloco', '{n} blocos')}</p>
   <div class="row" style="gap:10px"><button class="btn ghost sm" id="sPausa" style="flex:0 0 120px" disabled>${t('Pausar')}</button><button class="btn" id="sGo" style="flex:1">▶ ${t('Começar')}</button></div>
   <button class="link-fim" id="sSair">${t('Sair da aula')}</button>`;
 }
@@ -84,7 +89,7 @@ export function iniciarPlayer(a, { aoTerminar, aoSair, manterTela, soltarTela })
   }
   function mostra() {
     const b = a.blocos[i], p = a.blocos[i + 1];
-    $('#sNome').textContent = t(b.nome); $('#sDica').textContent = t(b.dica); $('#sSelo').textContent = b.pe ? t('Em pé') : t('Sentada'); $('#sSelo').classList.toggle('pe', !!b.pe);
+    $('#sNome').textContent = t(b.nome); $('#sDica').textContent = t(dicaDe(b)); $('#sSelo').textContent = b.pe ? t('Em pé') : t('Sentada'); $('#sSelo').classList.toggle('pe', !!b.pe);
     $('#sEsf').textContent = b.esf + '/10'; $('#sEsfB').innerHTML = Array.from({ length: 10 }, (_, k) => `<i class="${k < b.esf ? 'on' : ''}"></i>`).join('');
     $('#sProx').innerHTML = p ? `${t('Próximo:')} <b>${esc(t(p.nome))}</b> · ${p.pe ? t('em pé') : t('sentada')} · ${t('esforço {n}/10', { n: p.esf })}` : t('Último bloco! Segura que tá acabando.');
     $$('#sTrilha i').forEach((x, k) => { x.classList.toggle('feito', k < i); x.classList.toggle('agora', k === i); });
@@ -108,3 +113,5 @@ export function iniciarPlayer(a, { aoTerminar, aoSair, manterTela, soltarTela })
   raf = requestAnimationFrame(loop);
   return () => { vivo = false; cancelAnimationFrame(raf); soltarTela?.(); };
 }
+
+export const kcalFeitoSpin = (perfil, a, seg) => kcalSpin(perfil, a.blocos, seg);

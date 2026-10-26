@@ -82,14 +82,14 @@ export const refazerPasseio = perfil => { try { localStorage.removeItem('acolhe:
 
 // 3) RESUMO DA SEMANA ----------------------------------------------------------------------
 // Semana de segunda a domingo (igual à "Meta da semana"). sessoes: as finalizadas dela (treino do mês + programas).
-export function resumoSemana({ sessoes, cargas, perfil, semanaKey, isoWeek, semanasSeguidas }) {
+export function resumoSemana({ sessoes, cargas, perfil, semanaKey, isoWeek, semanasSeguidas, kcalDe }) {
   const da = sessoes.filter(s => s.finalizada_em && isoWeek(new Date(s.finalizada_em)) === semanaKey && (s.exercicios_feitos ?? 1) > 0);
   const minutos = Math.round(da.reduce((a, s) => a + (s.duracao_s || 0), 0) / 60);
   const exercicios = da.reduce((a, s) => a + (s.exercicios_feitos || 0), 0);
   const subiu = Object.entries(cargas || {}).filter(([, c]) => c?.kg && c.ant && +c.kg > +c.ant && c.data && isoWeek(new Date(c.data)) === semanaKey)
     .map(([nome, c]) => ({ nome, de: +c.ant, para: +c.kg })).sort((a, b) => (b.para - b.de) - (a.para - a.de));
-  const meta = perfil.dias_semana || 4;
-  return { semanaKey, treinos: da.length, meta, minutos, exercicios, subiu, titulos: da.map(s => s.titulo), semanas: semanasSeguidas, bateu: da.length >= meta };
+  const meta = perfil.dias_semana || 4, kcal = kcalDe ? da.reduce((a, s) => a + (kcalDe(s) || 0), 0) : 0;
+  return { semanaKey, treinos: da.length, meta, minutos, exercicios, subiu, titulos: da.map(s => s.titulo), semanas: semanasSeguidas, bateu: da.length >= meta, kcal };
 }
 export const fraseSemana = r => r.bateu ? t('Semana fechada! Você fez {n} de {m} treinos 🔥', { n: r.treinos, m: r.meta })
   : r.treinos ? tp(r.treinos, '{n} treino na semana. Cada um conta: a próxima a gente busca os {m}!', '{n} treinos na semana. Cada um conta: a próxima a gente busca os {m}!', { m: r.meta })
@@ -108,7 +108,7 @@ export function htmlResumo(r, { nome, titulo }) {
     <p class="muted">${fraseSemana(r)}</p>
     <div class="resumo-anel" style="--p:${pct}%"><div><b>${r.treinos}</b><span>${t('de {m} treinos', { m: r.meta })}</span></div></div>
     <div class="grid2" style="margin-top:4px">
-      <div class="card"><div class="big">${num(r.minutos)}<small> ${t('min')}</small></div><p class="muted">${t('treinando')}</p></div>
+      <div class="card"><div class="big">${num(r.minutos)}<small> ${t('min')}</small></div><p class="muted">${t('treinando')}${r.kcal ? ` · ~${num(r.kcal)} kcal` : ''}</p></div>
       <div class="card"><div class="big" style="color:var(--accent)"><span style="font-size:.6em;vertical-align:.25em">🔥</span>${r.semanas}</div><p class="muted">${tp(r.semanas, 'semana seguida', 'semanas seguidas')}</p></div>
     </div>
     ${r.subiu.length ? `<div class="card"><b>💪 ${tp(r.subiu.length, 'Subiu a carga em {n} exercício', 'Subiu a carga em {n} exercícios')}</b>${r.subiu.slice(0, 4).map(s => `<div class="row between" style="font-size:0.875rem;padding-top:6px;gap:8px"><span>${esc(s.nome)}</span><b style="color:var(--accent);white-space:nowrap">${num(s.de)} → ${num(s.para)} kg</b></div>`).join('')}</div>` : ''}

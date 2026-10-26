@@ -1,12 +1,12 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v21';
+const CACHE = 'isteam-v22';
 const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
 // Gerador de PDF, capas, fotos e fontes: não mudam com a versão do app, então ficam de uma versão pra outra
 // (antes cada atualização apagava e o PDF/capas paravam de abrir sem sinal até baixar tudo de novo)
 const EXTRAS = 'isteam-extras';
 const ehExtra = u => /\/js\/vendor\/|\/icons\/|\.(png|jpe?g|webp|gif|svg|woff2?)$/i.test(u.pathname) || /fonts\.(googleapis|gstatic)\.com$/.test(u.hostname);
 // Só o que a aluna usa ao abrir (painel do Igor, demo e fotos-guia entram no cache no 1º uso).
-const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/acolhe.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
+const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/acolhe.js','./js/kcal.js','./js/spin.js','./js/spin-aulas.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/igor_s.jpg']; // capas dos programas entram no cache no 1º uso
 
 self.addEventListener('install', e => {
