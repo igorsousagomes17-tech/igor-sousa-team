@@ -44,12 +44,13 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   ${semTreino.length ? `<p class="muted small">${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino no app.</p>` : ''}</div>`);
 
   // Botões embaixo do nome (cabe com zoom/fonte grande) e com 44px pra tocar
-  function linhaAluna(a) { const fi = fichas.get(a.id); return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}${alertaSaude(fi) ? ' <span class="pill warn">⚠ saúde</span>' : ''}</b><span>${a.pontos} pts · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês</span></div><div class="row wrap" style="gap:8px">${fi ? `<button class="btn ghost sm" data-ficha="${a.id}">ficha</button>` : ''}<button class="btn ghost sm" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="btn ghost sm" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div></div>`; }
+  function linhaAluna(a) { const fi = fichas.get(a.id); return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}${alertaSaude(fi) ? ' <span class="pill warn">⚠ saúde</span>' : ''}</b><span>${a.pontos} pts · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês</span></div><div class="row wrap" style="gap:8px">${fi ? `<button class="btn ghost sm" data-ficha="${a.id}">ficha</button>` : ''}<button class="btn ghost sm" data-postural="${a.id}">postural</button><button class="btn ghost sm" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="btn ghost sm" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div></div>`; }
 
   (db.assistente?.duvidasRecentes?.() || Promise.resolve([])).then(ds => { const el = $('#duv'); if (el) el.innerHTML = ds.length ? ds.map(d => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${esc(d.profiles?.nome || 'Aluna')}</b>${DOR.test(d.texto || '') ? ' <span class="pill warn">dor</span>' : ''} <span class="muted small">· ${new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><p class="muted" style="margin-top:2px">${esc(d.texto)}</p></div>`).join('') : '<p class="muted mt">Nenhuma dúvida ainda.</p>'; }).catch(() => { const el = $('#duv'); if (el) el.innerHTML = '<p class="muted mt">Não deu pra carregar agora.</p>'; });
   $('#out').onclick = async () => { await db.logout(); S.perfil = null; go('entrada'); };
   $('#busca').oninput = () => { const q = $('#busca').value.toLowerCase(); $$('#lista .r').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
   $$('[data-ficha]').forEach(b => b.onclick = () => fichaAnamnese(fichas.get(b.dataset.ficha)));
+  $$('[data-postural]').forEach(b => b.onclick = () => avaliacaoPostural(alunas.find(x => x.id === b.dataset.postural)));
   // Responder (ou editar a resposta) vendo o que ela escreveu
   $$('[data-resp],[data-edita]').forEach(b => b.onclick = () => {
     const id = b.dataset.resp || b.dataset.edita, f = fb.find(x => String(x.id) === String(id)) || {};
@@ -155,4 +156,52 @@ function fichaAnamnese(fi) {
   const linhas = [['Objetivo', fi.objetivo], ['Dias por semana', fi.dias_semana], ['Tempo por treino', fi.tempo_treino_min && fi.tempo_treino_min + ' min'], ['Sexo', { F: 'mulher', M: 'homem' }[fi.sexo]], ['Horário', { cedo: 'manhã cedo', manha: 'manhã', almoco: 'almoço', tarde: 'tarde', noite: 'noite', varia: 'varia' }[fi.horario]], ['Onde treina', fi.local_treino], ['Academia', { rede: 'grande, de rede', bairro: 'de bairro', condominio: 'de prédio/condomínio' }[fi.academia_tipo]], ['Tem em casa', (fi.equipamento || []).join(', ')], ['Experiência', fi.experiencia], ['Foco', (fi.foco || []).join(', ')], ['Mais incomoda', fi.incomoda], ['Cardio no fim', { sim: 'topa sempre', as_vezes: 'às vezes', nao: 'prefere não' }[fi.cardio]], ['Dor / lesão', fi.limitacoes], ['Não gosta / não consegue', fi.evita], ['Saúde', (fi.saude || []).join(', ')], ['Gestação', { nao: 'não', gravida: 'grávida', pos_parto: 'pós-parto' }[fi.gestacao] || fi.gestacao], ['Ciclo', { regular: 'regular', irregular: 'irregular', anticoncepcional: 'anticoncepcional', nao: 'não menstrua', nd: 'prefere não dizer' }[fi.ciclo]], ['Sono e estresse (1-5)', fi.sono_estresse], ['Dia a dia', fi.atividade], ['Nascimento', fi.nascimento && fmtData(fi.nascimento)], ['Nutricionista', fi.nutri], ['Já desistiu por', fi.desistiu], ['Peso / altura', [fi.peso_kg && fi.peso_kg + ' kg', fi.altura_m && fi.altura_m + ' m'].filter(Boolean).join(' · ')], ['Respondeu em', fi.anamnese_em && fmtData(fi.anamnese_em)]].filter(([, v]) => v != null && v !== '');
   overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:8px;margin-top:20px"><h2>${esc(fi.nome || 'Anamnese')}</h2>${alertaSaude(fi) ? '<p class="pill warn" style="align-self:flex-start">⚠ pede liberação médica antes de HIIT/carga alta</p>' : ''}${linhas.map(([k, v]) => `<div class="r" style="grid-template-columns:1fr"><div><span>${esc(k)}</span><b style="font-weight:600">${esc(v)}</b></div></div>`).join('')}<button class="btn ghost sm" id="c">Fechar</button></div></div>`);
   $('#c').onclick = closeOverlay;
+}
+
+// AVALIAÇÃO POSTURAL (só o Igor): as fotos da evolução dela com grade e linha de prumo por cima,
+// uma lista de achados de um toque e observação. Fica no perfil dela pra montar o treino; ela não vê.
+const ACHADOS = [
+  ['Cabeça e ombros', ['Cabeça projetada à frente', 'Ombros desnivelados', 'Ombros projetados à frente', 'Escápula alada']],
+  ['Coluna', ['Costas curvadas (hipercifose)', 'Lombar acentuada (hiperlordose)', 'Lombar reta (retificação)', 'Escoliose aparente']],
+  ['Quadril', ['Quadril desnivelado', 'Quadril pra frente (anteversão)', 'Quadril pra trás (retroversão)']],
+  ['Joelhos e pés', ['Joelho pra dentro (valgo)', 'Joelho pra fora (varo)', 'Joelho estendido demais (hiperextensão)', 'Pé chato / pisada pra dentro', 'Pé cavo / pisada pra fora']]
+];
+const ANGULOS = [['foto_path', 'Frente'], ['foto_lado', 'Lado'], ['foto_costas', 'Costas']];
+async function avaliacaoPostural(a) {
+  if (!a) return;
+  overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px;margin-top:20px"><h2>Postural · ${esc(a.nome)}</h2><p class="muted" id="pst">Carregando as fotos…</p></div></div>`);
+  let ev = [], hist = [];
+  try { [ev, hist] = await Promise.all([db.admin.evolucaoDe(a.id), db.admin.posturais(a.id)]); } catch (e) { if ($('#pst')) $('#pst').textContent = 'Não deu pra carregar agora: ' + e.message; return; }
+  const comFoto = ev.filter(e => e.foto_path || e.foto_lado || e.foto_costas).reverse(); // mais recente primeiro
+  let reg = comFoto[0], ang = 'foto_path', grade = true;
+  const marcados = new Set(hist[0]?.achados || []); // começa do que ele marcou da última vez
+  const box = $('#m .box'); if (!box) return;
+  box.innerHTML = `<div class="row between"><h2>Postural · ${esc(a.nome.split(' ')[0])}</h2><button class="btn ghost sm" id="c">Fechar</button></div>
+    ${comFoto.length ? `<div class="row wrap" style="gap:6px">${comFoto.length > 1 ? `<select class="input" id="dt" style="width:auto;min-height:40px">${comFoto.map((e, i) => `<option value="${i}">${fmtData(e.data)}</option>`).join('')}</select>` : `<span class="muted small">Fotos de ${fmtData(reg.data)}</span>`}
+      ${ANGULOS.map(([k, l]) => `<button class="pill big-pill ${k === ang ? 'on' : ''}" data-ang="${k}">${l}</button>`).join('')}<button class="pill big-pill on" id="gr">Grade</button></div>
+      <div id="ft" style="position:relative;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:#101012"></div>`
+    : `<p class="muted">Ela ainda não mandou as fotos. Dá pra marcar o que você observou pessoalmente ou pelo vídeo.</p>`}
+    ${hist.length ? `<p class="small muted">Última avaliação: ${fmtData(hist[0].created_at)}. Os achados dela já vêm marcados abaixo.</p>` : ''}
+    ${ACHADOS.map(([g, l]) => `<div><p class="small" style="color:var(--accent);font-weight:600;margin-bottom:6px">${g}</p><div class="opcoes multi">${l.map(x => `<button type="button" class="opc ${marcados.has(x) ? 'on' : ''}" data-ach="${esc(x)}">${esc(x)}</button>`).join('')}</div></div>`).join('')}
+    <div class="field"><label class="l" for="obs">Observação (o que considerar no treino)</label><textarea class="input" id="obs" rows="3" placeholder="ex. reforçar glúteo médio, mobilidade de tornozelo, cuidado com carga axial">${esc(hist[0]?.obs || '')}</textarea></div>
+    <button class="btn sm" id="s">Salvar avaliação</button>
+    ${hist.length ? `<details><summary class="linha" style="cursor:pointer;color:var(--muted)"><span>Avaliações anteriores (${hist.length})</span><span class="seta">▾</span></summary>${hist.map(h => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${fmtData(h.created_at)}</b><p class="muted">${esc((h.achados || []).join(', ') || 'sem achados')}${h.obs ? ' · ' + esc(h.obs) : ''}</p></div>`).join('')}</details>` : ''}`;
+  const foto = async () => {
+    const el = $('#ft'); if (!el || !reg) return;
+    const path = reg[ang]; const url = path ? await db.fotoUrl(path).catch(() => null) : null; if (!$('#ft')) return;
+    // grade de 8 colunas x 10 linhas + linha de prumo no meio (laranja), como no papel quadriculado da avaliação
+    el.innerHTML = url ? `<img src="${url}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain">${grade ? `<div aria-hidden="true" style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.28) 1px,transparent 1px);background-size:12.5% 10%"></div><div aria-hidden="true" style="position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:#ff6a00"></div>` : ''}`
+      : `<p class="muted" style="position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center">${path ? 'Sem internet pra mostrar a foto' : 'Sem foto desse ângulo nesse dia'}</p>`;
+  };
+  foto();
+  $('#c').onclick = closeOverlay;
+  if ($('#dt')) $('#dt').onchange = () => { reg = comFoto[+$('#dt').value]; foto(); };
+  $$('[data-ang]').forEach(b => b.onclick = () => { ang = b.dataset.ang; $$('[data-ang]').forEach(x => x.classList.toggle('on', x === b)); foto(); });
+  if ($('#gr')) $('#gr').onclick = () => { grade = !grade; $('#gr').classList.toggle('on', grade); foto(); };
+  $$('[data-ach]').forEach(b => b.onclick = () => { const x = b.dataset.ach; marcados.has(x) ? marcados.delete(x) : marcados.add(x); b.classList.toggle('on', marcados.has(x)); });
+  $('#s').onclick = async () => {
+    $('#s').disabled = true; $('#s').textContent = 'Salvando…';
+    try { await db.admin.salvarPostural({ aluna_id: a.id, achados: [...marcados], obs: $('#obs').value.trim() || null, foto_data: reg?.data || null }); closeOverlay(); toast('Avaliação postural salva ✓'); }
+    catch (e) { toast(e.message, true); if ($('#s')) { $('#s').disabled = false; $('#s').textContent = 'Salvar avaliação'; } }
+  };
 }

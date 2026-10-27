@@ -1220,6 +1220,7 @@ routes.evolucao = async () => {
       <div class="row between" style="margin-top:6px"><span class="muted small">${a && !so1 ? t('Antes') + ' · ' + fmtData(a.data) : ''}</span><span class="muted small">${so1 ? t('Sua 1ª foto') + ' · ' + fmtData(z.data) : z ? t('Agora') + ' · ' + fmtData(z.data) : ''}</span></div>`;
   };
   fotos('foto_path');
+  if (S.abrirRegistro) { S.abrirRegistro = false; setTimeout(() => $('#add')?.click(), 50); }
   $('#fotos').onclick = e => { if (e.target.closest('.photo.vazia')) $('#add').click(); }; // quadro vazio abre o registro do mês
   $$('#ang [data-a]').forEach(b => b.onclick = () => { $$('#ang .pill').forEach(x => x.classList.toggle('on', x === b)); fotos(b.dataset.a); });
   $('#add').onclick = () => {
@@ -1385,7 +1386,15 @@ function rotuloAnam(k, v) {
 }
 // Rascunho fica no celular a cada resposta; voltar do celular = pergunta anterior; sem pular sozinho;
 // no fim, uma tela pra conferir tudo antes de enviar.
+const cuidadoSaude = r => (r.saude || []).some(x => /Pressão|cardíaco|Diabetes|Cirurgia|peito|desmaiei|acompanhamento/.test(x)) || (r.gestacao && r.gestacao !== 'nao');
+// Logo depois da 1ª anamnese: as 3 fotos do início (viram a "foto zero" da evolução e a base da avaliação postural do Igor)
+async function fotosDoInicio() {
+  if (document.querySelector('#overlay .modal')) return setTimeout(fotosDoInicio, 1500);
+  const o = await escolher(t('Agora, suas fotos do início 📸'), t('Três fotos rápidas: frente, lado e costas. Elas mostram sua evolução lá na frente e ajudam o Igor a ver sua postura. Só você e o Igor veem.'), [t('Tirar agora'), t('Depois')]);
+  if (o === 0) { S.abrirRegistro = true; go('evolucao'); }
+}
 function anamneseForm(p, done, titulo = 'Me conta de você') {
+  const primeira = !p.anamnese_em; // lido antes de salvar (o perfil é atualizado no lugar)
   const rasc = db.LS.get('anamnese');
   const r = rasc?.r || Object.fromEntries(CAMPOS_ANAM.map(k => [k, ['foco', 'saude', 'equipamento'].includes(k) ? (p[k] || []) : (p[k] ?? null)]));
   // -1 = boas-vindas (1ª vez); já respondeu antes = abre na revisão, ela toca só no que quer mudar
@@ -1472,8 +1481,9 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
     $('#next').disabled = true; $('#next').textContent = t('Enviando…');
     Q.forEach(q => { if (!ativa(q)) r[q.k] = q.k === 'gestacao' ? 'nao' : q.tipo === 'multi' ? [] : null; });
     try { const novo = await db.salvarPerfil({ ...r, anamnese_em: new Date().toISOString() }); if (novo && S.perfil?.id === novo.id) S.perfil = novo; voltarOverlay = null; closeOverlay(); db.LS.del('anamnese'); done();
+      if (primeira && S.perfil?.role !== 'admin') setTimeout(fotosDoInicio, cuidadoSaude(r) ? 2600 : 900); // 1ª vez: já pede a foto zero
       // Pressão alta, coração, diabetes, cirurgia recente ou gravidez: orientação na hora (o Igor também vê o alerta no painel)
-      const cuidado = (r.saude || []).some(x => /Pressão|cardíaco|Diabetes|Cirurgia|peito|desmaiei|acompanhamento/.test(x)) || (r.gestacao && r.gestacao !== 'nao');
+      const cuidado = cuidadoSaude(r);
       toast(cuidado ? t('Enviado ✓ Como você marcou um cuidado de saúde, leva a liberação do seu médico pro Igor antes do HIIT e de cargas altas. Até lá, cardio leve.') : t('Enviado! O Igor monta seu treino a partir disso ✓'), false, { fixo: cuidado }); }
     catch (e) { $('#e').textContent = traduzErro(e) + ' ' + t('Suas respostas ficaram salvas no celular.'); $('#e').hidden = false; $('#next').disabled = false; $('#next').textContent = t('Enviar pro Igor'); }
   }

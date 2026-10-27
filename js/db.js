@@ -194,6 +194,10 @@ export const push = {
 };
 export const precisaVer = f => !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
 export const admin = {
+  // Avaliação postural (só o Igor vê): fotos da evolução dela + achados marcados por ele
+  async evolucaoDe(alunaId) { const { data, error } = await sb.from('evolucao').select('*').eq('aluna_id', alunaId).order('data'); if (error) throw error; return data || []; },
+  async posturais(alunaId) { const { data, error } = await sb.from('postural').select('*').eq('aluna_id', alunaId).order('created_at', { ascending: false }).limit(20); if (error) throw error; return data || []; },
+  async salvarPostural(row) { const { data, error } = await sb.from('postural').insert(row).select().single(); if (error) throw error; return data; },
   async alunas() { const { data, error } = await sb.from('v_alunas_status').select('*').order('nome'); if (error) throw error; return data; },
   // Treinos com comentário dela OU nota baixa (≤ 4) / esforço no limite (≥ 9) sem texto: sem tempo de escrever,
   // a nota é o sinal. Os sem resposta vêm primeiro (nenhum some da lista por ser antigo).
