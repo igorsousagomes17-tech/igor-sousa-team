@@ -193,7 +193,8 @@ h2{overflow-wrap:break-word}
 body{font-size:.9375rem}
 @supports (font:-apple-system-body){html{font:-apple-system-body}body{font-family:var(--body)}} /* iPhone: segue o tamanho de texto do sistema */
 .cta{position:sticky;bottom:calc(74px + var(--sab));z-index:3;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,rgba(11,11,12,0),var(--bg) 22%);padding-top:14px;margin-top:-6px}
-.toast.fixo{border:2px solid var(--accent)}
+.toast.fixo{border:2px solid var(--accent);padding-right:46px;cursor:pointer}.toast.fixo::after{content:'✕';position:absolute;right:6px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:rgba(0,0,0,.08);font-size:1rem} /* aviso que fica: mostra que fecha com um toque */
+body:has(.cta) .toast:not(.topo){bottom:calc(var(--tabsH,64px) + 150px)} /* aba Treino: aviso acima do Continuar/Iniciar */
 .opcoes.multi .opc{padding-left:46px;position:relative}
 .opcoes.multi .opc::before{content:"";position:absolute;left:14px;top:50%;width:20px;height:20px;margin-top:-10px;border-radius:5px;box-shadow:inset 0 0 0 2px #8f8b84}
 .opcoes.multi .opc.on::before{box-shadow:none;background:var(--accent-ink);content:"✓";color:var(--accent);display:grid;place-items:center;font-size:.875rem;font-weight:800}
@@ -222,8 +223,8 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .semop:active{border-color:var(--accent)}
 
 /* rodada extra 25/10 */
-.semopts{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}.semop{min-width:0}.semop span{overflow-wrap:anywhere}
-.toast.topo{top:calc(12px + var(--sat));bottom:auto}
+.semopts{grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr))}.semop{min-width:0}.semop span{overflow-wrap:break-word;hyphens:auto} /* letra grande: 1 coluna, sem partir "Quadrí/ceps" */
+.toast.topo{top:calc(12px + var(--sat));bottom:auto}.toast.topo.sess{top:calc(62px + var(--sat))}
 .ov .fase{font-size:2rem;font-weight:800;color:var(--accent);letter-spacing:.5px}
 .ov.leve .fase{color:#f4f2ee}.ov.leve:not(.mini) .ring{background:conic-gradient(#ffb27a var(--p,100%),#2a2a2e 0)}
 .msg.ia::before{content:"🤖 IA";display:block;font-size:.8125rem;color:var(--muted);margin-bottom:2px}
@@ -234,7 +235,7 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .chat-top{position:sticky;top:0;z-index:3;background:var(--bg);margin:calc(-12px - var(--sat)) -16px 0;padding:calc(6px + var(--sat)) 16px 6px}
 .chatbar textarea{max-height:40vh}
 .pontos-premios .lib{aspect-ratio:auto;min-height:140px;justify-content:flex-end}
-@media (max-width:300px){.tabs .tab span{font-size:clamp(10px,3.5vw,.8125rem);letter-spacing:-.2px}.tabs .tab{min-height:48px;justify-content:center;padding:0 1px}} /* nome embaixo de todas (estrela sozinha não diz "Pontos") */
+@media (max-width:300px){.tabs .tab span{font-size:clamp(.75rem,3.5vw,.8125rem);letter-spacing:-.2px}.tabs .tab{min-height:48px;justify-content:center;padding:0 1px}} /* nome embaixo de todas (estrela sozinha não diz "Pontos") */
 
 /* Lista dos exercícios no topo do treino: toca e vai direto (aparelho ocupado) */
 .passos{display:flex;gap:6px;overflow-x:auto;margin:10px -4px 0;padding:2px 4px;scrollbar-width:none}.passos::-webkit-scrollbar{display:none}
@@ -311,7 +312,7 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .semop::after{content:"›";margin-left:auto;color:var(--muted);font-size:1.25rem;line-height:1}
 .sessao>.topbar{position:sticky;top:0;z-index:6;background:var(--bg);margin:calc(-12px - var(--sat)) -16px 0;padding:calc(8px + var(--sat)) 16px 8px}
 .pills-wrap,.row.fotos{flex-wrap:wrap}
-.lib.mini b{overflow-wrap:anywhere;hyphens:auto}
+.lib.mini b{overflow-wrap:normal;hyphens:manual;letter-spacing:-.2px} /* palavra inteira (FORTALECIMENTO), nunca partida */
 .grid2>.field{display:flex;flex-direction:column;justify-content:flex-end}
 .hiit-explica{color:var(--fg)}
 .passos button{flex:0 0 auto;min-width:44px;padding:0 6px}
@@ -346,3 +347,12 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .spin-big{font-family:var(--display);font-size:2rem;line-height:1.1}
 .spin-esf{display:flex;gap:3px;margin-top:6px}.spin-esf i{flex:1;height:7px;border-radius:3px;background:#2a2a2e}.spin-esf i.on{background:var(--accent)}
 .spin-barra{height:8px;background:#2a2a2e;border-radius:6px;overflow:hidden}.spin-barra i{display:block;height:100%;width:0;background:var(--accent)}
+
+/* Abas com letra grande: nome curto (Pts, Evol.) em vez de "Pon···"; cresce com a fonte dela */
+.tabs .tab{flex:1 1 0;container-type:inline-size}.tabs .tab span.c{display:none}
+@container (max-width:4.4rem){.tabs .tab span.l{display:none}.tabs .tab span.c{display:block;font-size:.6875rem;letter-spacing:-.3px;overflow:visible;text-overflow:clip}}
+/* Treino em 300 px com letra grande: título encolhe em vez de partir no meio */
+.sessao .bloco h1{font-size:clamp(1.25rem,7vw,2rem)!important;hyphens:auto}
+.sessao .bloco .tag+h1{font-size:clamp(1.125rem,6vw,1.625rem)!important}
+.set .h{overflow-wrap:normal;hyphens:auto}
+.chatbar .btn{white-space:nowrap;flex:0 0 auto;width:auto} /* "Enviar ➤" numa linha só */

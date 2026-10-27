@@ -20,7 +20,7 @@ for (const vw of [375,360]) {
   if (await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth)) errs.push(vw+' scroll horizontal');
   await p.click('#ini'); await p.waitForTimeout(800); const ses=await p.evaluate(()=>JSON.parse(localStorage.getItem('demo:sessao')||localStorage.getItem('sessao')||'null'));
   if (!ses?.express) errs.push('sessão não marcou express'); 
-  if (await p.evaluate(()=>localStorage.getItem('demo:versaoExpress'))!=='true') errs.push('não lembrou a escolha');
+  if (await p.evaluate(()=>{ const d=new Date(), k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); return localStorage.getItem('demo:versaoExpress')===JSON.stringify(k); })!==true) errs.push('não lembrou a escolha (no dia)'); // Express vale só no dia (27/10)
   await ctx.close();
 }
 console.log('erros:',errs); await b.close(); if(errs.length) process.exit(1);

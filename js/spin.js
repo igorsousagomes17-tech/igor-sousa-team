@@ -50,7 +50,7 @@ const SVG = `<svg class="spin-svg" viewBox="0 0 400 300" role="img" aria-label="
 
 export function htmlPlayer(a, perfil) {
   return `<div class="spin-palco">${SVG}<div class="spin-selo" id="sSelo">${t('Sentada')}</div><div class="spin-rpm"><b id="sRpm">0</b><span>${t('pedaladas/min')}</span></div></div>
-  <div><h1 id="sNome" style="font-size:2.3rem">${esc(nomeAula(a))}</h1><p class="muted" id="sDica">${t('Ajusta a bike, pega a água e toca em começar. O app conduz o resto.')}</p></div>
+  <div><h1 id="sNome" style="font-size:clamp(1.6rem,8vw,2.3rem);line-height:1.08;margin-bottom:6px">${esc(nomeAula(a))}</h1><p class="muted" id="sDica">${t('Ajusta a bike, pega a água e toca em começar. O app conduz o resto.')}</p></div>
   <div class="row" style="gap:10px"><div class="card" style="flex:1;padding:10px 12px"><p class="muted small">${t('Tempo do bloco')}</p><b class="spin-big" id="sTempo">0:00</b></div><div class="card" style="flex:1;padding:10px 12px"><p class="muted small">${t('Esforço')}</p><b class="spin-big" id="sEsf">—</b><div class="spin-esf" id="sEsfB"></div></div></div>
   <div class="spin-barra"><i id="sProg"></i></div>
   <p class="muted small" id="sProx"></p>
@@ -67,9 +67,10 @@ const set = (id, a, b) => { const e = document.getElementById(id); if (!e) retur
 const lerp = (a, b, k) => a + (b - a) * k;
 
 // Controla a aula. aoTerminar({ seg, feito }) é chamado quando acaba (ou ela sai depois de fazer parte).
-export function iniciarPlayer(a, { aoTerminar, aoSair, manterTela, soltarTela }) {
+// retomar: aula pela metade guardada no celular (recarregou/o Android fechou o app); salvar(st|null) guarda a cada bloco e a cada 5 s
+export function iniciarPlayer(a, { aoTerminar, aoSair, manterTela, soltarTela, retomar = null, salvar = () => {} }) {
   const reduz = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let fimBloco = 0, ang = 0, emPe = 0, rpm = 0, i = -1, resta = 0, rodando = false, pausado = false, feito = 0, ult = performance.now(), raf = 0, vivo = true, ultimoBipe = -1;
+  let fimBloco = 0, ang = 0, emPe = 0, rpm = 0, i = -1, resta = 0, rodando = false, pausado = false, feito = 0, ult = performance.now(), raf = 0, vivo = true, ultimoBipe = -1, comecouEm = 0, ultDesenho = 0, ultSalvo = 0, pausouEm = 0;
   const total = a.blocos.reduce((s, b) => s + b.seg, 0);
   function desenha(dt) {
     const b = a.blocos[Math.max(0, i)];
@@ -99,17 +100,28 @@ export function iniciarPlayer(a, { aoTerminar, aoSair, manterTela, soltarTela })
     i++; if (i >= a.blocos.length) return fim();
     const agora = Date.now(); fimBloco = (pulou || i === 0 || fimBloco <= 0 ? agora : fimBloco) + a.blocos[i].seg * 1000; resta = (fimBloco - agora) / 1000; ultimoBipe = -1; beep(i ? 'forte' : 'fim'); try { navigator.vibrate?.(120); } catch {} mostra();
   }
-  function fim() { rodando = false; vivo = false; soltarTela?.(); aoTerminar({ seg: Math.round(feito), feito: true }); }
+  const estado = () => ({ id: a.id, i, resta: Math.max(0, resta), feito, em: Date.now() });
+  function fim() { rodando = false; vivo = false; soltarTela?.(); salvar(null); aoTerminar({ seg: Math.round(feito), feito: true, total }); }
   function loop(tm) {
-    if (!vivo) return; const dt = Math.min(.05, (tm - ult) / 1000); ult = tm;
-    if (rodando && !pausado) { resta = (fimBloco - Date.now()) / 1000; const s = Math.ceil(resta); if (s <= 3 && s > 0 && s !== ultimoBipe && a.blocos[i + 1]) { ultimoBipe = s; beep('leve'); } if (resta <= 0) proximo(false); }
+    if (!vivo) return; ult = tm;
+    if (rodando && !pausado) { resta = (fimBloco - Date.now()) / 1000; const s = Math.ceil(resta); if (s <= 3 && s > 0 && s !== ultimoBipe && a.blocos[i + 1]) { ultimoBipe = s; beep('leve'); } if (resta <= 0) proximo(false); if (vivo && Date.now() - ultSalvo > 5000) { ultSalvo = Date.now(); salvar(estado()); } }
+    if (pausado && pausouEm && Date.now() - pausouEm > 10 * 60000) { pausouEm = 0; soltarTela?.(); } // pausada 10 min: a tela pode apagar
     if (i >= 0 && a.blocos[i]) { const e = $('#sTempo'); if (e) e.textContent = fmt(resta); const pr = $('#sProg'); if (pr) pr.style.width = ((feito + a.blocos[i].seg - Math.max(0, resta)) / total * 100).toFixed(1) + '%'; }
-    if (!desenha(dt)) { vivo = false; soltarTela?.(); return; } raf = requestAnimationFrame(loop);
+    // Celular velho: o boneco desenha no máx. ~25 quadros/s e para quando a roda parou (antes de começar e pausada)
+    const mexe = (rodando && !pausado) || rpm > 0.5 || ultDesenho === 0;
+    if (mexe && tm - ultDesenho >= 40) { if (!desenha(Math.min(.1, (tm - (ultDesenho || tm - 16)) / 1000))) { vivo = false; soltarTela?.(); return; } ultDesenho = tm; }
+    else if (!document.getElementById('sRpm')) { vivo = false; soltarTela?.(); return; }
+    raf = requestAnimationFrame(loop);
   }
   // Tela apagada/app escondido: o tempo continua contando certo pela diferença de relógio (o loop retoma de onde parou)
-  $('#sGo').onclick = () => { if (!rodando) { rodando = true; pausado = false; manterTela?.(); $('#sGo').textContent = '⏭ ' + t('Pular bloco'); $('#sPausa').disabled = false; proximo(false); } else proximo(true); };
-  $('#sPausa').onclick = () => { if (!rodando) return; pausado = !pausado; if (!pausado) fimBloco = Date.now() + resta * 1000; $('#sPausa').textContent = pausado ? t('Seguir') : t('Pausar'); };
-  $('#sSair').onclick = () => { const fez = feito + (i >= 0 && a.blocos[i] ? a.blocos[i].seg - Math.max(0, resta) : 0); vivo = false; soltarTela?.(); aoSair({ seg: Math.round(fez) }); };
+  const comecou = () => { rodando = true; comecouEm = Date.now(); manterTela?.(); $('#sGo').textContent = '⏭ ' + t('Pular bloco'); $('#sGo').classList.add('ghost'); $('#sPausa').disabled = false; $('#sPausa').classList.remove('ghost'); };
+  const pausa = p => { pausado = p; pausouEm = p ? Date.now() : 0; if (!p) { fimBloco = Date.now() + resta * 1000; manterTela?.(); } $('#sPausa').textContent = p ? t('Seguir') : t('Pausar'); if (vivo) salvar(estado()); };
+  // Toque duplo no Começar (celular engasgou) não pula o aquecimento
+  $('#sGo').onclick = () => { if (!rodando) { pausado = false; comecou(); proximo(false); salvar(estado()); } else if (Date.now() - comecouEm > 1200) { proximo(true); salvar(estado()); } };
+  $('#sPausa').onclick = () => { if (rodando) pausa(!pausado); };
+  // Sair (ou o voltar do celular): pausa e pergunta; "continuar" volta de onde estava
+  $('#sSair').onclick = () => { const fez = feito + (i >= 0 && a.blocos[i] ? a.blocos[i].seg - Math.max(0, resta) : 0), estava = pausado; if (rodando && !pausado) pausa(true); aoSair({ seg: Math.round(fez), total, comecou: rodando, voltar: () => { if (vivo && rodando && !estava) pausa(false); } }); };
+  if (retomar && a.blocos[retomar.i]) { i = retomar.i; resta = Math.min(a.blocos[i].seg, retomar.resta); feito = retomar.feito || 0; comecou(); pausa(true); mostra(); }
   raf = requestAnimationFrame(loop);
   return () => { vivo = false; cancelAnimationFrame(raf); soltarTela?.(); };
 }

@@ -38,3 +38,8 @@ contagem igual no topo/pop-up/feedback, chave com séries pela metade, "40kg" e 
 `tests/rodada-2610b.mjs` testa a 2ª rodada de 26/10 (Pausar com cronômetro não marca a série e volta parado, "cada lado" em 1:00, card incompleto "registrado" e sem cardio, 🔥 só com treino completo,
 recorde/Última só com a meta de reps, próxima série fora de ordem, anamnese que não apaga no Voltar, senha com espaço, aviso que deixa o toque passar, recomeçar do zero, "0/7 · 1 opcional",
 voltar na aba Treino, feedback que diz o que falta, pausa sozinha com 10 min parado, Evolução com letra grande em 300 px, story do resumo +30): `W=360 OUT=/tmp/shots node tests/rodada-2610b.mjs`.
+
+`tests/rodada-2710.mjs` testa a rodada 27/10 (IA do demo: "peito" do Treino C sem 192, peso do 1º dia, vídeo, "pressão é alta" freia o HIIT; Express 12/8 com a carga da série certa, só no dia e
+avisado no Início/sessão; desmarcar série tira o ✓; "‹ Corrigir" logo depois de fechar o exercício; série preenchida sem ✓ perguntada no fim; volta depois de 40 min fora sem relógio negativo;
+spinning: toque duplo, voltar pergunta, recarregar retoma, aula curta não pontua e tem story; login vazio; abas "Pts/Evol." com letra grande; treino pausado sem pop-up de pontos):
+`W=360 OUT=/tmp/shots node tests/rodada-2710.mjs`.

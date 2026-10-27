@@ -97,7 +97,7 @@ for (const L of LINGUAS) {
   await p.click('.tabs [data-go="perfil"]'); await espera(800);
   const outro = L === 'pt' ? 'en' : 'pt';
   await p.click('#idi'); await espera(300); await p.click(`[data-l="${outro}"]`); await espera(700);
-  const h2 = await p.textContent('.topbar h2'), aba = await p.textContent('.tabs [data-go="perfil"]');
+  const h2 = await p.textContent('.topbar h2'), aba = await p.textContent('.tabs [data-go="perfil"] span.l'); // aba tem nome inteiro + curto (letra grande)
   ok(h2 === (outro === 'pt' ? 'Perfil' : 'Profile') && aba.trim() === h2, `${L}: trocar no Perfil re-desenha na hora (${h2} / ${aba.trim()})`);
   ok(!errs.length, `${L}: sem erro de página/console ${errs.length ? JSON.stringify(errs.slice(0, 5)) : ''}`);
   await ctx.close();

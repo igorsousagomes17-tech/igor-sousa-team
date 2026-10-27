@@ -111,7 +111,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
 // 6. Evolução com letra grande em 300 px não estoura a tela; story do resumo da semana pontua
 { const { ctx, p } = await nova(null, 300); await login(p); await p.evaluate(() => { document.documentElement.style.fontSize = '130%'; });
   for (const aba of ['evolucao', 'pontos', 'perfil', 'treino', 'home']) { await p.click(`.tabs [data-go="${aba}"]`); await espera(p, 700); const w = await p.evaluate(() => document.documentElement.scrollWidth); ok(w <= 300, `${aba} cabe em 300 px com letra 130% (${w})`); }
-  ok(await p.evaluate(() => [...document.querySelectorAll('.tabs .tab span')].every(s => getComputedStyle(s).display !== 'none')), 'abas com nome embaixo em 300 px');
+  ok(await p.evaluate(() => [...document.querySelectorAll('.tabs .tab')].every(b => [...b.querySelectorAll('span')].some(s => getComputedStyle(s).display !== 'none' && s.textContent.trim()))), 'abas com nome embaixo em 300 px');
   await shot(p, 'evolucao-300'); await ctx.close(); }
 { const { ctx, p } = await nova(); await login(p); const pts0 = (await st(p)).perfil.pontos;
   await p.evaluate(() => { navigator.canShare = () => false; }); await p.click('#resumoSem'); await espera(p, 900);

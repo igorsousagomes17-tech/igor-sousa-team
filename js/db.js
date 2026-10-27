@@ -96,20 +96,20 @@ export async function finalizarSessao(sessaoId, patch) {
 }
 // Histórico de carga por NOME do exercício: vale entre treinos e meses diferentes.
 export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
-  const { data, error } = await sb.from('series').select('kg,reps,n,sessao_id,sessoes!inner(aluna_id,finalizada_em)')
+  const { data, error } = await sb.from('series').select('kg,reps,n,sessao_id,sessoes!inner(aluna_id,finalizada_em,comentario)')
     .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
     .order('sessoes(finalizada_em)', { ascending: false }).limit(limit * 6);
   if (error) throw error; // sem sinal: quem chamou mostra o que tem no celular
   if (!data?.length) return [];
   // agrupa por sessão: maior carga da sessão + todas as séries (pirâmide 22/25/28)
   const por = {};
-  data.forEach(r => { const k = r.sessoes.finalizada_em; const a = por[k] || (por[k] = { kg: r.kg, reps: r.reps, data: k, sessao_id: r.sessao_id, sets: [] }); a.sets.push({ n: r.n, kg: +r.kg, reps: r.reps }); if (+r.kg > +a.kg) { a.kg = r.kg; a.reps = r.reps; } });
+  data.forEach(r => { const k = r.sessoes.finalizada_em; const a = por[k] || (por[k] = { kg: r.kg, reps: r.reps, data: k, sessao_id: r.sessao_id, sets: [], express: /^⚡ Express/.test(r.sessoes.comentario || '') }); a.sets.push({ n: r.n, kg: +r.kg, reps: r.reps }); if (+r.kg > +a.kg) { a.kg = r.kg; a.reps = r.reps; } });
   Object.values(por).forEach(a => a.sets.sort((x, y) => x.n - y.n));
   return Object.values(por).sort((a, b) => b.data.localeCompare(a.data)).slice(0, limit);
 }
 // Última carga: busca no banco e guarda no celular; sem internet usa a guardada.
 // Dia em que ela parou no meio (1 de 3 séries) não vira a "Última"; "ant" = treino anterior (pro +/− kg).
-export const escolheUltima = h => { const mx = Math.max(0, ...h.map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.sets.length >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; };
+export const escolheUltima = h => { const mx = Math.max(0, ...h.filter(x => !x.express).map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.express || x.sets.length >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; };
 export async function ultimaCarga(alunaId, exercicioNome) {
   const cache = LS.get('cargas', {});
   try { const u = escolheUltima(await historicoCarga(alunaId, exercicioNome, 3)); if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || cache[exercicioNome] || null; }

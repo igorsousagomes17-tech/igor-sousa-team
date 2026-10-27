@@ -48,6 +48,7 @@ window.addEventListener('popstate', ev => {
   if (voltarOverlay) { voltarOverlay(); return repoe(); } // anamnese: voltar = pergunta anterior
   if ($('#overlay').innerHTML) { closeOverlay(); const c = cancelarPopup; cancelarPopup = null; c?.(); return repoe(); } // voltar fecha pop-up primeiro (pergunta aberta = cancelada)
   if (minimizarDescanso()) return repoe(); // descanso aberto: voltar só minimiza, o tempo continua
+  if (rotaAtual === 'spinAula' && $('#sPausa') && !$('#sPausa').disabled) { $('#sSair').click(); return repoe(); } // aula rodando: voltar pergunta (não perde a aula)
   const st = ev.state || { name: S.perfil ? 'home' : 'entrada' };
   if (!S.perfil && !['entrada', 'login'].includes(st.name)) return go('entrada', null, { hist: false });
   if (S.perfil && ['entrada', 'login'].includes(st.name)) { history.replaceState({ name: 'home', arg: null }, '', '#home'); return go('home', null, { hist: false }); }
@@ -116,7 +117,7 @@ routes.entrada = () => { render(`<div class="view noTabs">${botaoIdioma()}<div c
 routes.login = () => {
   render(`<div class="view noTabs"><div class="topbar"><button class="back" data-go="entrada">‹ ${t('Voltar')}</button>${botaoIdioma().replace('langbtn', 'langbtn inline')}</div>
   <div class="logo big" style="font-size:2.125rem;margin-top:24px">IGOR<br>SOUSA <b>TEAM</b></div>
-  <form id="f" style="display:flex;flex-direction:column;gap:14px">
+  <form id="f" novalidate style="display:flex;flex-direction:column;gap:14px">
     ${DEMO ? `<div class="card" style="padding:10px 14px"><p class="muted small"><b style="color:var(--fg)">${t('Modo demonstração.')}</b> ${t('Já preenchi o seu acesso (painel do Igor). Pra ver como aluna, troca o e-mail por ana@demo.com.')}</p></div>` : ''}
     <div class="field"><label class="l" for="em">${t('E-mail')}</label><input class="input" id="em" type="email" autocomplete="username" inputmode="email" required value="${DEMO ? 'igor@demo.com' : ''}"></div>
     <div class="field"><label class="l" for="pw">${t('Senha')}</label><div class="senha"><input class="input" id="pw" type="password" autocomplete="current-password" required value="${DEMO ? 'demo1234' : ''}"><button type="button" class="olho">${t('mostrar')}</button></div><p class="muted small" style="margin-top:6px">${t('1ª vez? A senha é o seu WhatsApp, só os números com DDD (ex. 62999990000).')}</p></div>
@@ -127,7 +128,10 @@ routes.login = () => {
     <p class="muted center small">${t('Pagamento pela Kiwify. Confirmou, recebe o acesso no WhatsApp.')}</p></form></div>`);
   $('#lang').onclick = escolherIdioma;
   $('#f').onsubmit = async e => {
-    e.preventDefault(); $('#bt').disabled = true; $('#err').hidden = true;
+    e.preventDefault(); $('#err').hidden = true;
+    const vazio = !$('#em').value.trim() ? ['#em', t('Digita seu e-mail.')] : !$('#pw').value ? ['#pw', t('Digita sua senha (1ª vez: seu WhatsApp, só números).')] : null;
+    if (vazio) { $('#err').textContent = vazio[1]; $('#err').hidden = false; $(vazio[0]).focus(); return; } // aviso do app, grande e fixo (o balão do navegador some sozinho)
+    $('#bt').disabled = true;
     const pw = $('#pw').value, dig = pw.replace(/\D/g, '');
     // Digitou o WhatsApp do jeito que aparece no celular, "(62) 99999-0000": tenta também só com os números
     try { await db.login($('#em').value, pw).catch(er => { if (dig !== pw && dig.length >= 10 && dig.length <= 13 && !/fetch|network|Failed/i.test(String(er?.message))) return db.login($('#em').value, dig); throw er; }); await boot(); }
@@ -140,7 +144,7 @@ routes.login = () => {
 // Treinos feitos sem sinal entram na contagem na hora (sequência, meta, treino de hoje), antes de subir pro banco.
 // Cada item da fila tem dono: treino feito sem sinal nunca sobe na conta de outra pessoa que entrar no mesmo celular.
 const daFila = it => !it.dono || it.dono === S.perfil?.id;
-const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && (it.series || []).length > 0).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.patch.exercicios_total ?? it.s.total, duracao_s: it.patch.duracao_s, pendente: true }));
+const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && ((it.series || []).length > 0 || /^Spinning/.test(it.s?.titulo || ''))).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.patch.exercicios_total ?? it.s.total, duracao_s: it.patch.duracao_s, pendente: true }));
 async function sessoesComFila(p, lim) { const ss = await rapido(db.minhasSessoes(p.id, lim), db.LS.get('sessoes', [])); return [...pendentesDaFila(), ...ss].sort((a, b) => b.finalizada_em.localeCompare(a.finalizada_em)); }
 const seriesFeitas = s => Object.values(s.sets).flat().filter(x => x.done).length;
 const pillPausa = sa => sa.pausadoEm ? (haQuanto(sa.pausadoEm) ? t('Treino pausado há {t}', { t: haQuanto(sa.pausadoEm) }) : t('Treino pausado há pouco')) : t('Treino em andamento');
@@ -171,7 +175,7 @@ routes.home = async () => {
   ${sa && sa.fimEm ? `<div class="card hero"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Falta enviar')}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${t('Seu treino ainda não foi registrado: falta tocar em Enviar (o esforço e o recado pro Igor).')}</p><button class="btn dark" style="margin-top:8px" data-go="fim">${t('Enviar agora')}</button></div>`
     : sa ? `<div class="card hero"><span class="pill" id="pausaPill" style="background:rgba(0,0,0,.18);color:#1a0d00">${pillPausa(sa)}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${tp(sf, '{n} série feita', '{n} séries feitas')} · ${t('{a} de {b} exercícios · tudo salvo', contaObr(sa))}</p><button class="btn dark" style="margin-top:8px" data-go="sessao">${t('Continuar de onde parei')}</button><button class="back" id="desc" style="color:#1a0d00;margin-top:4px;text-decoration:underline">${t('descartar esse treino')}</button></div>`
     : perguntaSemana(plano, sessoes) || (feitoHoje && prox ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1.0625rem">${t('Treino de hoje feito ✓')}</b><p class="muted">${t('{x} registrado. Descansa e volta amanhã: o próximo é o {y}.', { x: esc(nomeTreino(feitoHoje.titulo)), y: t('Treino {l}', { l: esc(prox.letra) }) })}</p><button class="btn ghost sm mt" style="width:100%" data-go="treino" data-arg="${esc(prox.letra)}">${t('Ver o Treino {l}', { l: esc(prox.letra) })}</button></div>`
-    : prox ? `<div class="card hero"><div class="row between"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Treino de hoje')}</span><span class="small" style="font-weight:600">~${t('{n} min', { n: prox.duracao_min || 40 })}${kcalTxt(K.kcalTreino(p, prox.exercicios || [], prox.duracao_min || 40))}</span></div>
+    : prox ? `<div class="card hero"><div class="row between"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Treino de hoje')}</span><span class="small" style="font-weight:600">${expressHoje() ? `⚡ ${t('Express')} ~${t('{n} min', { n: durExpress(prox.duracao_min) })}` : `~${t('{n} min', { n: prox.duracao_min || 40 })}${kcalTxt(K.kcalTreino(p, prox.exercicios || [], prox.duracao_min || 40))}`}</span></div>
     <div class="logo" style="font-size:1.875rem;margin:8px 0 4px;color:#1a0d00">${t('Treino {l}', { l: esc(prox.letra) })}<br><span style="font-weight:600;font-size:1.0625rem;font-family:var(--body);text-transform:none">${esc(prox.nome)}</span></div>
     ${prox.repete ? `<p style="color:#1a0d00;font-weight:600">${prox.repete.exercicios_feitos ? t('Da última vez ele ficou pela metade ({a} de {b}). Bora fazer inteiro?', { a: prox.repete.exercicios_feitos, b: prox.repete.exercicios_total }) : t('Da última vez ele ficou só no começo. Bora fazer inteiro?')}</p>` : semCount >= meta ? `<p style="color:#1a0d00;font-weight:600">${t('Semana fechada 💪 Esse é só se você quiser treinar a mais.')}</p>` : ''}
     <button class="btn dark" style="margin-top:8px" data-go="treino" data-arg="${esc(prox.letra)}">${t('Abrir treino')}</button>${prox.repete ? `<button class="back" id="seguirMeia" style="color:#1a0d00;text-decoration:underline">${t('Não, seguir pro próximo')}</button>` : ''}${inicioDaSemana(plano) === prox.letra && !semCount ? `<button class="back" id="semTroca" style="color:#1a0d00;text-decoration:underline">${t('Você escolheu começar a semana por ele · trocar')}</button>` : ''}</div>`
@@ -204,6 +208,7 @@ routes.home = async () => {
   if ($('#seguirMeia')) $('#seguirMeia').onclick = () => { db.LS.set('seguirMeia', prox.repete.finalizada_em); routes.home(); };
   if ($('#semTroca')) $('#semTroca').onclick = () => { db.LS.del('inicioSemana'); db.LS.del('inicioSemanaPulou'); routes.home(); };
   if ($('#semPula')) $('#semPula').onclick = () => { db.LS.set('inicioSemanaPulou', isoWeek(new Date())); routes.home(); };
+  if (spinGuardada()) setTimeout(ofereceSpin, 700);
 };
 // "N treinos" sempre bate com o que tem de verdade no programa
 function subProg(pr) {
@@ -263,8 +268,8 @@ routes.treino = async (letra) => {
   if (!letra) { const ses = S.sessoes || await sessoesComFila(S.perfil); letra = proximoTreino(plano, ses)?.letra; }
   const tr = plano.treinos.find(x => x.letra === letra) || plano.treinos[0];
   if (rotaAtual === 'treino' && argAtual !== tr.letra) { argAtual = tr.letra; history.replaceState({ name: 'treino', arg: tr.letra }, '', '#treino'); }
-  // Versão express (~25 min): mesmos exercícios, menos séries e descanso mais curto, sem o cardio do fim. Fica lembrada.
-  const expr = !!db.LS.get('versaoExpress', false), exs = expr ? expressDe(tr.exercicios) : tr.exercicios;
+  // Versão express (~25 min): mesmos exercícios, menos séries e descanso mais curto, sem o cardio do fim. Lembrada só no dia (amanhã volta o Completo).
+  const expr = expressHoje(), exs = expr ? expressDe(tr.exercicios) : tr.exercicios;
   const dur = expr ? Math.max(15, Math.round((tr.duracao_min || 40) * 0.6 / 5) * 5) : (tr.duracao_min || 40);
   const mes = dataLocal(plano.mes + 'T12:00', { month: 'long' });
   const semPend = !S.sessao && !!perguntaSemana(plano, S.sessoes || []); // segunda sem escolher: o treino que ela iniciar vira o começo da semana
@@ -282,16 +287,20 @@ routes.treino = async (letra) => {
   $$('[data-ficha]').forEach(b => b.onclick = () => abrirHistorico(exs[+b.dataset.ficha].nome, exs[+b.dataset.ficha]));
   $('#pdf').onclick = () => baixarPdf($('#pdf'), plano);
   if ($('#kcalDado')) $('#kcalDado').onclick = () => anamneseForm(S.perfil, () => routes.treino(tr.letra));
-  $$('[data-ver]').forEach(b => b.onclick = () => { db.LS.set('versaoExpress', b.dataset.ver === '1'); routes.treino(tr.letra); });
+  $$('[data-ver]').forEach(b => b.onclick = () => { db.LS.set('versaoExpress', b.dataset.ver === '1' ? diaLocal() : false); routes.treino(tr.letra); });
   if (['zh', 'hi'].includes(idioma())) $$('#pdf').forEach(b => b.textContent += ' (English)'); // PDF nesses idiomas sai em inglês: avisa antes
 };
+const expressHoje = () => db.LS.get('versaoExpress', false) === diaLocal();
+const durExpress = d => Math.max(15, Math.round((d || 40) * 0.6 / 5) * 5);
 // Regra da versão express (o Igor pode mudar aqui): mobilidade/ativação ficam iguais; cardio/HIIT do fim sai;
 // os outros exercícios ficam com ~60% das séries (mín. 2) e descanso 25% menor (mín. 30 s). Bi-sets continuam.
 function expressDe(lista) {
   return lista.filter(e => !ehHiit(e)).map(e => {
     if (/mobilidade|ativa[çc][ãa]o|alongamento|aquecimento/i.test(e.nome) || (e.series || 1) <= 2) return e;
     const n = Math.max(2, Math.round(e.series * 0.6)), alvos = String(e.reps || '').split('/');
-    return { ...e, series: n, reps: alvos.length > n ? alvos.slice(-n).join('/') : e.reps, descanso_s: e.descanso_s ? Math.max(30, Math.round(e.descanso_s * 0.75 / 5) * 5) : e.descanso_s };
+    // Pirâmide 12/10/8 → 12/8 (começa leve, termina na pesada); serieIdx = qual série do completo cada uma é (sugestão de carga certa)
+    const idx = alvos.length > n ? [...new Set(Array.from({ length: n }, (_, j) => Math.round(j * (alvos.length - 1) / (n - 1))))] : null;
+    return { ...e, series: n, reps: idx ? idx.map(j => alvos[j]).join('/') : e.reps, serieIdx: idx || undefined, descanso_s: e.descanso_s ? Math.max(30, Math.round(e.descanso_s * 0.75 / 5) * 5) : e.descanso_s };
   });
 }
 async function baixarPdf(b, plano, programa) {
@@ -550,10 +559,12 @@ function descontaFora(s) {
 document.addEventListener('visibilitychange', () => {
   const s = S.sessao; if (!s || !(rotaAtual === 'sessao' || (rotaAtual === 'assistente' && duvidaNoTreino))) return; // "? Dúvida" no meio do treino também conta como treino aberto
   // Celular no bolso no descanso também é treino: conta até o fim do descanso + 3 min (o tempo da série)
-  if (document.visibilityState === 'hidden') { s.ocultoEm = Date.now(); s.trabFim = trabalhoFim() || (s.descansoAte ? s.descansoAte + 3 * 60000 : null); salvaSessao(); return; }
-  manterTelaAcesa();
+  if (document.visibilityState === 'hidden') { if (!s.ocultoEm) s.ocultoEm = Date.now(); s.trabFim = trabalhoFim() || (s.descansoAte ? s.descansoAte + 3 * 60000 : null); salvaSessao(); return; }
+  manterTelaAcesa(); ultToque = Date.now(); // voltou pro app: o tempo fora já foi descontado, não vira "10 min parado"
   const gap = descontaFora(s); if (gap >= 60000) { toast(t('Você ficou fora: tirei {n} min de tempo parado do relógio do treino.', { n: Math.round(gap / 60000) })); const c = $('#clock'); if (c) c.textContent = fmtMin(Math.floor((Date.now() - s.inicio) / 1000)); }
 });
+// "? Dúvida" largada no meio do treino (criança chamou): 10 min sem toque = pausa o treino e solta a tela, igual na sessão
+setInterval(() => { const s = S.sessao; if (!duvidaNoTreino || rotaAtual !== 'assistente' || !s || s.pausadoEm || document.hidden || descansoAtivo() || trabalhoFim() || Date.now() - ultToque <= INATIVO) return; s.pausadoEm = Math.max(ultToque + FORA_TOL, s.inicio); salvaSessao(); soltarTela(); toast(t('Pausei seu treino: ficou 10 min parado. O tempo parado não conta, e tá tudo salvo.'), false, { fixo: true }); }, 5000);
 // Treino aberto em duas abas (app instalado + Safari): a mais recente vale nas duas, nenhuma apaga série da outra.
 window.addEventListener('storage', ev => {
   if (ev.key !== 'sessao' && ev.key !== 'demo:sessao') return;
@@ -588,13 +599,16 @@ async function descanso(seg, txt) {
   if (S.sessao === s && !descansoAtivo() && !s.pausadoEm) { s.descansoAte = null; salvaSessao(); }
   return r;
 }
-function marcarFeita(s, i, k) { const st = s.sets[i][k], e = s.exs[i]; st.done = true; st.feitaEm = Date.now(); st.nome = e.nome; st.eid = e.nome === e.original ? (e.id || null) : null; }
+// Nº da série no treino completo (no Express a 2ª série da pirâmide 12/8 é a 3ª do completo)
+const serieN = (e, k) => (e.serieIdx?.[k] ?? k) + 1;
+function marcarFeita(s, i, k) { const st = s.sets[i][k], e = s.exs[i];
+  if (!tempo(e.reps)) { if (!semCarga(e) && st.kg === '') { const sug = piramide(e.reps) ? e.porSerie?.[serieN(e, k)] : e.ultima?.kg; if (sug != null) st.kg = String(sug); } if (st.reps === '') { const r = repsAlvo(e.reps, k); if (r) st.reps = String(r); } } /* o que aparece é o que fica salvo */ st.done = true; st.feitaEm = Date.now(); st.nome = e.nome; st.eid = e.nome === e.original ? (e.id || null) : null; }
 routes.sessao = () => {
   const s = S.sessao; if (!s) return go('home');
-  const voltouDaPausa = !!s.pausadoEm || s.descansoMini; // recarregou com o descanso em tela cheia: volta em tela cheia; minimizado ou voltando da pausa: minimizado
+  const voltouDaPausa = !!s.pausadoEm || s.descansoMini; if (s.pausadoEm) fecharToast(true); // "Pausei seu treino" some no Continuar // recarregou com o descanso em tela cheia: volta em tela cheia; minimizado ou voltando da pausa: minimizado
   if (s.pausadoEm) { s.inicio += Date.now() - s.pausadoEm; s.pausadoEm = null; } // pausa não conta no tempo
   else if (s.fimEm) s.inicio += Date.now() - s.fimEm; // voltou do feedback: o tempo parado lá não conta
-  s.fimEm = null; if (!document.hidden) s.ocultoEm = null; // redesenhou com o app escondido (cronômetro acabou no bolso): a marca de "fora" fica
+  s.fimEm = null; if (!document.hidden) s.ocultoEm = null; if (s.inicio > Date.now()) s.inicio = Date.now(); // relógio nunca negativo // redesenhou com o app escondido (cronômetro acabou no bolso): a marca de "fora" fica
   if (!s.passos[s.p]) { s.p = s.passos.length - 1; s.passos[s.p].forEach(i => delete s.feito[i]); } // voltou do fim pro último exercício
   salvaSessao();
   const passo = s.passos[s.p];
@@ -612,7 +626,7 @@ routes.sessao = () => {
     };
     // Ver execução, Dúvida e "Senti dor" sempre à vista; dica e trocas ficam no "Dica e opções" (as séries sobem na tela)
     const rapidos = `<button class="btn ghost sm" style="width:auto" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}">▶ ${T('Ver execução')}</button><button class="btn ghost sm" style="width:auto" data-duvida="${esc(e.nome)}">? ${T('Dúvida')}</button><button class="btn ghost sm" style="width:auto" data-dor="${i}">${(s.dor || []).includes(e.nome) ? '✓ ' + T('Dor anotada') : '⚠ ' + T('Senti dor')}</button>`;
-    const phKg = k => pir ? (e.porSerie?.[k + 1] != null ? dec(e.porSerie[k + 1]) : 'kg') : (e.ultima?.kg != null ? dec(e.ultima.kg) : 'kg'); // pirâmide: a carga daquela série da última vez
+    const phKg = k => pir ? (e.porSerie?.[serieN(e, k)] != null ? dec(e.porSerie[serieN(e, k)]) : 'kg') : (e.ultima?.kg != null ? dec(e.ultima.kg) : 'kg'); // pirâmide: a carga daquela série da última vez
     return `<div class="bloco" data-i="${i}">
       <div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0">${bi ? `<span class="tag">A${n + 1}</span>` : ''}<h1 style="font-size:${bi ? 1.625 : 2}rem">${esc(e.nome)}</h1></div></div>
       <p class="muted">${e.series > 1 ? T('{n} séries ×', { n: e.series }) + ' ' : ''}${esc(e.reps)}${!bi && e.descanso_s ? ' · ' + T('descanso {n}s', { n: e.descanso_s }) : ''}</p>
@@ -625,7 +639,7 @@ routes.sessao = () => {
       ${e.dica ? `<p class="dica">${esc(e.dica)}</p>` : ''}
       <div class="row" style="margin:8px 0;gap:8px;flex-wrap:wrap">${e.alternativa ? `<button class="btn ghost sm swap" style="width:auto" data-i="${i}">⇄ ${T('Trocar por {x}', { x: esc(e.alternativa) })}</button>` : e.nome !== e.original ? `<button class="btn ghost sm swap" style="width:auto" data-i="${i}">↺ ${T('Voltar pro {x}', { x: esc(e.original) })}</button>` : ''}${!t && (s.programa_treino_id || /casa|ambos/.test(S.perfil?.local_treino || '')) && (!sc || semPesoMarcado(e.nome)) ? `<button class="btn ghost sm" style="width:auto" data-sempeso="${i}">${sc ? T('Usar peso') : T('Sem peso (peso do corpo)')}</button>` : ''}</div>
       ${e.dica || e.alternativa || e.nome !== e.original || (!t && (s.programa_treino_id || /casa|ambos/.test(S.perfil?.local_treino || '')) && (!sc || semPesoMarcado(e.nome))) ? '</details>' : '</div>'}
-      ${t ? '' : `<div class="set ${sc ? 'sc' : ''}"><span class="h">${T('Série')}</span>${sc ? '' : '<span class="h">kg</span>'}<span class="h">${lado ? T('reps/lado') : T('reps')}</span><span class="h c">${ultimoDoPar && e.descanso_s ? T('descanso') : T('feito')}</span></div>`}
+      ${t ? '' : `<div class="set ${sc ? 'sc' : ''}"><span class="h" title="${T('Série')}">${T('Nº')}</span>${sc ? '' : '<span class="h">kg</span>'}<span class="h">${lado ? T('reps/lado') : T('reps')}</span><span class="h c" aria-label="${ultimoDoPar && e.descanso_s ? T('descanso') : T('feito')}">${ultimoDoPar && e.descanso_s ? '⏱' : T('feito')}</span></div>`}
       ${sets.map((st, k) => t
         ? `<div class="set tset ${st.done ? 'done' : ''}" data-i="${i}" data-k="${k}"><span>${k + 1}</span><span class="muted">${esc(e.reps)}</span>${botao(k)}</div>`
         : `<div class="set ${sc ? 'sc' : ''} ${st.done ? 'done' : ''}" data-i="${i}" data-k="${k}"><span>${k + 1}</span>${sc ? '' : `<input inputmode="decimal" enterkeyhint="next" value="${esc(st.kg)}" data-f="kg" placeholder="${phKg(k)}" aria-label="${T('kg da série {n}', { n: k + 1 })}">`}<input inputmode="numeric" enterkeyhint="next" value="${esc(st.reps)}" data-f="reps" placeholder="${repsAlvo(e.reps, k) || T('reps')}" aria-label="${T('reps da série {n}', { n: k + 1 })}">${botao(k)}</div>`).join('')}
@@ -639,9 +653,10 @@ routes.sessao = () => {
   const ok = passo.every(i => s.feito[i]), ultimo = s.p === s.passos.length - 1;
   const abertos = rotaAtual === 'sessao' && s.pMais === s.p ? new Set($$('.bloco details.mais[open]').map(d => d.closest('.bloco').dataset.i)) : new Set(); s.pMais = s.p; // redesenhou (trocou o exercício, sem peso): o "Dica e opções" aberto continua aberto
   render(`<div class="view fx sessao"><div class="topbar"><button class="back" id="sair">‹ ${t('Pausar')}</button><span class="pill" id="clock">${fmtMin(Math.floor((Date.now() - s.inicio) / 1000))}</span></div>
-  <div class="row between"><span class="muted">${esc(nomeCurto(s.titulo))}${bi ? ' · <span style="white-space:nowrap">' + (passo.length > 2 ? t('Tri-set') : t('Bi-set')) + '</span>' : ''}</span><span class="muted">${totalTxt(s)}</span></div>
+  <div class="row between"><span class="muted">${esc(nomeCurto(s.titulo))}${s.express ? ' · ⚡ ' + t('Express') : ''}${bi ? ' · <span style="white-space:nowrap">' + (passo.length > 2 ? t('Tri-set') : t('Bi-set')) + '</span>' : ''}</span><span class="muted">${totalTxt(s)}</span></div>
   <div class="bar"><i style="width:${Math.min(100, obrigatorios(s).filter(i => completo(s, i)).length / Math.max(1, obrigatorios(s).length) * 100)}%"></i></div>
   <div class="passos" role="tablist" aria-label="${t('Ir direto pra um exercício')}">${s.passos.map((g, j) => `<button class="${j === s.p ? 'on' : ''} ${g.every(i => completo(s, i)) ? 'ok' : ''}" data-passo="${j}" aria-label="${esc(s.exs[g[0]].nome)}">${g.every(i => completo(s, i)) ? '✓' : g.every(i => opcional(s.exs[i])) ? '+' : g.map(i => s.exs[i].ordem ?? j + 1).filter((v, x, a) => a.indexOf(v) === x).join('-')}</button>`).join('')}</div>
+  ${s.corrigir && s.corrigir.p !== s.p && s.passos[s.corrigir.p] && Date.now() - s.corrigir.em < 180000 ? `<button class="back small" id="corr" style="color:var(--accent);align-self:flex-start;min-height:40px">‹ ${t('Corrigir {x}', { x: esc(s.exs[s.passos[s.corrigir.p][0]].nome) })}</button>` : ''}
   ${bi || (seriesFeitas(s) < 3 && !s.dicaOk) ? `<p class="restHint">${hint}</p>` : ''}
   ${passo.map(bloco).join('<div class="sep"></div>')}
   <div class="card row between" style="margin-top:6px"><div><b style="font-size:0.9375rem">${passo.length > 2 ? t('Tri-set concluído?') : bi ? t('Bi-set concluído?') : t('Exercício concluído?')}</b><p class="muted">${ultimo ? t('É o último: marca que eu fecho o treino.') : t('Marca que eu já puxo o próximo.')}</p></div><button class="sw ${ok ? 'on' : ''}" id="sw" aria-label="${t('Concluir')}"></button></div>
@@ -653,7 +668,7 @@ routes.sessao = () => {
   clearInterval(clockIv); ultToque = Math.max(ultToque, Date.now() - 1000); clockIv = setInterval(() => { const c = $('#clock'); if (c) c.textContent = fmtMin(Math.floor((Date.now() - s.inicio) / 1000));
     // Celular largado no banco (saiu correndo atrás do filho sem pausar): 10 min sem toque e nada rodando = pausa sozinho e solta a tela
     const parado = Math.max(ultToque, s.descansoAte || 0);
-    if (!document.hidden && rotaAtual === 'sessao' && S.sessao === s && !descansoAtivo() && !trabalhoFim() && Date.now() - parado > INATIVO) { s.pausadoEm = parado + FORA_TOL; salvaSessao(); go('home'); toast(t('Pausei seu treino: ficou 10 min parado. O tempo parado não conta, e tá tudo salvo.'), false, { fixo: true }); }
+    if (!document.hidden && rotaAtual === 'sessao' && S.sessao === s && !descansoAtivo() && !trabalhoFim() && Date.now() - parado > INATIVO) { s.pausadoEm = Math.max(parado + FORA_TOL, s.inicio); salvaSessao(); go('home'); toast(t('Pausei seu treino: ficou 10 min parado. O tempo parado não conta, e tá tudo salvo.'), false, { fixo: true }); }
   }, 1000);
   // Recarregou ou voltou com o descanso rodando: ele reaparece minimizado com o tempo que falta
   if (s.descansoAte && !descansoAtivo()) { const l = Math.ceil((s.descansoAte - Date.now()) / 1000); if (l > 0) { descanso(l, s.descansoTxt); if (voltouDaPausa) minimizarDescanso(); } else { s.descansoAte = null; salvaSessao(); } }
@@ -685,12 +700,17 @@ routes.sessao = () => {
     if (s.trab && s.trab.i === i && s.trab.k === k && trabalhoFim()) return abrirTimer(); // cardio já rodando: só abre, não recomeça
     if (st.done) { // toque de novo desfaz (toque duplo sem querer, não)
       if (Date.now() - (st.feitaEm || 0) < 1000) return;
-      st.done = false; salvaSessao(); routes.sessao(); return toast(T('Série {n} desmarcada. Toca de novo pra marcar.', { n: k + 1 }));
+      const fe = st.feitaEm || 0; st.done = false; delete s.feito[i]; // desmarcou: o exercício volta a faltar (não conta como completo)
+      // A "Última" no celular volta a ser a das séries que continuam marcadas (ou a de antes do treino)
+      const cs = db.LS.get('cargas', {}), nm = st.nome || e.nome; if (s.sets[i].some(x => x.done)) guardaCargaDo(s, i); else if (cs[nm]?.sessao === s.chave) { if (e.ultima?.kg != null && nm === e.nome) cs[nm] = { ...e.ultima, sessao: null }; else delete cs[nm]; db.LS.set('cargas', cs); }
+      // Desmarcou a série que abriu o descanso: o descanso para (ela não fez a série)
+      if (descansoAtivo() && s.descansoAte && fe >= Math.max(...Object.values(s.sets).flat().filter(x => x.done).map(x => x.feitaEm || 0), 0)) { pararDescanso(); s.descansoAte = null; }
+      salvaSessao(); routes.sessao(); return toast(T('Série {n} desmarcada. Toca de novo pra marcar.', { n: k + 1 }));
     }
     const t = tempo(e.reps);
     if (!t) {
       // O que aparece no campo é o que fica salvo: sugestão vira o número de verdade (dá pra corrigir depois)
-      if (!semCarga(e) && st.kg === '') { const sug = piramide(e.reps) ? e.porSerie?.[k + 1] : e.ultima?.kg; if (sug != null) st.kg = String(sug); }
+      if (!semCarga(e) && st.kg === '') { const sug = piramide(e.reps) ? e.porSerie?.[serieN(e, k)] : e.ultima?.kg; if (sug != null) st.kg = String(sug); }
       if (st.reps === '') { const r = repsAlvo(e.reps, k); if (r) st.reps = String(r); }
       const v = semCarga(e) ? null : numero(st.kg), ref = +e.ultima?.kg || 0;
       if (v != null && (v > 400 || (ref && v > ref * 2.5 && v - ref > 20))) {
@@ -735,6 +755,9 @@ routes.sessao = () => {
   $$('.hist').forEach(a => a.onclick = ev => { ev.preventDefault(); abrirHistorico(s.exs[+a.dataset.i].nome); });
   $$('.swap').forEach(b => b.onclick = async () => {
     const i = +b.dataset.i, e = s.exs[i];
+    // Trocar por um exercício que já está no treino mistura as cargas dos dois (pirâmide x drop): avisa antes
+    const jaTem = e.alternativa && s.exs.findIndex((x, j) => j !== i && x.nome === e.alternativa);
+    if (e.alternativa && jaTem >= 0) { const ok = await perguntar(t('Esse já está no seu treino'), t('{x} é também o exercício nº {n} de hoje. Se trocar, as cargas dos dois ficam juntas no histórico.', { x: e.alternativa, n: s.exs[jaTem].ordem ?? jaTem + 1 }), t('Trocar mesmo assim'), t('Manter o {x}', { x: e.nome })); if (!ok || S.sessao !== s) return; }
     if (e.alternativa) { e.trocadoDe = e.nome; e.nome = e.alternativa; e.alternativa = null; }
     else { e.alternativa = e.nome; e.nome = e.original; }
     e.ultima = db.LS.get('cargas', {})[e.nome] || null; e.porSerie = null;
@@ -769,12 +792,13 @@ routes.sessao = () => {
   $$('[data-dor]').forEach(b => b.onclick = () => { const nome = s.exs[+b.dataset.dor].nome; s.dor = s.dor || []; if (s.dor.includes(nome)) { s.dor = s.dor.filter(x => x !== nome); toast(t('Dor desmarcada')); } else { s.dor.push(nome); toast(t('Anotei: dor em {x}. Se doer de novo, para esse exercício (pode pular). O Igor recebe isso no fim do treino.', { x: nome })); } salvaSessao(); routes.sessao(); });
   $$('[data-sempeso]').forEach(b => b.onclick = () => { const e = s.exs[+b.dataset.sempeso], vira = !semCarga(e); marcarSemPeso(e.nome, vira); if (vira) s.sets[+b.dataset.sempeso].forEach(st => { if (!st.done) st.kg = ''; }); salvaSessao(); routes.sessao(); });
   // Fez uma série a mais (ou a menos) que o planejado
-  $$('[data-mais]').forEach(b => b.onclick = () => { const i = +b.dataset.mais, l = s.sets[i], u = l[l.length - 1]; l.push({ kg: u?.kg || '', reps: '', done: false }); delete s.feito[i]; salvaSessao(); routes.sessao(); });
+  $$('[data-mais]').forEach(b => b.onclick = () => { const i0 = +b.dataset.mais, alvo = passo.includes(i0) && bi ? passo : [i0]; const n0 = s.sets[i0].length; alvo.forEach(i => { const l = s.sets[i]; if (l.length > n0) return; const u = l[l.length - 1]; l.push({ kg: u?.kg || '', reps: '', done: false }); delete s.feito[i]; }); salvaSessao(); routes.sessao(); }); // bi-set: a série a mais vale pro A1 e pro A2
   $$('[data-menos]').forEach(b => b.onclick = () => { const i = +b.dataset.menos, l = s.sets[i]; if (l.length > 1 && !l[l.length - 1].done) { l.pop(); salvaSessao(); routes.sessao(); } });
   $$('[data-passo]').forEach(b => b.onclick = () => { const j = +b.dataset.passo; if (j === s.p) return; s.p = j; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); });
   if ($('#prev')) $('#prev').onclick = () => { s.p--; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
   if ($('#pular')) $('#pular').onclick = () => { s.p++; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
   $('#fim').onclick = confirmarFim;
+  if ($('#corr')) $('#corr').onclick = () => { s.p = s.corrigir.p; s.corrigir = null; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
   $('#sair').onclick = () => { go('home'); toast(t('Treino pausado. O relógio parou, continua quando quiser.')); };
 };
 // Histórico de carga de um exercício (no treino, na lista do treino e em Evolução > Minhas cargas)
@@ -791,14 +815,15 @@ async function abrirHistorico(nome, ex) {
   const doCelular = !h?.length && c; if (!h?.length) h = c ? [c] : []; // sem sinal: o que tem no celular
   const hl = $('#hl'); if (!hl) return;
   // Gráfico com o número em cima e a data embaixo (mais antigo à esquerda); dia que ela parou no meio = "parcial"
-  const mx = Math.max(...h.map(x => +x.kg || 0), 1), linha = [...h].slice(0, 6).reverse(), maxSets = Math.max(0, ...h.map(x => x.sets?.length || 0));
-  const parcial = x => x.sets?.length && x.sets.length < maxSets;
+  const mx = Math.max(...h.map(x => +x.kg || 0), 1), linha = [...h].slice(0, 6).reverse(), maxSets = Math.max(0, ...h.filter(x => !x.express).map(x => x.sets?.length || 0));
+  const parcial = x => !x.express && x.sets?.length && x.sets.length < maxSets; // Express (menos séries de propósito) não é dia parcial
   hl.innerHTML = h.length ? `${linha.length > 1 ? `<div class="row" style="align-items:flex-end;gap:6px;height:104px;margin:6px 0 4px">${linha.map(x => `<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%"><b style="font-size:0.875rem">${dec(x.kg)}</b><i style="display:block;width:100%;height:${Math.max(6, (+x.kg / mx) * 56)}px;background:var(--accent);border-radius:4px;opacity:${parcial(x) ? .45 : .9}"></i><span class="muted small">${fmtData(x.data)}</span></div>`).join('')}</div><p class="muted small">${t('kg · mais antigo à esquerda, mais recente à direita')}</p>` : ''}
     ${h.map((x, j) => { const ant = h.slice(j + 1).find(y => !parcial(y)), d = ant && !parcial(x) ? +x.kg - +ant.kg : 0; return `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line);gap:8px"><span class="muted">${fmtData(x.data)}${parcial(x) ? ` · ${t('parcial ({a} de {b})', { a: x.sets.length, b: maxSets })}` : ''}${x.sets?.length > 1 ? `<br><span class="small">${x.sets.map(z => z.reps != null ? t('{kg} kg, {n} vezes', { kg: dec(z.kg), n: z.reps }) : `${dec(z.kg)} kg`).join(' · ')}</span>` : ''}</span><span class="row" style="gap:6px;flex-shrink:0"><b style="white-space:nowrap">${dec(x.kg)} kg × ${x.reps ?? '–'}</b>${d ? `<span style="white-space:nowrap;font-size:0.875rem;font-weight:600;color:${d > 0 ? 'var(--accent)' : 'var(--muted)'}">${d > 0 ? '+' : '−'}${dec(Math.abs(d))} kg</span>` : ''}${x.sessao_id ? `<button class="back small" data-apaga="${esc(x.sessao_id)}" aria-label="${t('Apagar')}" style="color:var(--muted);padding:0 6px">✕</button>` : ''}</span></div>`; }).join('')}
     ${doCelular ? `<p class="muted small mt">${t('Sem internet: mostrando a última carga guardada no celular.')}</p>` : ''}` : `<p class="muted">${t('Quando você anotar o peso durante o treino, ele aparece aqui.')}</p>`;
   $$('[data-apaga]', hl).forEach(b => b.onclick = async () => {
     if (!(await perguntar(t('Apagar esse registro?'), t('Use pra corrigir um número digitado errado. As séries desse exercício nesse dia somem do histórico.'), t('Apagar'), t('Manter')))) return abrirHistorico(nome, ex);
-    try { await db.apagarCarga(b.dataset.apaga, nome); const cs = db.LS.get('cargas', {}); const resto = h.filter(x => x.sessao_id !== b.dataset.apaga); if (resto[0]) cs[nome] = { kg: +resto[0].kg, reps: resto[0].reps, data: resto[0].data }; else delete cs[nome]; db.LS.set('cargas', cs); toast(t('Registro apagado ✓')); }
+    try { await db.apagarCarga(b.dataset.apaga, nome); const cs = db.LS.get('cargas', {}); const resto = h.filter(x => x.sessao_id !== b.dataset.apaga); if (resto[0]) cs[nome] = { kg: +resto[0].kg, reps: resto[0].reps, data: resto[0].data }; else delete cs[nome]; db.LS.set('cargas', cs); toast(t('Registro apagado ✓'));
+      const sa = S.sessao; if (sa) { const nova = resto.length ? db.escolheUltima?.(resto) || cs[nome] || null : null; sa.exs.forEach(e => { if (e.nome === nome) { e.ultima = nova ? { kg: +nova.kg, reps: nova.reps, data: nova.data } : null; e.porSerie = null; } }); salvaSessao(); if (rotaAtual === 'sessao') routes.sessao(); } }
     catch (er) { toast(traduzErro(er), true); }
     abrirHistorico(nome, ex);
   });
@@ -821,7 +846,7 @@ function guardaCargaDo(s, i) {
 }
 function concluirPasso() {
   const s = S.sessao; if (!s) return; const passo = s.passos[s.p]; if (!passo) return go('fim');
-  passo.forEach(i => { s.feito[i] = true; guardaCargaDo(s, i); });
+  passo.forEach(i => { s.feito[i] = true; guardaCargaDo(s, i); }); s.corrigir = { p: s.p, em: Date.now() }; // 3 min pra voltar e corrigir a última série
   // Vai pro próximo que ainda falta (pulou o aparelho ocupado e voltou nele: não cai no que já fez)
   const pend = j => !s.passos[j].every(i => completo(s, i));
   let prox = s.passos.findIndex((g, j) => j > s.p && pend(j)), pulado = false;
@@ -833,11 +858,23 @@ function concluirPasso() {
 }
 function confirmarFim() {
   if (encerrarTrabalho()) return setTimeout(confirmarFim, 80); // cardio rodando: primeiro registra os minutos feitos
-  const s = S.sessao, n = feitosCount(s);
+  const s = S.sessao;
+  // Digitou kg/reps e esqueceu de tocar no ✓ (costume do Mfit): pergunta antes de jogar fora
+  const preench = []; s.exs.forEach((e, i) => s.sets[i].forEach((x, k) => { if (!x.done && (x.reps !== '' || x.kgMan)) preench.push([i, k]); }));
+  if (preench.length && !s.semMarcarOk) {
+    const nomes = [...new Set(preench.map(([i]) => s.exs[i].nome))].join(', ');
+    return escolher(tp(preench.length, '{n} série preenchida sem marcar', '{n} séries preenchidas sem marcar'), t('{x}: você digitou e não tocou no ✓. Marco como feitas?', { x: nomes }), [t('Marcar como feitas'), t('Não fiz essas')]).then(o => {
+      if (o < 0 || S.sessao !== s) return;
+      if (o === 0) { preench.forEach(([i, k]) => marcarFeita(s, i, k)); [...new Set(preench.map(([i]) => i))].forEach(i => { if (s.sets[i].every(x => x.done)) s.feito[i] = true; guardaCargaDo(s, i); }); }
+      else s.semMarcarOk = true;
+      salvaSessao(); if (rotaAtual === 'sessao') routes.sessao(); confirmarFim();
+    });
+  }
+  const n = feitosCount(s);
   // Mesma conta do "X de Y feitos": exercício pela metade ainda falta (opcional não conta como faltando)
   const obr = s.exs.map((e, i) => i).filter(i => !opcional(s.exs[i])), faltam = obr.filter(i => !completo(s, i)), meio = faltam.filter(i => s.sets[i].some(x => x.done)).length, falta = faltam.length;
   if (!falta) return go('fim');
-  overlay(`<div class="modal" id="m"><div class="box" style="padding:18px;display:flex;flex-direction:column;gap:12px"><h2>${n ? tp(falta, 'Falta {n} exercício', 'Faltam {n} exercícios') + (meio ? ' ' + tp(meio, '({n} pela metade)', '({n} pela metade)') : '') : t('Nenhuma série marcada')}</h2>
+  overlay(`<div class="modal" id="m"><div class="box" style="padding:18px;display:flex;flex-direction:column;gap:12px"><h2>${n && falta === 1 ? t('Falta 1 exercício: {x}', { x: esc(s.exs[faltam[0]].nome) }) + (meio ? ' ' + t('(pela metade)') : '') : n ? tp(falta, 'Falta {n} exercício', 'Faltam {n} exercícios') + (meio ? ' ' + tp(meio, '({n} pela metade)', '({n} pela metade)') : '') : t('Nenhuma série marcada')}</h2>
     <p class="muted">${n ? t('Quer encerrar assim mesmo? Fica no seu histórico, mas sem pontos: só treino completo pontua.') : t('Se encerrar agora, esse treino não conta. Quer continuar?')}</p>
     <button class="btn sm" id="volta">${t('Continuar treino')}</button><button class="btn ghost sm" id="enc">${n ? t('Encerrar e registrar') : s.dor?.length ? t('Avisar o Igor da dor e encerrar') : t('Descartar treino')}</button></div></div>`);
   $('#volta').onclick = closeOverlay;
@@ -846,11 +883,11 @@ function confirmarFim() {
 function seriesDaSessao(s) {
   const rows = [];
   // Cada série vai com o nome do exercício que ela fez de verdade (trocou no meio? cada uma no seu)
-  s.exs.forEach((e, i) => s.sets[i].forEach((st, k) => { if (!st.done) return; const nome = st.nome || e.nome; const kg = st.kg !== '' ? st.kg : (!piramide(e.reps) && nome === e.nome ? (e.ultima?.kg ?? '') : ''); rows.push({ exercicio_id: st.nome ? st.eid : (e.nome === e.original ? (e.id || null) : null), exercicio_nome: nome, n: k + 1, kg: kg === '' || semCarga(e) ? null : numero(kg), reps: tempo(e.reps) ? null : st.reps !== '' ? repsNum(st.reps) : (repsAlvo(e.reps, k) || null), feita: true }); })); // série de tempo não inventa reps
+  s.exs.forEach((e, i) => s.sets[i].forEach((st, k) => { if (!st.done) return; const nome = st.nome || e.nome; const kg = st.kg; /* campo vazio = sem carga (o ✓ já preenche com a sugestão; se ela apagou, não grava escondido) */ rows.push({ exercicio_id: st.nome ? st.eid : (e.nome === e.original ? (e.id || null) : null), exercicio_nome: nome, n: serieN(e, k), kg: kg === '' || semCarga(e) ? null : numero(kg), reps: tempo(e.reps) ? null : st.reps !== '' ? repsNum(st.reps) : (repsAlvo(e.reps, k) || null), feita: true }); })); // série de tempo não inventa reps
   return rows;
 }
 // Guardou na fila com sinal (4G travado, treino começado sem sinal): já tenta mandar, sem esperar ela fechar o app.
-const novaFila = item => { const f = db.LS.get('fila', []); f.push({ uid: Date.now() + '-' + Math.random().toString(36).slice(2, 7), dono: S.perfil?.id || null, ...item }); db.LS.set('fila', f); if (navigator.onLine !== false) setTimeout(sincronizarFila, 1500); };
+const novaFila = item => { const f = db.LS.get('fila', []); f.push({ uid: Date.now() + '-' + Math.random().toString(36).slice(2, 7), dono: S.perfil?.id || null, em: Date.now(), ...item }); db.LS.set('fila', f); if (navigator.onLine !== false) setTimeout(sincronizarFila, 1500); };
 // Feedback do fim: é uma tela com rota (voltar funciona) e o que ela escreve fica salvo.
 routes.fim = () => {
   clearInterval(clockIv); soltarTela(); encerrarTrabalho(); pararDescanso(); const s = S.sessao; if (!s) return go('home');
@@ -864,8 +901,8 @@ routes.fim = () => {
   const escala = (id, a, b) => `<div class="scale" id="${id}">${Array.from({ length: 11 }, (_, i) => `<button type="button" class="${s.fb[id] === i ? 'on' : ''}">${i}</button>`).join('')}</div><div class="row between muted small" style="margin-top:4px"><span>${a}</span><span>${b}</span></div>`;
   render(`<div class="view noTabs fx" style="padding-top:16px"><button class="back" id="volta" style="align-self:flex-start">‹ ${t('Voltar pro treino')}</button>
   ${s.dor?.length ? `<div class="card" style="border:1px solid var(--warn)"><b>⚠ ${t('Você anotou dor em {x}.', { x: esc(s.dor.join(', ')) })}</b><p class="muted">${t('Vai junto com o seu recado pro Igor. Se quiser, conta mais embaixo.')}</p></div>` : ''}
-  <div><p class="muted">${esc(nomeCurto(s.titulo))} · ${fmtMin(dur)} · ${t('{a} de {b}', { a: nObr, b: obr.length })}${opcFeito(s) ? ' + ' + t('opcional ✓') : ''}</p><h1>${nObr >= obr.length ? t('Mandou bem!') : t('Treino incompleto ({a} de {b})', { a: nObr, b: obr.length })}</h1>${nObr >= obr.length ? '' : `<div class="card" style="border:1.5px solid var(--warn);margin-top:8px"><p style="font-weight:600">${t('Treino incompleto fica no seu histórico, mas não soma pontos nem conta no desafio. Dá pra voltar e terminar.')}</p><p class="muted small mt">${t('Só fica registrado quando você tocar em Enviar, lá embaixo.')}</p></div>`}</div>
-  <div id="esfBox"><label class="l">${t('Quanto esforço foi?')}</label>${escala('esf', t('0 · muito leve'), t('10 · no limite'))}</div>
+  <div><p class="muted">${esc(nomeCurto(s.titulo))} · ${dur < 60 ? t('{n} s', { n: dur }) : t('{n} min', { n: Math.round(dur / 60) })} · ${t('{a} de {b}', { a: nObr, b: obr.length })}${opcFeito(s) ? ' + ' + t('opcional ✓') : ''}</p><h1>${nObr >= obr.length ? t('Mandou bem!') : t('Treino incompleto ({a} de {b})', { a: nObr, b: obr.length })}</h1>${nObr >= obr.length ? '' : `<div class="card" style="border:1.5px solid var(--warn);margin-top:8px"><p style="font-weight:600">${t('Treino incompleto fica no seu histórico, mas não soma pontos nem conta no desafio. Dá pra voltar e terminar.')}</p><p class="muted small mt">${t('Só fica registrado quando você tocar em Enviar, lá embaixo.')}</p></div>`}</div>
+  <p class="muted small">${t('Esforço = quanto cansou. Nota = quanto você curtiu.')}</p><div id="esfBox"><label class="l">${t('Quanto esforço foi?')}</label>${escala('esf', t('0 · muito leve'), t('10 · no limite'))}</div>
   <div id="notaBox"><label class="l">${t('Que nota você dá pro treino?')}</label>${escala('nota', t('0 · não curti'), t('10 · amei'))}</div>
   <div class="field"><label class="l" for="fb">${t('Quer falar algo pro Igor? (opcional)')}</label><textarea class="input" id="fb" placeholder="${t('Senti a lombar no búlgaro... / Tá leve, pode subir carga...')}">${esc(s.fb.txt || '')}</textarea></div>
   <p class="err" id="e" hidden>${t('Marca o esforço e a nota, é rapidinho.')}</p>
@@ -883,7 +920,7 @@ routes.fim = () => {
     const recordes = s.exs.map((e, i) => { const mx = Math.max(0, ...s.sets[i].filter((x, k) => x.done && bateuMeta(x.reps, e.reps, k)).map(x => numero(x.kg) || 0)); return !semCarga(e) && e.ultima?.kg && mx > +e.ultima.kg ? `${e.nome} ${dec(mx)} kg` : null; }).filter(Boolean).slice(0, 3);
     const pontos = await enviarSessao(s, { esforco: +$('#esf .on').textContent, nota: +$('#nota .on').textContent, comentario: [$('#fb').value.trim(), dor].filter(Boolean).join(' · ') || null });
     const esfN = +$('#esf .on').textContent;
-    go('card', JSON.stringify({ kcal: K.kcalFeito(S.perfil, Math.max(1, Math.round(dur / 60)), esfN, { hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }), titulo: s.titulo, min: Math.max(1, Math.round(dur / 60)), ex: completosCount(s), total: obr.length, series: seriesFeitas(s), completo: nObr >= obr.length, quando: s.registrarEm || diaDoTreino(s, s.fimEm || Date.now()), recordes, pontos, hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }));
+    go('card', JSON.stringify({ kcal: K.kcalFeito(S.perfil, Math.max(1, Math.round(dur / 60)), esfN, { hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }), titulo: s.titulo, min: Math.max(1, Math.round(dur / 60)), ex: completosCount(s), total: obr.length, series: seriesFeitas(s), completo: nObr >= obr.length, quando: s.registrarEm || diaDoTreino(s, s.fimEm || Date.now()), recordes, pontos, express: !!s.express, hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }));
     if (!pontos) toast(navigator.onLine === false ? t('Sem internet agora, mas tá guardado no celular. Envio sozinha quando o sinal voltar.') : t('Sem conexão com o servidor agora (internet lenta ou Wi-Fi sem internet): tá guardado no celular e eu envio sozinha.'));
   };
 };
@@ -899,7 +936,7 @@ async function enviarSessao(s, fb) {
   s.enviada = true; salvaSessao();
   const fim = s.fimEm || s.pausadoEm || s.ult || Date.now();
   const obr = obrigatorios(s), obrT = obr.length ? obr : s.exs.map((e, i) => i);
-  const patch = { duracao_s: Math.max(0, Math.floor((fim - s.inicio) / 1000)), exercicios_feitos: obrT.filter(i => completo(s, i)).length, exercicios_total: obrT.length, esforco: fb.esforco ?? null, nota: fb.nota ?? null, comentario: fb.comentario || null, finalizada_em: new Date(s.registrarEm || diaDoTreino(s, fim)).toISOString() };
+  const patch = { duracao_s: Math.max(0, Math.floor((fim - s.inicio) / 1000)), exercicios_feitos: obrT.filter(i => completo(s, i)).length, exercicios_total: obrT.length, esforco: fb.esforco ?? null, nota: fb.nota ?? null, comentario: [s.express ? '⚡ Express' : '', fb.comentario || ''].filter(Boolean).join(' · ') || null, finalizada_em: new Date(s.registrarEm || diaDoTreino(s, fim)).toISOString() };
   const series = seriesDaSessao(s); let pontos = true, seriesOk = false;
   const item = () => ({ s: { titulo: s.titulo, treino_id: s.treino_id, programa_treino_id: s.programa_treino_id || null, total: s.exs.length }, sid: s.local ? null : s.id, seriesOk, series, patch });
   try {
@@ -915,7 +952,7 @@ async function enviarSessao(s, fb) {
 let sincronizando = false;
 const erroDeRede = er => /fetch|network|Failed|lento|timeout|offline|load failed/i.test(String(er?.message || er || ''));
 async function sincronizarFila() {
-  if (sincronizando || !S.perfil || S.perfil.role === 'admin' || navigator.onLine === false) return; sincronizando = true; let enviados = 0, evs = 0;
+  if (sincronizando || !S.perfil || S.perfil.role === 'admin' || navigator.onLine === false) return; sincronizando = true; let enviados = 0, evs = 0, velhos = 0; const L = p => comLimite(p, 15000); // Wi-Fi sem internet: chamada pendurada não trava a fila pra sempre
   const atualiza = (uid, patch) => db.LS.set('fila', db.LS.get('fila', []).map(x => x.uid === uid ? { ...x, ...patch } : x));
   try {
     // Item sem dono (versão antiga do app) fica com quem está logado agora
@@ -923,17 +960,17 @@ async function sincronizarFila() {
     for (const it0 of db.LS.get('fila', []).filter(x => x.dono === S.perfil.id)) {
       const it = db.LS.get('fila', []).find(x => x.uid === it0.uid); if (!it) continue;
       try {
-        if (it.tipo === 'pontos') await db.registrarPontos(S.perfil.id, it.motivo, it.pontos, it.ref);
+        if (it.tipo === 'pontos') await L(db.registrarPontos(S.perfil.id, it.motivo, it.pontos, it.ref));
         else if (it.tipo === 'evolucao') {
           const fotos = (await idb('readonly', st => st.get(it.idb)).catch(() => null)) || {};
-          await db.salvarEvolucao(S.perfil.id, it.row, fotos);
+          await L(db.salvarEvolucao(S.perfil.id, it.row, fotos));
           if (it.pontos) await db.registrarPontos(S.perfil.id, 'evolucao', 80, it.ref).catch(() => {});
           idb('readwrite', st => st.delete(it.idb)).catch(() => {}); evs++;
         } else {
           let sid = it.sid;
-          if (!sid) { const sess = await db.iniciarSessao(S.perfil.id, { treino_id: it.s.treino_id || null, programa_treino_id: it.s.programa_treino_id || null, titulo: it.s.titulo, total: it.s.total || 0 }); sid = sess.id; atualiza(it.uid, { sid }); }
-          if (!it.seriesOk) { await db.salvarSeries(sid, it.series || it.s.series || []); atualiza(it.uid, { seriesOk: true }); }
-          await db.finalizarSessao(sid, it.patch); enviados++;
+          if (!sid) { const sess = await L(db.iniciarSessao(S.perfil.id, { treino_id: it.s.treino_id || null, programa_treino_id: it.s.programa_treino_id || null, titulo: it.s.titulo, total: it.s.total || 0 })); sid = sess.id; atualiza(it.uid, { sid }); }
+          if (!it.seriesOk) { await L(db.salvarSeries(sid, it.series || it.s.series || [])); atualiza(it.uid, { seriesOk: true }); }
+          await L(db.finalizarSessao(sid, it.patch)); enviados++; if (!it.em || Date.now() - it.em > 90000) velhos++;
         }
         db.LS.set('fila', db.LS.get('fila', []).filter(x => x.uid !== it.uid));
       } catch (er) {
@@ -944,7 +981,7 @@ async function sincronizarFila() {
       }
     }
   } finally { sincronizando = false; }
-  if (enviados) { toast(t('Treino feito sem sinal foi enviado ✓')); if (rotaAtual === 'home') routes.home(); }
+  if (enviados) { toast(velhos ? t('Treino feito sem sinal foi enviado ✓') : t('Registrado ✓')); if (rotaAtual === 'home') routes.home(); }
   else if (evs) { toast(t('Registro do mês enviado ✓')); if (rotaAtual === 'evolucao') routes.evolucao(); }
 }
 // Enquanto tiver coisa na fila, tenta de novo de tempo em tempo e quando ela volta pro app (não só no evento "online").
@@ -961,7 +998,7 @@ routes.card = async (arg) => {
     <p class="muted mt small">${esc(primeiroNome(S.perfil.nome))} · ${esc(nomeCurto(d.titulo))} · ${esc(C.INSTAGRAM)}</p></div></div>
   ${d.recordes?.length ? `<div class="card" style="border:1px solid var(--accent)"><b>🏆 ${tp(d.recordes.length, 'Recorde!', 'Recordes!')}</b><p class="muted">${esc(d.recordes.join(' · '))} · ${t('mais do que da última vez')}</p></div>` : ''}
   <div class="row"><button class="btn sm" style="flex:1" id="share">${t('Postar no story')}</button><button class="btn ghost sm" style="flex:1" data-go="evolucao">${t('Minha evolução')}</button></div>
-  ${d.titulo === 'Cardio 20 min' || d.hiit || d.ex === 0 || d.completo === false ? '' : `<button class="btn ghost sm" data-go="assistente" data-arg='${esc(JSON.stringify({ pergunta: t('Me passa um cardio de 20 minutos pra fazer agora'), contexto: 'Ela acabou de terminar o ' + (d.titulo || 'treino') + '.', enviar: true, cardio: true }))}'>🔥 ${t('Quer um cardio de 20 min agora?')}</button>`}
+  ${d.titulo === 'Cardio 20 min' || d.hiit || d.express || d.ex === 0 || d.completo === false ? '' : `<button class="btn ghost sm" data-go="assistente" data-arg='${esc(JSON.stringify({ pergunta: t('Me passa um cardio de 20 minutos pra fazer agora'), contexto: 'Ela acabou de terminar o ' + (d.titulo || 'treino') + '.', enviar: true, cardio: true }))}'>🔥 ${t('Quer um cardio de 20 min agora?')}</button>`}
   ${A.lembreteSuportado() && !A.lembreteLigado() && Notification.permission === 'default' && !db.LS.get('lembretePerg') ? `<div class="card" id="lemb"><b style="font-size:0.9375rem">🔔 ${t('Quer que eu te lembre se passar uns dias sem treinar?')}</b><p class="muted">${t('Um aviso carinhoso, sem cobrança. Dá pra desligar no Perfil.')}</p><div class="row mt"><button class="btn ghost sm" id="lembN" style="flex:1">${t('Agora não')}</button><button class="btn sm" id="lembS" style="flex:1">${t('Quero')}</button></div></div>` : ''}
   <p class="muted center small">${t('Cada story é um convite pra sua amiga entrar no time.')}</p>${amigaBtn(S.perfil)}</div>`, 'home');
   if ($('#lemb')) { $('#lembN').onclick = () => { db.LS.set('lembretePerg', Date.now()); $('#lemb').remove(); }; $('#lembS').onclick = async () => { db.LS.set('lembretePerg', Date.now()); const r = await A.ligarLembrete(); $('#lemb')?.remove(); toast(msgLembrete(r)); }; }
@@ -1002,12 +1039,15 @@ const kcalTxt = k => k ? ` · ~${t('{n} kcal', { n: num(k) })}` : '';
 // 1h30 depois de começar sem finalizar: o servidor manda um aviso no celular (função push) e, quando ela abre o app,
 // pergunta se já terminou. Uma vez por treino. (Mais de 12 h: o boot já trata como "treino pela metade".)
 async function perguntaTreinoAberto() {
-  const s = S.sessao; if (!s || s.fimEm || s.perguntouFim || document.querySelector('#overlay .modal')) return;
+  const s = S.sessao; if (!s || s.fimEm || s.pausadoEm || s.perguntouFim || document.querySelector('#overlay .modal')) return; // pausado de propósito: não empurra a fechar
   const comecou = +String(s.chave || '').replace('local-', '') || s.inicio; const passou = Date.now() - comecou;
   if (!(passou > 90 * 60000 && passou < 12 * 3600000)) return;
   s.perguntouFim = true; salvaSessao();
   const hora = new Date(comecou).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' });
-  const o = await escolher(t('Terminou o treino? 💪'), t('Seu {x} tá aberto desde as {h}. Se já acabou, finaliza pra registrar e ganhar os pontos.', { x: nomeTreino(s.titulo), h: hora }), [t('Já terminei, finalizar'), t('Ainda tô treinando')]);
+  const c = contaObr(s), inc = c.a < c.b, metade = c.a < c.b / 2; // incompleto não pontua: não promete pontos; faltando muito, "continuar" vem em destaque
+  const txt = t('Seu {x} tá aberto desde as {h}. Se já acabou, finaliza pra registrar.', { x: nomeTreino(s.titulo), h: hora }) + (inc ? ' ' + t('{a} de {b} feitos: incompleto fica no histórico, mas não pontua.', c) : ' ' + t('Finalizando, entram os pontos.'));
+  const ops = metade ? [t('Ainda tô treinando'), t('Já terminei, finalizar')] : [t('Já terminei, finalizar'), t('Ainda tô treinando')];
+  let o = await escolher(t('Terminou o treino? 💪'), txt, ops); if (metade && o >= 0) o = 1 - o;
   if (o === 0) { if (!s.fimEm) { s.fimEm = s.ult || Date.now(); s.pausadoEm = null; salvaSessao(); } go('fim'); }
 }
 // Inscreve o celular pros avisos com o app fechado (só se ela já liberou notificação). 1x por dia, em silêncio.
@@ -1023,31 +1063,69 @@ async function ativarPush() {
 }
 // SPINNING GUIADO ---------------------------------------------------------------------
 const cardSpin = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="spin" style="background-image:url(icons/spin_s.jpg)"><b>${t('Spinning')}</b><span>${t('Aulas guiadas · 10 a 30 min')}</span></button>`;
+// Spinning sem sinal e sem o app instalado ainda: o import falha; avisa e tenta de novo com outro endereço
+const importaSpin = () => import('./spin.js').catch(() => import('./spin.js?r=' + Date.now())).catch(() => { toast(t('Sem internet pra abrir as aulas agora. Depois da 1ª vez elas abrem sem sinal.'), true); return null; });
 routes.spin = async (filtro) => {
-  const SP = await import('./spin.js'); if (rotaAtual !== 'spin') return;
+  const SP = await importaSpin(); if (!SP) { if (rotaAtual === 'spin') go('lib', null, { hist: false }); return; } if (rotaAtual !== 'spin') return;
   render(`<div class="view fx"><div class="topbar"><button class="back" data-go="lib">‹ ${t('Programas')}</button><h2>${t('Spinning')}</h2></div>${SP.htmlLista(filtro, S.perfil)}</div>`, 'home');
   $$('[data-dur]').forEach(b => b.onclick = () => go('spin', b.dataset.dur || '', { hist: false }));
   $$('[data-spin]').forEach(b => b.onclick = e => { e.stopPropagation(); go('spinAula', b.dataset.spin); });
 };
+// Aula pela metade guardada no celular (12 h): recarregou ou o Android fechou o app, ela continua de onde parou
+const spinGuardada = () => { const g = db.LS.get('spinAberta', null); return g && g.dono === S.perfil?.id && Date.now() - g.em < 12 * 3600000 ? g : null; };
+const fezSpin = (g, a) => Math.max(0, Math.round((g.feito || 0) + (a.blocos[g.i]?.seg || 0) - (g.resta || 0)));
+// Abriu o app com uma aula pela metade: continuar, registrar ou descartar (pergunta uma vez)
+async function ofereceSpin() {
+  const g = spinGuardada(); if (!g || g.perguntou || S.sessao || document.querySelector('#overlay .modal')) return;
+  db.LS.set('spinAberta', { ...g, perguntou: true });
+  const SP = await importaSpin(), a = SP?.AULAS.find(x => x.id === g.id); if (!a) return db.LS.del('spinAberta');
+  if (rotaAtual !== 'home') return;
+  const seg = fezSpin(g, a), total = a.blocos.reduce((x, b) => x + b.seg, 0);
+  const o = await escolher(t('Aula pela metade'), t('Sua aula {x} ficou em {t}.', { x: SP.nomeAula(a), t: fmtMin(seg) }), [t('Continuar a aula'), ...(seg >= 60 ? [t('Registrar o que pedalei')] : []), t('Descartar')]);
+  if (o === 0) return go('spinAula', a.id);
+  if (o < 0) return;
+  db.LS.del('spinAberta'); if (o === 1 && seg >= 60) { registraSpin(a, seg, total); toast(seg >= total * 0.9 ? t('Aula registrada ✓') : t('Aula registrada ✓ (incompleta não pontua)')); if (rotaAtual === 'home') routes.home(); }
+}
+// Só aula quase inteira (90%) conta como treino completo (pontos, desafio, semana), igual à regra do treino
+function registraSpin(a, seg, total) {
+  if (seg < 60) return false; // menos de 1 min pedalando não vira treino
+  const completa = seg >= total * 0.9, titulo = `Spinning · ${a.nome} ${a.min}`, fim = new Date().toISOString();
+  novaFila({ s: { titulo, total: 1 }, sid: null, seriesOk: true, series: [], patch: { duracao_s: seg, exercicios_feitos: completa ? 1 : 0, exercicios_total: 1, finalizada_em: fim } });
+  S.sessoes = null; return true;
+}
 routes.spinAula = async (id) => {
-  const SP = await import('./spin.js'); if (rotaAtual !== 'spinAula') return;
+  const SP = await importaSpin(); if (!SP || rotaAtual !== 'spinAula') return;
   const a = SP.AULAS.find(x => x.id === id); if (!a) return go('spin');
   pararSpin?.();
   render(`<div class="view fx spin-view"><div class="topbar"><button class="back" id="sVolta">‹ ${t('Aulas')}</button><span class="pill">${t('Spinning')} · ${t('{n} min', { n: SP.duracaoAula(a) })}</span></div>${SP.htmlPlayer(a, S.perfil)}</div>`);
-  const registra = seg => {
-    if (seg < 60) return false; // menos de 1 min pedalando não vira treino
-    const titulo = `Spinning · ${a.nome} ${a.min}`, fim = new Date().toISOString();
-    novaFila({ s: { titulo, total: 1 }, sid: null, seriesOk: true, series: [], patch: { duracao_s: seg, exercicios_feitos: 1, exercicios_total: 1, finalizada_em: fim } });
-    S.sessoes = null; return true;
+  const feitoTela = (seg, total, registrado) => {
+    const completa = registrado && seg >= total * 0.9, semSinal = registrado && navigator.onLine === false, mins = Math.max(1, Math.round(seg / 60));
+    render(`<div class="view fx"><div class="card hero" style="color:#1a0d00;text-align:center"><div class="logo" style="font-size:2.4rem;color:#1a0d00">${completa ? t('Aula feita!') + ' 🔥' : registrado ? t('Boa, registrado!') : t('Aula pulada')}</div><p style="font-weight:700;font-size:1.1rem">${seg < 60 ? t('{n} s pedalando', { n: seg }) : t('{n} min pedalando', { n: mins })}${kcalTxt(SP.kcalFeitoSpin(S.perfil, a, seg))}</p><p style="font-weight:600">${esc(SP.nomeAula(a))}</p></div>
+    <p class="muted center">${!registrado ? t('Menos de 1 min pedalando não conta como treino.') : completa ? t('Bebe água e alonga a panturrilha e o quadril. Conta como treino da semana.') : t('Aula incompleta fica no seu histórico, mas não pontua nem conta na semana.')}${semSinal ? ' ' + t('Sem internet agora: tá guardado no celular e eu envio quando o sinal voltar.') : ''}</p>
+    ${registrado ? `<button class="btn" id="spStory">${t('Postar no story')}</button>` : ''}<button class="btn ${registrado ? 'ghost' : ''}" data-go="home">${t('Voltar pro início')}</button><button class="btn ghost" data-go="spin">${t('Ver outras aulas')}</button></div>`, 'home');
+    if ($('#spStory')) $('#spStory').onclick = async () => {
+      const bt = $('#spStory'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
+      const st = streakDias(await sessoesComFila(S.perfil).catch(() => [])), k = SP.kcalFeitoSpin(S.perfil, a, seg);
+      let r; try { r = await cardImagem({ nome: primeiroNome(S.perfil.nome), titulo: `${t('Spinning')} · ${SP.nomeAula(a)}`, minutos: mins, exercicios: 1, series: 0, streak: st.semanas, data: dataLocal(Date.now(), { day: 'numeric', month: 'short' }), insta: C.INSTAGRAM, completo: completa, rotulo: completa ? t('AULA|FEITA') : t('AULA|REGISTRADA'), stat2: k ? [`~${num(k)}`, 'kcal'] : [`${a.blocos.length}`, t('blocos')] }); } catch { r = 'erro'; } finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
+      if (r === 'erro') return toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true);
+      if (r !== 'cancel') pontosStory(r);
+    };
   };
-  const feitoTela = (seg, completa) => render(`<div class="view fx"><div class="card hero" style="color:#1a0d00;text-align:center"><div class="logo" style="font-size:2.4rem;color:#1a0d00">${completa ? t('Aula feita!') : t('Boa, registrado!')} 🔥</div><p style="font-weight:700;font-size:1.1rem">${t('{n} min pedalando', { n: Math.max(1, Math.round(seg / 60)) })}${kcalTxt(SP.kcalFeitoSpin(S.perfil, a, seg))}</p><p style="font-weight:600">${esc(SP.nomeAula(a))}</p></div>
-    <p class="muted center">${t('Bebe água e alonga a panturrilha e o quadril. Conta como treino da semana.')}</p>
-    <button class="btn" data-go="home">${t('Voltar pro início')}</button><button class="btn ghost" data-go="spin">${t('Ver outras aulas')}</button></div>`, 'home');
+  const g = spinGuardada(), retomar = g && g.id === a.id ? g : null;
   pararSpin = SP.iniciarPlayer(a, {
-    manterTela: manterTelaAcesa, soltarTela,
-    aoTerminar: ({ seg }) => { pararSpin = null; registra(seg); feitoTela(seg, true); beep('fim'); },
-    aoSair: async ({ seg }) => { pararSpin = null; if (seg >= 60 && await perguntar(t('Registrar o que você pedalou?'), t('Você pedalou {n} min dessa aula.', { n: Math.round(seg / 60) }), t('Registrar'), t('Não registrar'))) { registra(seg); return feitoTela(seg, false); } go('spin'); },
+    manterTela: manterTelaAcesa, soltarTela, retomar,
+    salvar: st => st ? db.LS.set('spinAberta', { ...st, dono: S.perfil?.id }) : db.LS.del('spinAberta'),
+    aoTerminar: ({ seg, total }) => { pararSpin = null; db.LS.del('spinAberta'); const ok = registraSpin(a, seg, total); feitoTela(seg, total, ok); beep('fim'); },
+    aoSair: async ({ seg, total, comecou, voltar }) => {
+      if (!comecou) { pararSpin?.(); pararSpin = null; db.LS.del('spinAberta'); return go('spin'); }
+      const o = await escolher(t('Sair da aula?'), seg >= 60 ? t('Você pedalou {n} min dessa aula.', { n: Math.round(seg / 60) }) : t('Você pedalou menos de 1 min: isso não conta como treino.'), seg >= 60 ? [t('Continuar pedalando'), t('Registrar e sair'), t('Sair sem registrar')] : [t('Continuar pedalando'), t('Sair')]);
+      if (o <= 0 || rotaAtual !== 'spinAula') return voltar(); // voltar do celular no pop-up: continua a aula
+      pararSpin?.(); pararSpin = null; db.LS.del('spinAberta');
+      if (o === 1 && seg >= 60) { const ok = registraSpin(a, seg, total); return feitoTela(seg, total, ok); }
+      go('spin');
+    },
   });
+  if (retomar) toast(t('Sua aula ficou pausada em {t}. Toca em Seguir quando estiver pronta.', { t: fmtMin(fezSpin(retomar, a)) }));
   $('#sVolta').onclick = () => $('#sSair').click();
 };
 // O TIME (comunidade) -----------------------------------------------------------------
@@ -1166,7 +1244,8 @@ routes.evolucao = async () => {
     $('#s').onclick = async () => {
       $('#s').disabled = true; $('#e').hidden = true;
       const pv = $('#pk').value.trim(), cv = $('#ci').value.trim(), peso = numero(pv), cint = numero(cv);
-      if (pv && (peso == null || peso < 30 || peso > 250)) return erro(t('Confere o peso: digita só o número, ex. {v}', { v: dec(64.5) }));
+      if (pv && peso == null) return erro(t('Confere o peso: digita só o número, ex. {v}', { v: dec(64.5) }));
+      if (pv && (peso < 30 || peso > 250)) return erro(t('{v} kg? Confere se não sobrou ou faltou um número (ex. {e}).', { v: dec(peso), e: dec(64.5) }));
       if (cv && (cint == null || cint < 40 || cint > 200)) return erro(t('Confere a cintura em centímetros, ex. 72'));
       const arquivos = { ...escolhidas }; // lido antes de esperar qualquer coisa: se ela tocar em voltar, as fotos não se perdem
       const n = ['frente', 'lado', 'costas'].filter(k => arquivos[k]).length;
@@ -1227,7 +1306,7 @@ routes.perfil = async () => {
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Respostas do Igor')}</b>${novas ? `<span class="pill on">${tp(novas, '{n} nova', '{n} novas')}</span>` : ''}</div>${resp.length ? resp.slice(0, 3).map(s => `<div class="mt"><p class="muted small">${t('Seu {x}', { x: esc(s.titulo ? nomeCurto(s.titulo) : t('treino')) })} · ${fmtData(s.finalizada_em)}${s.comentario ? ': "' + esc(s.comentario) + '"' : ''}</p><p style="margin-top:2px">↳ "${esc(s.resposta_igor)}"</p></div>`).join('') + `<p class="muted small mt">${t('Quer responder? Escreve no recado do próximo treino ou')} <a href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 2px">${t('chama no WhatsApp')}</a>.</p>` : `<p class="muted">${t('Quando você mandar feedback no fim do treino, ele responde aqui.')}</p>`}</div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Indique uma amiga')}</b><b style="color:var(--accent)">${t('+{n} pts', { n: 300 })}</b></div><p class="muted">${t('Seu código:')} <b style="color:var(--fg)">${esc(p.cod_indicacao || '')}</b>. ${t('Quando ela assinar, é só ela falar seu código pro Igor no WhatsApp: os +300 entram pra você.')}</p>${amigaBtn(p, true)}</div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🌐 ${t('Idioma')}</b><button class="btn ghost sm" id="idi">${infoIdioma().flag} ${infoIdioma().nome}</button></div><p class="muted">${t('O app aparece nesse idioma. Treinos, dicas e recados do Igor continuam em português.')}</p></div>
-  <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteSuportado() ? `<button class="sw ${A.lembreteLigado() ? 'on' : ''}" id="notif" aria-label="${t('Lembretes')}"></button>` : ''}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : t('No iPhone esse aviso chega em breve. O alarme do fim do descanso já funciona 😉')}</p></div>
+  <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteSuportado() ? `<button class="sw ${A.lembreteLigado() ? 'on' : ''}" id="notif" aria-label="${t('Lembretes')}"></button>` : ''}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : t('Lembrete de 3 dias sem treinar: no iPhone chega em breve.') + ' ' + t('No descanso, deixa o app aberto: com a tela apagada o iPhone não apita.')}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🔥 ${t('Aparecer no time')}</b><button class="sw ${p.comunidade === false ? '' : 'on'}" id="swTime" aria-label="${t('Aparecer no time')}"></button></div><p class="muted">${t('Seu primeiro nome e a inicial aparecem no ranking e em "treinou agora há pouco". Nada de foto, carga ou peso.')}</p></div>
   <button class="btn ghost sm" id="tour" style="width:100%">🧭 ${t('Ver o passeio pelo app de novo')}</button>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Senha')}</b><button class="btn ghost sm" id="pw">${t('trocar')}</button></div><p class="muted">${p.senha_trocada === false ? t('Se ainda é o seu número de WhatsApp, troca aqui.') : t('Quer mudar sua senha? Troca aqui quando quiser.')}</p></div>
@@ -1243,15 +1322,15 @@ routes.perfil = async () => {
     A.limparLembrete(); await db.logout().catch(() => {}); ['chat', 'chatRasc', 'chatPend', 'chatRest', 'chatEm', 'cargas', 'evolucao', 'sessoes'].forEach(k => db.LS.del(k)); S.perfil = null; go('entrada'); // outra pessoa no mesmo celular não vê a conversa dela
   };
   if ($('#notif')) $('#notif').onclick = async () => { if (A.lembreteLigado()) { await A.desligarLembrete(); toast(t('Lembretes desligados.')); return routes.perfil(); } const r = await A.ligarLembrete(); toast(msgLembrete(r)); routes.perfil(); };
-  $('#tour').onclick = () => { A.refazerPasseio(p); go('home'); };
+  $('#tour').onclick = () => { A.refazerPasseio(p); go('home'); setTimeout(() => { if (rotaAtual === 'home' && !$('#overlay')?.innerHTML && !document.querySelector('.tour')) A.passeio(p); }, 700); }; // pediu: mostra (também no demo)
   $('#swTime').onclick = async () => { const b = $('#swTime'), quer = !b.classList.contains('on'); b.classList.toggle('on', quer); try { S.perfil = await db.salvarPerfil({ comunidade: quer }); toast(quer ? t('Você aparece no time ✓') : t('Pronto: você não aparece mais no time.')); } catch { b.classList.toggle('on', !quer); toast(t('Não deu pra salvar agora. Tenta de novo com internet.'), true); } };
   $('#pw').onclick = () => {
-    overlay(`<div class="modal" id="m"><form class="box" id="fs" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${t('Nova senha')}</h2>
-      <div class="field"><label class="l" for="n1">${t('Nova senha')}</label>${campoSenha('n1', t('6 ou mais'))}</div><div class="field"><label class="l" for="n2">${t('Repete a senha')}</label>${campoSenha('n2')}</div>
+    overlay(`<div class="modal" id="m"><form class="box" id="fs" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${t('Trocar senha')}</h2>
+      <div class="field"><label class="l" for="n1">${t('Nova senha')}</label>${campoSenha('n1', t('6 ou mais'))}</div><div class="field"><label class="l" for="n2">${t('Repete a senha')}</label>${campoSenha('n2', t('repete'))}</div>
       <p class="err" id="e" hidden></p><div class="row" style="flex-wrap:wrap;gap:8px"><button type="button" class="btn ghost sm" id="c" style="flex:1 1 120px;min-width:0">${t('Cancelar')}</button><button class="btn sm" id="s" style="flex:1 1 120px;min-width:0">${t('Salvar')}</button></div></form></div>`);
     $('#c').onclick = closeOverlay;
     $('#fs').onsubmit = async ev => { ev.preventDefault(); const er = erroSenha($('#n1').value, $('#n2').value); if (er) { $('#e').textContent = er; $('#e').hidden = false; return; }
-      $('#s').disabled = true; try { await db.trocarSenha($('#n1').value); await db.salvarPerfil({ senha_trocada: true }).catch(() => {}); closeOverlay(); toast(t('Senha trocada ✓ Na próxima vez, entra com ela.')); } catch (e) { $('#e').textContent = traduzErro(e); $('#e').hidden = false; $('#s').disabled = false; } };
+      $('#e').hidden = true; $('#s').disabled = true; try { await db.trocarSenha($('#n1').value); await db.salvarPerfil({ senha_trocada: true }).catch(() => {}); closeOverlay(); toast(t('Senha trocada ✓ Na próxima vez, entra com ela.')); } catch (e) { $('#e').textContent = traduzErro(e); $('#e').hidden = false; $('#s').disabled = false; } };
   };
   $('#ed').onclick = () => anamneseForm(p, () => go('perfil'));
 };
@@ -1342,7 +1421,7 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
     if (q.tipo === 'um' || q.tipo === 'multi') corpo = `<div id="ops" class="opcoes ${q.tipo === 'multi' ? 'multi' : ''}">${q.op.map(o => `<button type="button" class="opc ${marcado(o) ? 'on' : ''}" data-v="${esc(val(o))}">${esc(lab(o))}</button>`).join('')}</div>`;
     if (q.tipo === 'texto') corpo = `<input class="input" id="tx" value="${esc(sel || '')}" placeholder="${esc(t(q.ph || ''))}">`;
     if (q.tipo === 'data') { const hj = new Date(); corpo = `<input class="input" id="tx" type="date" value="${esc(sel || '')}" min="${hj.getFullYear() - 90}-01-01" max="${hj.getFullYear() - 14}-12-31">`; }
-    if (q.tipo === 'medidas') corpo = `<div class="grid2"><div class="field"><label class="l" for="pk">${t('Peso (kg)')}</label><input class="input" id="pk" inputmode="decimal" value="${virgula(r.peso_kg)}" placeholder="${t('ex. {v}', { v: 64 })}"></div><div class="field"><label class="l" for="al">${t('Altura (m)')}</label><input class="input" id="al" inputmode="decimal" value="${virgula(r.altura_m)}" placeholder="${t('ex. {v}', { v: dec(1.65) })}"></div></div>`;
+    if (q.tipo === 'medidas') corpo = `<div class="grid2"><div class="field"><label class="l" for="pk">${t('Peso (kg)')}</label><input class="input" id="pk" inputmode="decimal" value="${virgula(r.peso_kg)}" placeholder="${t('ex. {v}', { v: 64 })}"></div><div class="field"><label class="l" for="al">${t('Altura (m)')}</label><input class="input" id="al" inputmode="decimal" value="${virgula(r.altura_m)}" placeholder="${t('ex. {v}', { v: dec(1.65) })}"><p class="muted small" style="margin-top:4px">${t('Pode ser 1,58 ou 158')}</p></div></div>`;
     caixa(`<div class="row between"><h3>${esc(t(titulo))}</h3><span class="muted small">${t('{a} de {b}', { a: i + 1, b: Q.length })}</span></div><div class="bar"><i style="width:${(i) / Q.length * 100}%"></i></div>
       <div style="flex:1;display:flex;flex-direction:column;gap:10px"><h2 style="font-size:1.5rem">${esc(t(q.t))}</h2>${q.sub ? `<p class="muted">${esc(t(q.sub))}</p>` : ''}${corpo}<p class="err" id="e" hidden>${t('Essa é importante pro Igor montar seu treino.')}</p></div>`,
       `${i > 0 ? `<button class="btn ghost sm" id="prev" style="flex:1">${t('Voltar')}</button>` : `<button class="btn ghost sm" id="cancel" style="flex:1">${t('Depois')}</button>`}<button class="btn sm" id="next" style="flex:2">${revisando ? t('Pronto') : i === Q.length - 1 ? t('Conferir') : t('Próxima')}</button>`);
@@ -1350,6 +1429,7 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
       if (q.tipo === 'multi') { let arr = r[q.k] || []; if (q.excl && v === q.excl) arr = [v]; else { arr = arr.filter(x => x !== q.excl); arr = arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]; } r[q.k] = arr; $$('#ops button').forEach(x => x.classList.toggle('on', arr.includes(q.num ? +x.dataset.v : x.dataset.v))); }
       else { r[q.k] = v; $$('#ops button').forEach(x => x.classList.toggle('on', x === b)); }
       $('#e').hidden = true; guarda(); };
+    ['#tx', '#pk', '#al'].forEach(sl => { const x = $(sl); if (x) x.addEventListener('input', () => { $('#e').hidden = true; }); }); // preencheu: o aviso vermelho some
     lerAtual = () => { if (!$('#next')) return; if ((q.tipo === 'texto' || q.tipo === 'data') && $('#tx')) r[q.k] = $('#tx').value.trim() || null;
       if (q.tipo === 'medidas' && $('#pk')) { const pk = numero($('#pk').value); let al = numero($('#al').value); if (al && al > 3) al = +(al / 100).toFixed(2); r.peso_kg = pk; r.altura_m = al; } };
     if ($('#prev')) $('#prev').onclick = () => { guarda(); i--; guarda(); tela(); };
@@ -1412,7 +1492,7 @@ async function boot() {
   // Encerrou o treino e fechou o app sem tocar em Enviar: depois de 2 h registra sozinho com o que ela já tinha marcado
   if (S.sessao?.fimEm && Date.now() - S.sessao.fimEm > 2 * 3600000 && seriesFeitas(S.sessao)) {
     const s0 = S.sessao; S.sessao = null; db.LS.del('sessao'); const fb = s0.fb || {}, dor = s0.dor?.length ? `⚠ dor: ${s0.dor.join(', ')}` : '';
-    enviarSessao(s0, { esforco: fb.esf ?? null, nota: fb.nota ?? null, comentario: [String(fb.txt || '').trim(), dor].filter(Boolean).join(' · ') || null }).then(ok => toast(ok ? t('Seu {x} foi registrado ✓ (você tinha saído antes de enviar)', { x: nomeTreino(s0.titulo) }) : t('{x} guardado no celular. Envio quando o sinal voltar.', { x: nomeCurto(s0.titulo) })));
+    enviarSessao(s0, { esforco: fb.esf ?? null, nota: fb.nota ?? null, comentario: [String(fb.txt || '').trim(), dor].filter(Boolean).join(' · ') || null }).then(ok => { toast(ok ? t('Seu {x} foi registrado ✓ (você tinha saído antes de enviar)', { x: nomeTreino(s0.titulo) }) : t('{x} guardado no celular. Envio quando o sinal voltar.', { x: nomeCurto(s0.titulo) }), false, { fixo: true }); if (rotaAtual === 'home') routes.home(); }); // Início redesenha com o treino já contado (não manda fazer de novo)
   }
   // Treino esquecido há mais de 12h: não apaga, pergunta se ela quer registrar o que fez
   const s = S.sessao, velho = s && Date.now() - (s.pausadoEm || s.ult || s.inicio) > 12 * 3600000;
@@ -1450,7 +1530,7 @@ function criarSenha() {
     ev.preventDefault();
     const a = $('#n1').value, erro = erroSenha(a, $('#n2').value);
     if (erro) { $('#e').textContent = erro; $('#e').hidden = false; return; }
-    $('#s').disabled = true;
+    $('#e').hidden = true; $('#s').disabled = true; $('#s').textContent = t('Salvando…');
     try { await db.trocarSenha(a); S.perfil = await db.salvarPerfil({ senha_trocada: true }); toast(t('Senha criada ✓ Guarda ela!'), false, { curto: true }); boot(); }
     catch (er) { $('#e').textContent = traduzErro(er); $('#e').hidden = false; $('#s').disabled = false; }
   };

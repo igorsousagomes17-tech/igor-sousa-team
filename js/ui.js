@@ -8,13 +8,13 @@ let tt, ttEm = 0;
 // Aviso embaixo (não cobre o título), fica mais tempo e fecha com um toque.
 // fixo: fica até ela tocar (ex.: "descanso acabou há 2 min" quando ela volta pro app).
 export function toast(msg, err = false, { fixo = false, curto = false } = {}) {
-  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + (err ? ' err' : '') + (fixo ? ' fixo' : '') + (location.hash === '#fim' || location.hash === '#sessao' || $('#overlay')?.innerHTML ? ' topo' : ''); // no feedback do fim e com pop-up aberto fica em cima (não cobre o "Enviar" nem o "Fechar")
+  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + (err ? ' err' : '') + (fixo ? ' fixo' : '') + (location.hash === '#fim' || location.hash === '#sessao' || $('#overlay')?.innerHTML ? ' topo' : '') + (location.hash === '#sessao' && !$('#overlay')?.innerHTML ? ' sess' : ''); // na sessão: abaixo do "‹ Pausar" e do relógio // no feedback do fim e com pop-up aberto fica em cima (não cobre o "Enviar" nem o "Fechar")
   t.onclick = () => t.classList.remove('on');
   clearTimeout(tt); if (!fixo) tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : curto ? 2500 : 4500);
 }
 // Troca de tela ou descanso abrindo: o aviso antigo some (não fica cobrindo a tela nova)
 // (aviso de menos de 0,7 s fica: "Treino pausado" logo antes de trocar de tela precisa aparecer)
-export function fecharToast() { const t = $('#toast'); if (t && !t.classList.contains('fixo') && Date.now() - ttEm > 700) t.classList.remove('on'); }
+export function fecharToast(todos = false) { const t = $('#toast'); if (t && (todos || (!t.classList.contains('fixo') && Date.now() - ttEm > 700))) t.classList.remove('on'); }
 // Texto do aviso que acabou de aparecer (pra juntar dois avisos em vez de um apagar o outro)
 const avisoRecente = () => { const t = $('#toast'); return t && t.classList.contains('on') && Date.now() - ttEm < 1500 ? t.textContent : ''; };
 // Exercício sem peso (peso do corpo, elástico, mobilidade): esconde a coluna de kg (vale no app e no PDF).
@@ -192,11 +192,11 @@ export function tabs(active) {
     ['videos', 'Vídeos', 'M4 5h16v14H4zM10 9l5 3-5 3z'],
     ['pontos', 'Pontos', 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z'], ['evolucao', 'Evolução', 'M4 19V5M4 19h16M7 15l4-5 3 3 5-7'],
     ['perfil', 'Perfil', 'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zM4 21a8 8 0 0 1 16 0']];
-  return `<nav class="tabs">${abas.map(([id, l, d]) => `<button class="tab ${active === id ? 'on' : ''}" data-go="${id}" aria-label="${t(l)}"><svg viewBox="0 0 24 24"><path d="${d}"/></svg><span>${t(l)}</span></button>`).join('')}</nav>`;
+  return `<nav class="tabs">${abas.map(([id, l, d]) => `<button class="tab ${active === id ? 'on' : ''}" data-go="${id}" aria-label="${t(l)}"><svg viewBox="0 0 24 24"><path d="${d}"/></svg><span class="l">${t(l)}</span><span class="c">${t({ Pontos: 'Pts', 'Evolução': 'Evol.' }[l] || l)}</span></button>`).join('')}</nav>`;
 }
 
 // Card compartilhável → imagem PNG (canvas) → Web Share ou download
-export async function cardImagem({ nome, titulo, minutos, exercicios, series, streak, data, insta, completo = true, total = 0, destaque = '' }) {
+export async function cardImagem({ nome, titulo, minutos, exercicios, series, streak, data, insta, completo = true, total = 0, destaque = '', rotulo = '', stat2 = null }) {
   // a letra da marca precisa estar carregada antes de desenhar (senão o story sai com outra fonte)
   try { await Promise.race([Promise.all(['800 54px "Barlow Condensed"', '500 30px Barlow', '700 48px Barlow'].map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 1500))]); } catch {}
   const W = 1080, H = 1920, c = document.createElement('canvas'); c.width = W; c.height = H;
@@ -209,13 +209,13 @@ export async function cardImagem({ nome, titulo, minutos, exercicios, series, st
   x.fillStyle = '#ff6a00'; x.fillText('TEAM', 70 + x.measureText('IGOR SOUSA ').width, 120);
   x.fillStyle = '#9a968f'; x.font = `500 30px ${BODY}`; x.fillText(data, W - 70 - x.measureText(data).width, 118);
   // "TREINO FEITO ✓" no idioma dela; diminui a letra se a palavra for comprida (francês, espanhol)
-  const [l1, l2] = (exercicios === 0 || !completo ? t('TREINO|REGISTRADO') : t('TREINO|FEITO')).split('|'); let fs = 190;
+  const [l1, l2] = (rotulo || (exercicios === 0 || !completo ? t('TREINO|REGISTRADO') : t('TREINO|FEITO'))).split('|'); let fs = 190;
   x.font = `800 ${fs}px ${DISP}`; while (fs > 90 && Math.max(x.measureText(l1).width, x.measureText(l2 + ' ✓').width) > W - 140) { fs -= 10; x.font = `800 ${fs}px ${DISP}`; }
   if (destaque) { const dd = destaque.toUpperCase(); x.fillStyle = '#ff6a00'; let fd = 64; x.font = `800 ${fd}px ${DISP}`; while (fd > 36 && x.measureText(dd).width > W - 140) { fd -= 4; x.font = `800 ${fd}px ${DISP}`; } x.fillText(dd, 70, 600); x.font = `800 ${fs}px ${DISP}`; }
   x.fillStyle = '#f4f2ee'; x.fillText(l1, 70, 880); x.fillText(l2, 70, 880 + fs * 0.95);
   x.fillStyle = '#ff6a00'; x.fillText("✓", 70 + x.measureText(l2 + " ").width, 880 + fs * 0.95);
   // Palavras por extenso ("semanas", não "sem."): em duas linhas pra caber
-  const stats = [[`${minutos}`, t('min')], exercicios === 0 && series ? [`${series}`, tp(series, 'série', 'séries')] : [!completo && total ? `${exercicios}/${total}` : `${exercicios}`, tp(exercicios, 'exercício', 'exercícios')], [`🔥${streak}`, tp(streak, 'semana seguida', 'semanas seguidas')]];
+  const stats = [[`${minutos}`, t('min')], stat2 ? stat2 : exercicios === 0 && series ? [`${series}`, tp(series, 'série', 'séries')] : [!completo && total ? `${exercicios}/${total}` : `${exercicios}`, tp(exercicios, 'exercício', 'exercícios')], [`🔥${streak}`, tp(streak, 'semana seguida', 'semanas seguidas')]];
     stats.forEach(([v, l], j) => { const yy = 1260 + j * 130; x.fillStyle = j === 2 ? '#ff6a00' : '#f4f2ee'; x.font = `800 96px ${DISP}`; x.fillText(v, 70, yy); const wv = x.measureText(v).width; x.fillStyle = '#9a968f'; let fz = 42; x.font = `500 ${fz}px ${BODY}`; while (fz > 26 && x.measureText(l).width > W - 160 - wv) { fz -= 2; x.font = `500 ${fz}px ${BODY}`; } x.fillText(l, 70 + wv + 20, yy); });
   x.fillStyle = '#9a968f'; x.font = `500 36px ${BODY}`;
   let linha = `${nome} · ${titulo}`; if (x.measureText(linha).width > W - 140) { while (x.measureText(linha + '…').width > W - 140 && linha.length > 4) linha = linha.slice(0, -1); linha = linha.trimEnd() + '…'; }
