@@ -207,7 +207,7 @@ export const admin = {
     return [...(abertos.data || []), ...(respondidos.data || [])].filter(precisaVer);
   },
   async responder(sessaoId, texto) { const { error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId); if (error) throw error; },
-  async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,dias_semana,tempo_treino_min,local_treino,experiencia,foco,incomoda,limitacoes,saude,gestacao,sono_estresse,atividade,nascimento,nutri,desistiu,peso_kg,altura_m,anamnese_em,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(500); return data || []; },
+  async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,sexo,horario,academia_tipo,equipamento,cardio,evita,ciclo,dias_semana,tempo_treino_min,local_treino,experiencia,foco,incomoda,limitacoes,saude,gestacao,sono_estresse,atividade,nascimento,nutri,desistiu,peso_kg,altura_m,anamnese_em,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(500); return data || []; },
   async planoDe(alunaId) {
     const { data } = await sb.from('planos').select('id,mes,titulo,treinos(id,letra,nome,ordem,exercicios(*))').eq('aluna_id', alunaId).order('mes', { ascending: false }).limit(1);
     return data?.[0] || null;

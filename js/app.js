@@ -1349,24 +1349,34 @@ export function tmb(p) {
 }
 // ANAMNESE: uma pergunta por tela ------------------------------------------------
 const PARTES = ['Glúteo', 'Pernas', 'Abdômen', 'Costas', 'Braços', 'Peito', 'Ombro'];
+// Anamnese enxuta (27/10): base do app + o que funcionava na do Mfit (cardio, horário, tipo de academia) + sexo,
+// triagem de segurança (PAR-Q) dentro de "saúde", equipamento de casa, exercício que evita e ciclo. `se` = só aparece quando faz sentido.
+const ehF = r => r.sexo !== 'M';
 const Q = [
   { k: 'objetivo', t: 'Qual seu objetivo principal?', tipo: 'um', op: ['Emagrecer', 'Ganhar massa', 'Os dois', 'Correr melhor', 'Saúde e disposição'], req: true },
+  { k: 'sexo', t: 'Você é:', sub: 'Entra na conta de quanto você gasta em cada treino.', tipo: 'um', op: [['Mulher', 'F'], ['Homem', 'M']], req: true },
   { k: 'dias_semana', t: 'Quantos dias por semana você consegue treinar de verdade?', tipo: 'um', op: [2, 3, 4, 5, 6], req: true, num: true },
   { k: 'tempo_treino_min', t: 'Quanto tempo você tem por treino?', tipo: 'um', op: [['até 30 min', 30], ['40 min', 40], ['50 a 60 min', 60]], req: true, num: true },
+  { k: 'horario', t: 'Que horas você costuma treinar?', tipo: 'um', op: [['De manhã cedo (antes das 9h)', 'cedo'], ['Manhã', 'manha'], ['Hora do almoço', 'almoco'], ['Tarde', 'tarde'], ['Noite', 'noite'], ['Varia muito', 'varia']] },
   { k: 'local_treino', t: 'Onde vai treinar?', tipo: 'um', op: [['Academia', 'academia'], ['Casa', 'casa'], ['Os dois', 'ambos']], req: true },
+  { k: 'academia_tipo', t: 'Como é a sua academia?', sub: 'Muda as máquinas que o Igor pode usar no seu treino.', tipo: 'um', op: [['Grande, de rede (Smart Fit, Bluefit...)', 'rede'], ['De bairro, menor', 'bairro'], ['Do prédio ou condomínio', 'condominio']], se: r => r.local_treino !== 'casa' },
+  { k: 'equipamento', t: 'O que você tem pra treinar em casa?', sub: 'Pode marcar mais de uma.', tipo: 'multi', op: ['Halteres', 'Elástico ou superband', 'Caneleira', 'Kettlebell', 'Nada, só o corpo'], excl: 'Nada, só o corpo', se: r => r.local_treino === 'casa' || r.local_treino === 'ambos' },
   { k: 'experiencia', t: 'Há quanto tempo treina musculação?', tipo: 'um', op: ['Nunca treinei', 'Menos de 6 meses', '6 meses a 2 anos', 'Mais de 2 anos'], req: true },
   { k: 'foco', t: 'Que partes do corpo você quer focar mais?', sub: 'Pode marcar mais de uma.', tipo: 'multi', op: PARTES, req: true },
-  { k: 'incomoda', t: 'Qual parte mais te incomoda hoje?', tipo: 'um', op: [...PARTES, 'Nenhuma'] },
+  { k: 'cardio', t: 'Topa fazer um cardio rápido no fim do treino?', tipo: 'um', op: [['Topo, sempre', 'sim'], ['Às vezes', 'as_vezes'], ['Prefiro não', 'nao']] },
   { k: 'limitacoes', t: 'Sente dor, tem lesão ou alguma limitação?', sub: 'Se não tiver, pode pular.', tipo: 'texto', ph: 'ex. lombar, joelho direito, ombro...' },
-  { k: 'saude', t: 'Alguma dessas se aplica a você?', sub: 'Pode marcar mais de uma. Se nenhuma, marca "Nenhuma".', tipo: 'multi', op: ['Nenhuma', 'Pressão alta', 'Diabetes', 'Problema cardíaco', 'Asma', 'Cirurgia nos últimos 12 meses', 'Tomo medicação contínua'], req: true, excl: 'Nenhuma' },
-  { k: 'gestacao', t: 'Está grávida ou teve filho nos últimos 12 meses?', tipo: 'um', op: [['Não', 'nao'], ['Grávida', 'gravida'], ['Pós-parto', 'pos_parto']], req: true },
+  { k: 'evita', t: 'Tem algum exercício que você não gosta ou não consegue fazer?', sub: 'Se não tiver, pode pular.', tipo: 'texto', ph: 'ex. agachamento livre, burpee, corrida...' },
+  { k: 'saude', t: 'Alguma dessas se aplica a você?', sub: 'Pode marcar mais de uma. Se nenhuma, marca "Nenhuma".', tipo: 'multi', op: ['Nenhuma', 'Dor no peito quando faço esforço', 'Tontura forte ou já desmaiei', 'Médico disse pra só treinar com acompanhamento', 'Pressão alta', 'Diabetes', 'Problema cardíaco', 'Asma', 'Cirurgia (estética ou de saúde) no último ano', 'Tomo medicação contínua'], req: true, excl: 'Nenhuma' },
+  { k: 'gestacao', t: 'Está grávida ou teve filho nos últimos 12 meses?', tipo: 'um', op: [['Não', 'nao'], ['Grávida', 'gravida'], ['Pós-parto', 'pos_parto']], req: true, se: ehF },
+  { k: 'ciclo', t: 'E o seu ciclo menstrual?', sub: 'Ajuda o Igor a adaptar o treino nas semanas mais difíceis.', tipo: 'um', op: [['Regular', 'regular'], ['Irregular', 'irregular'], ['Tomo anticoncepcional', 'anticoncepcional'], ['Não menstruo (DIU, contínuo, menopausa...)', 'nao'], ['Prefiro não dizer', 'nd']], se: r => ehF(r) && r.gestacao !== 'gravida' },
   { k: 'sono_estresse', t: 'Como anda seu sono e seu estresse?', sub: 'Juntando os dois: escolhe o que mais parece com você.', tipo: 'um', op: [['😩 1 · durmo mal e vivo estressada', 1], ['😕 2 · durmo mal ou ando bem estressada', 2], ['😐 3 · mais ou menos', 3], ['🙂 4 · durmo bem, um pouco de estresse', 4], ['😄 5 · durmo bem e tô tranquila', 5]], num: true },
   { k: 'atividade', t: 'Fora do treino, como é seu dia a dia?', sub: 'Pra calcular quanto você gasta por dia.', tipo: 'um', op: [['Sentada a maior parte (escritório, estudo)', 'sedentaria'], ['Anda bastante, fica em pé', 'leve'], ['Trabalho ativo, carrego peso', 'moderada'], ['Muito ativo o dia inteiro', 'alta']], req: true },
   { k: 'nascimento', t: 'Sua data de nascimento', sub: 'A idade entra na conta da sua taxa metabólica.', tipo: 'data', req: true },
+  { k: 'medidas', t: 'Seu peso e altura', sub: 'Com isso o app calcula o gasto de cada treino.', tipo: 'medidas', req: true },
   { k: 'nutri', t: 'Faz acompanhamento com nutricionista?', tipo: 'um', op: ['Sim', 'Não', 'Quero fazer'] },
-  { k: 'medidas', t: 'Seu peso e altura', tipo: 'medidas', req: true },
   { k: 'desistiu', t: 'O que já te fez desistir de treinar antes?', sub: 'Pra o Igor te ajudar a não repetir.', tipo: 'um', op: ['Falta de tempo', 'Falta de resultado', 'Dor ou lesão', 'Sem companhia ou motivação', 'Nunca desisti'] }
 ];
+const CAMPOS_ANAM = ['objetivo', 'sexo', 'dias_semana', 'tempo_treino_min', 'horario', 'local_treino', 'academia_tipo', 'equipamento', 'experiencia', 'foco', 'cardio', 'limitacoes', 'evita', 'saude', 'gestacao', 'ciclo', 'sono_estresse', 'atividade', 'nascimento', 'nutri', 'peso_kg', 'altura_m', 'desistiu'];
 // Rótulo de uma resposta salva (o valor no banco fica em português; aqui só o que aparece na tela)
 function rotuloAnam(k, v) {
   if (v == null || v === '') return null;
@@ -1377,7 +1387,7 @@ function rotuloAnam(k, v) {
 // no fim, uma tela pra conferir tudo antes de enviar.
 function anamneseForm(p, done, titulo = 'Me conta de você') {
   const rasc = db.LS.get('anamnese');
-  const r = rasc?.r || { atividade: p.atividade, nascimento: p.nascimento, objetivo: p.objetivo, dias_semana: p.dias_semana, tempo_treino_min: p.tempo_treino_min, local_treino: p.local_treino, experiencia: p.experiencia, foco: p.foco || [], incomoda: p.incomoda, limitacoes: p.limitacoes, saude: p.saude || [], gestacao: p.gestacao ?? null, sono_estresse: p.sono_estresse, nutri: p.nutri, peso_kg: p.peso_kg, altura_m: p.altura_m, desistiu: p.desistiu };
+  const r = rasc?.r || Object.fromEntries(CAMPOS_ANAM.map(k => [k, ['foco', 'saude', 'equipamento'].includes(k) ? (p[k] || []) : (p[k] ?? null)]));
   // -1 = boas-vindas (1ª vez); já respondeu antes = abre na revisão, ela toca só no que quer mudar
   let i = rasc ? rasc.i : (p.objetivo ? Q.length : -1), revisando = false;
   const val = o => Array.isArray(o) ? o[1] : o, lab = o => t(Array.isArray(o) ? o[0] : o);
@@ -1386,9 +1396,14 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
   const guarda = () => { try { lerAtual(); } catch {} db.LS.set('anamnese', { r, i: Math.max(0, i) }); };
   const fechar = () => { guarda(); voltarOverlay = null; closeOverlay(); };
   let naRevisao = false;
-  voltarOverlay = () => { if (naRevisao) return fechar(); if (revisando || i === Q.length) { i = Q.length; return revisao(); } if (i > 0) { guarda(); i--; guarda(); tela(); } else fechar(); };
+  // Pergunta que não se aplica (ex. tipo de academia pra quem só treina em casa) é pulada na ida, na volta e na revisão
+  const ativa = q => !q.se || q.se(r);
+  const prox = j => { while (j < Q.length && !ativa(Q[j])) j++; return j; };
+  const ant = j => { while (j >= 0 && !ativa(Q[j])) j--; return j; };
+  const ativas = () => Q.filter(ativa);
+  voltarOverlay = () => { if (naRevisao) return fechar(); if (revisando || i === Q.length) { i = Q.length; return revisao(); } const a = ant(i - 1); if (a >= 0) { guarda(); i = a; guarda(); tela(); } else fechar(); };
   const caixa = (miolo, rodape) => overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:14px;margin-top:20px;min-height:70vh;overflow:visible">${miolo}<div class="row rodape">${rodape}</div></div></div>`);
-  const falta = q => q.req && !(q.tipo === 'medidas' ? (r.peso_kg && r.altura_m) : q.tipo === 'multi' ? (r[q.k] || []).length : r[q.k] != null && r[q.k] !== '');
+  const falta = q => ativa(q) && q.req && !(q.tipo === 'medidas' ? (r.peso_kg && r.altura_m) : q.tipo === 'multi' ? (r[q.k] || []).length : r[q.k] != null && r[q.k] !== '');
   const resposta = q => {
     if (q.tipo === 'medidas') return [r.peso_kg ? virgula(r.peso_kg) + ' kg' : '', r.altura_m ? virgula(r.altura_m) + ' m' : ''].filter(Boolean).join(' · ');
     const v = r[q.k]; if (v == null || v === '' || (Array.isArray(v) && !v.length)) return '';
@@ -1397,14 +1412,14 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
     return Array.isArray(v) ? v.map(nome).join(', ') : nome(v);
   };
   function boasVindas() {
-    caixa(`<h3>${esc(t(titulo))}</h3><div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center"><h2 style="font-size:1.75rem">${t('Antes do primeiro treino')}</h2><p style="font-size:1.0625rem;line-height:1.45">${t('São {n} perguntas rápidas (uns 3 minutos). Com elas o Igor monta o <b>seu</b> treino.', { n: Q.length })}</p><p class="muted">${t('Dá pra parar e continuar depois: o que você responder fica salvo.')}</p></div>`,
+    caixa(`<h3>${esc(t(titulo))}</h3><div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:center"><h2 style="font-size:1.75rem">${t('Antes do primeiro treino')}</h2><p style="font-size:1.0625rem;line-height:1.45">${t('São {n} perguntas rápidas (uns 3 minutos). Com elas o Igor monta o <b>seu</b> treino.', { n: ativas().length })}</p><p class="muted">${t('Dá pra parar e continuar depois: o que você responder fica salvo.')}</p></div>`,
       `<button class="btn ghost sm" id="cancel" style="flex:1">${t('Depois')}</button><button class="btn sm" id="next" style="flex:2">${t('Começar')}</button>`);
-    $('#cancel').onclick = fechar; $('#next').onclick = () => { i = 0; guarda(); tela(); };
+    $('#cancel').onclick = fechar; $('#next').onclick = () => { i = prox(0); guarda(); tela(); };
   }
   function revisao() {
     revisando = true; naRevisao = true;
     caixa(`<div class="row between"><h3>${esc(t(titulo))}</h3><span class="muted small">${t('Confere')}</span></div><h2 style="font-size:1.5rem">${t('Tá tudo certo?')}</h2><p class="muted">${t('Toca numa resposta pra mudar.')}</p>
-      <div style="flex:1">${Q.map((q, j) => `<button class="linha" data-j="${j}" style="flex-direction:column;align-items:flex-start;gap:2px"><span class="muted small" style="text-align:left">${esc(t(q.t))}</span>${falta(q) ? `<b style="text-align:left;color:var(--accent)">${t('falta responder')} ›</b>` : `<b style="text-align:left;font-weight:600">${esc(resposta(q) || '—')}</b>`}</button>`).join('')}</div>
+      <div style="flex:1">${Q.map((q, j) => !ativa(q) ? '' : `<button class="linha" data-j="${j}" style="flex-direction:column;align-items:flex-start;gap:2px"><span class="muted small" style="text-align:left">${esc(t(q.t))}</span>${falta(q) ? `<b style="text-align:left;color:var(--accent)">${t('falta responder')} ›</b>` : `<b style="text-align:left;font-weight:600">${esc(resposta(q) || '—')}</b>`}</button>`).join('')}</div>
       <p class="err" id="e" hidden></p>`,
       `<button class="btn ghost sm" id="cancel" style="flex:1">${t('Fechar')}</button><button class="btn sm" id="next" style="flex:2">${t('Enviar pro Igor')}</button>`);
     $('#cancel').onclick = fechar;
@@ -1414,6 +1429,7 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
   function tela() {
     naRevisao = false;
     if (i < 0) return boasVindas();
+    i = prox(i);
     if (i >= Q.length) return revisao();
     const q = Q[i]; const sel = r[q.k];
     let corpo = '';
@@ -1422,9 +1438,9 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
     if (q.tipo === 'texto') corpo = `<input class="input" id="tx" value="${esc(sel || '')}" placeholder="${esc(t(q.ph || ''))}">`;
     if (q.tipo === 'data') { const hj = new Date(); corpo = `<input class="input" id="tx" type="date" value="${esc(sel || '')}" min="${hj.getFullYear() - 90}-01-01" max="${hj.getFullYear() - 14}-12-31">`; }
     if (q.tipo === 'medidas') corpo = `<div class="grid2"><div class="field"><label class="l" for="pk">${t('Peso (kg)')}</label><input class="input" id="pk" inputmode="decimal" value="${virgula(r.peso_kg)}" placeholder="${t('ex. {v}', { v: 64 })}"></div><div class="field"><label class="l" for="al">${t('Altura (m)')}</label><input class="input" id="al" inputmode="decimal" value="${virgula(r.altura_m)}" placeholder="${t('ex. {v}', { v: dec(1.65) })}"><p class="muted small" style="margin-top:4px">${t('Pode ser 1,58 ou 158')}</p></div></div>`;
-    caixa(`<div class="row between"><h3>${esc(t(titulo))}</h3><span class="muted small">${t('{a} de {b}', { a: i + 1, b: Q.length })}</span></div><div class="bar"><i style="width:${(i) / Q.length * 100}%"></i></div>
+    caixa(`<div class="row between"><h3>${esc(t(titulo))}</h3><span class="muted small">${t('{a} de {b}', { a: ativas().indexOf(q) + 1, b: ativas().length })}</span></div><div class="bar"><i style="width:${ativas().indexOf(q) / ativas().length * 100}%"></i></div>
       <div style="flex:1;display:flex;flex-direction:column;gap:10px"><h2 style="font-size:1.5rem">${esc(t(q.t))}</h2>${q.sub ? `<p class="muted">${esc(t(q.sub))}</p>` : ''}${corpo}<p class="err" id="e" hidden>${t('Essa é importante pro Igor montar seu treino.')}</p></div>`,
-      `${i > 0 ? `<button class="btn ghost sm" id="prev" style="flex:1">${t('Voltar')}</button>` : `<button class="btn ghost sm" id="cancel" style="flex:1">${t('Depois')}</button>`}<button class="btn sm" id="next" style="flex:2">${revisando ? t('Pronto') : i === Q.length - 1 ? t('Conferir') : t('Próxima')}</button>`);
+      `${ant(i - 1) >= 0 ? `<button class="btn ghost sm" id="prev" style="flex:1">${t('Voltar')}</button>` : `<button class="btn ghost sm" id="cancel" style="flex:1">${t('Depois')}</button>`}<button class="btn sm" id="next" style="flex:2">${revisando ? t('Pronto') : prox(i + 1) >= Q.length ? t('Conferir') : t('Próxima')}</button>`);
     if ($('#ops')) $('#ops').onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = q.num ? +b.dataset.v : b.dataset.v;
       if (q.tipo === 'multi') { let arr = r[q.k] || []; if (q.excl && v === q.excl) arr = [v]; else { arr = arr.filter(x => x !== q.excl); arr = arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]; } r[q.k] = arr; $$('#ops button').forEach(x => x.classList.toggle('on', arr.includes(q.num ? +x.dataset.v : x.dataset.v))); }
       else { r[q.k] = v; $$('#ops button').forEach(x => x.classList.toggle('on', x === b)); }
@@ -1432,7 +1448,7 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
     ['#tx', '#pk', '#al'].forEach(sl => { const x = $(sl); if (x) x.addEventListener('input', () => { $('#e').hidden = true; }); }); // preencheu: o aviso vermelho some
     lerAtual = () => { if (!$('#next')) return; if ((q.tipo === 'texto' || q.tipo === 'data') && $('#tx')) r[q.k] = $('#tx').value.trim() || null;
       if (q.tipo === 'medidas' && $('#pk')) { const pk = numero($('#pk').value); let al = numero($('#al').value); if (al && al > 3) al = +(al / 100).toFixed(2); r.peso_kg = pk; r.altura_m = al; } };
-    if ($('#prev')) $('#prev').onclick = () => { guarda(); i--; guarda(); tela(); };
+    if ($('#prev')) $('#prev').onclick = () => { guarda(); i = ant(i - 1); guarda(); tela(); };
     if ($('#cancel')) $('#cancel').onclick = fechar;
     $('#next').onclick = avancar;
     function avancar() {
@@ -1447,16 +1463,17 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
       }
       const ok = q.tipo === 'medidas' ? (r.peso_kg && r.altura_m) : q.tipo === 'multi' ? (r[q.k] || []).length : r[q.k] != null && r[q.k] !== '';
       if (q.req && !ok) { $('#e').textContent = q.tipo === 'data' ? t('Toca no campo e escolhe o dia, o mês e o ano em que você nasceu.') : q.tipo === 'multi' || q.tipo === 'um' ? t('Toca numa das opções acima. Essa é importante pro Igor montar seu treino.') : t('Essa é importante pro Igor montar seu treino.'); $('#e').hidden = false; return; }
-      i = revisando ? Q.length : i + 1; guarda(); tela();
+      i = revisando ? Q.length : prox(i + 1); guarda(); tela();
     }
   }
   async function salvar() {
     const f = Q.findIndex(falta);
     if (f >= 0) { i = f; return tela(); }
     $('#next').disabled = true; $('#next').textContent = t('Enviando…');
+    Q.forEach(q => { if (!ativa(q)) r[q.k] = q.k === 'gestacao' ? 'nao' : q.tipo === 'multi' ? [] : null; });
     try { const novo = await db.salvarPerfil({ ...r, anamnese_em: new Date().toISOString() }); if (novo && S.perfil?.id === novo.id) S.perfil = novo; voltarOverlay = null; closeOverlay(); db.LS.del('anamnese'); done();
       // Pressão alta, coração, diabetes, cirurgia recente ou gravidez: orientação na hora (o Igor também vê o alerta no painel)
-      const cuidado = (r.saude || []).some(x => /Pressão|cardíaco|Diabetes|Cirurgia/.test(x)) || (r.gestacao && r.gestacao !== 'nao');
+      const cuidado = (r.saude || []).some(x => /Pressão|cardíaco|Diabetes|Cirurgia|peito|desmaiei|acompanhamento/.test(x)) || (r.gestacao && r.gestacao !== 'nao');
       toast(cuidado ? t('Enviado ✓ Como você marcou um cuidado de saúde, leva a liberação do seu médico pro Igor antes do HIIT e de cargas altas. Até lá, cardio leve.') : t('Enviado! O Igor monta seu treino a partir disso ✓'), false, { fixo: cuidado }); }
     catch (e) { $('#e').textContent = traduzErro(e) + ' ' + t('Suas respostas ficaram salvas no celular.'); $('#e').hidden = false; $('#next').disabled = false; $('#next').textContent = t('Enviar pro Igor'); }
   }

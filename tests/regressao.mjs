@@ -54,10 +54,11 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   await login(p); await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; s.perfil.foco = []; localStorage.setItem('demo:state', JSON.stringify(s)); }); await p.reload(); await espera(p, 1000);
   ok(/Antes do primeiro treino/i.test(await p.innerText('#overlay')), 'anamnese abre com boas-vindas'); await p.click('#next'); await espera(p, 300);
   for (let i = 0; i < 5; i++) { await p.click('#ops button >> nth=0'); await espera(p, 250); ok(await p.$('#ops .on') !== null && /próxima/i.test(await p.innerText('#next')), `pergunta ${i + 1} não pula sozinha`); await p.click('#next'); await espera(p, 250); }
+  for (let k = 0; k < 6 && !(await p.$('#ops.multi')); k++) { await p.click('#ops button >> nth=0'); await p.click('#next'); await espera(p, 250); } // até a de foco (múltipla)
   await p.click('#ops button >> nth=0'); await p.click('#ops button >> nth=2'); await p.click('#next'); await espera(p, 250); await p.goBack(); await espera(p, 400);
   ok((await p.$$('#ops .opc.on')).length === 2, 'voltar do celular volta 1 pergunta e mantém as 2 marcadas'); await shot(p, 'anamnese-multi');
-  await p.reload(); await espera(p, 1000); ok(/de 16/.test(await p.innerText('#overlay')) && !/Antes do primeiro/.test(await p.innerText('#overlay')), 'recarregou: continua de onde parou');
-  await p.evaluate(() => { const a = JSON.parse(localStorage.getItem('demo:anamnese')); a.i = 14; localStorage.setItem('demo:anamnese', JSON.stringify(a)); }); await p.reload(); await espera(p, 1000);
+  await p.reload(); await espera(p, 1000); ok(/\d+ de \d+/.test(await p.innerText('#overlay')) && !/Antes do primeiro/.test(await p.innerText('#overlay')), 'recarregou: continua de onde parou');
+  await p.evaluate(() => { const a = JSON.parse(localStorage.getItem('demo:anamnese')); a.i = 19; /* peso e altura */ localStorage.setItem('demo:anamnese', JSON.stringify(a)); }); await p.reload(); await espera(p, 1000);
   await p.fill('#pk', '64,5 kg'); await p.fill('#al', '165'); await p.click('#next'); await espera(p, 300);
   const an = await p.evaluate(() => JSON.parse(localStorage.getItem('demo:anamnese')).r); ok(an.altura_m === 1.65 && an.peso_kg === 64.5, 'altura 165 vira 1,65 e "64,5 kg" vira 64,5');
   await ctx.close(); }

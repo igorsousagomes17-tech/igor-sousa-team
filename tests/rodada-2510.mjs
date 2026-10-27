@@ -87,9 +87,10 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; s.perfil.gestacao = null; s.perfil.nascimento = null; localStorage.setItem('demo:state', JSON.stringify(s)); localStorage.removeItem('demo:anamnese'); });
   await p.reload(); await espera(p, 1200);
   await p.click('#next'); await espera(p, 200); // boas-vindas → 1ª pergunta
-  for (let i = 0; i < 9; i++) { if (await p.$('#ops .opc.on')) await p.click('#next'); else if (await p.$('#ops')) { await p.click('#ops .opc'); await p.click('#next'); } else await p.click('#next'); await espera(p, 150); }
+  for (let i = 0; i < 25 && !/grávida/i.test(await txt(p, '#m')); i++) { if (await p.$('#ops .opc.on')) await p.click('#next'); else if (await p.$('#ops')) { await p.click('#ops .opc'); await p.click('#next'); } else await p.click('#next'); await espera(p, 150); }
   ok(/grávida/i.test(await txt(p, '#m')) && !(await p.$('#ops .opc.on')), 'pergunta de gravidez começa sem resposta marcada');
   await p.click('#ops .opc'); await p.click('#next'); await espera(p, 150);
+  if (/ciclo/i.test(await txt(p, '#m'))) { await p.click('#ops .opc'); await p.click('#next'); await espera(p, 150); } // ciclo (nova, 27/10)
   ok(/durmo bem e tô tranquila/.test(await txt(p, '#m')), 'sono/estresse com o texto em cada opção');
   await p.click('#ops .opc'); await p.click('#next'); await espera(p, 150); await p.click('#ops .opc'); await p.click('#next'); await espera(p, 150);
   await p.fill('#tx', '2024-03-10'); await p.click('#next'); await espera(p, 200);
