@@ -66,6 +66,24 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   ok(vistas.some(v => /em casa\?/i.test(v)) && !vistas.some(v => /Como é a sua academia/i.test(v)), 'quem treina em casa vê equipamento e não vê tipo de academia');
   await ctx.close(); }
 
+// 2b. Veio do Mfit (o Igor preencheu o perfil, sem anamnese enviada): abre direto na conferência, marca o que falta, envia
+{ const { ctx, p } = await nova();
+  await p.goto('http://app.local/?demo'); await p.waitForTimeout(400); await p.click('text=ENTRAR'); await p.fill('#em', 'ana@demo.com'); await p.press('#pw', 'Enter'); await p.waitForTimeout(900);
+  await zera(ctx, p, { anamnese_em: null, sexo: null, horario: null });
+  const m = await txt(p, '#m');
+  ok(/Tá tudo certo/i.test(m) && /já preencheu/i.test(m) && /Emagrecer/.test(m), 'veio do Mfit: abre na conferência com as respostas já preenchidas');
+  ok(/falta responder/i.test(m), 'mostra o que falta responder');
+  await p.click('#next'); await p.waitForTimeout(300); // Enviar → vai pra 1ª que falta (sexo)
+  ok(/Você é/i.test(await txt(p, '#m')), 'enviar leva direto pra pergunta que falta');
+  await p.click('#ops .opc'); await p.click('#next'); await p.waitForTimeout(300);
+  ok(/Tá tudo certo/i.test(await txt(p, '#m')), 'depois de responder volta pra conferência');
+  const salvo = () => p.evaluate(() => !!JSON.parse(localStorage.getItem('demo:state')).perfil.anamnese_em);
+  for (let k = 0; k < 20 && !(await salvo()); k++) { // responde o que mais faltar (ex. saúde) e envia
+    if (await p.$('#ops') && !(await p.$('#ops .opc.on'))) await p.click('#ops .opc');
+    if (await p.$('#next')) await p.click('#next'); await p.waitForTimeout(700); }
+  ok(await salvo(), 'enviou');
+  await ctx.close(); }
+
 // 3. Igor: avaliação postural
 { const { ctx, p } = await nova();
   await p.goto('http://app.local/?demo'); await p.waitForTimeout(400); await p.click('text=ENTRAR'); await p.fill('#em', 'igor@demo.com'); await p.press('#pw', 'Enter'); await p.waitForTimeout(1200);

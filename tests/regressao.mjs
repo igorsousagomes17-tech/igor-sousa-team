@@ -50,8 +50,8 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   await p.click('#rest-x'); await espera(p, 300); await p.click('#sair'); await espera(p, 500); ok(await p.$('#rest') === null, 'pausar encerra o descanso (não cobre as abas)'); await ctx.close(); }
 
 // 4. Anamnese: múltipla escolha mantém marcado, altura em cm vira metro, rascunho sobrevive ao recarregar
-{ const { ctx, p } = await nova(); await p.addInitScript(() => { const s = JSON.parse(localStorage.getItem('demo:state') || 'null'); if (s && !sessionStorage.x) { s.perfil.objetivo = null; localStorage.setItem('demo:state', JSON.stringify(s)); sessionStorage.x = 1; } });
-  await login(p); await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; s.perfil.foco = []; localStorage.setItem('demo:state', JSON.stringify(s)); }); await p.reload(); await espera(p, 1000);
+{ const { ctx, p } = await nova(); await p.addInitScript(() => { const s = JSON.parse(localStorage.getItem('demo:state') || 'null'); if (s && !sessionStorage.x) { s.perfil.objetivo = null; s.perfil.anamnese_em = null; localStorage.setItem('demo:state', JSON.stringify(s)); sessionStorage.x = 1; } });
+  await login(p); await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; s.perfil.anamnese_em = null; s.perfil.foco = []; localStorage.setItem('demo:state', JSON.stringify(s)); }); await p.reload(); await espera(p, 1000);
   ok(/Antes do primeiro treino/i.test(await p.innerText('#overlay')), 'anamnese abre com boas-vindas'); await p.click('#next'); await espera(p, 300);
   for (let i = 0; i < 5; i++) { await p.click('#ops button >> nth=0'); await espera(p, 250); ok(await p.$('#ops .on') !== null && /próxima/i.test(await p.innerText('#next')), `pergunta ${i + 1} não pula sozinha`); await p.click('#next'); await espera(p, 250); }
   for (let k = 0; k < 6 && !(await p.$('#ops.multi')); k++) { await p.click('#ops button >> nth=0'); await p.click('#next'); await espera(p, 250); } // até a de foco (múltipla)

@@ -84,7 +84,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
 // 6. Anamnese: data impossível barrada; gravidez começa sem resposta; sono com texto
 { const { ctx, p } = await nova(); await login(p);
-  await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; s.perfil.gestacao = null; s.perfil.nascimento = null; localStorage.setItem('demo:state', JSON.stringify(s)); localStorage.removeItem('demo:anamnese'); });
+  await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; s.perfil.anamnese_em = null; s.perfil.gestacao = null; s.perfil.nascimento = null; localStorage.setItem('demo:state', JSON.stringify(s)); localStorage.removeItem('demo:anamnese'); });
   await p.reload(); await espera(p, 1200);
   await p.click('#next'); await espera(p, 200); // boas-vindas → 1ª pergunta
   for (let i = 0; i < 25 && !/grávida/i.test(await txt(p, '#m')); i++) { if (await p.$('#ops .opc.on')) await p.click('#next'); else if (await p.$('#ops')) { await p.click('#ops .opc'); await p.click('#next'); } else await p.click('#next'); await espera(p, 150); }

@@ -86,14 +86,14 @@ for (const L of LINGUAS) {
   await p.click('.tabs [data-go="home"]'); await espera(800); await p.click('[data-go="assistente"]'); await espera(900);
   await p.click('.sug [data-q] >> nth=5'); await espera(1600); await tela('tira-duvidas');
   // Anamnese (perguntas e opções) e a tela de conferir
-  await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; localStorage.setItem('demo:state', JSON.stringify(s)); localStorage.removeItem('demo:anamnese'); });
+  await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; s.perfil.anamnese_em = null; localStorage.setItem('demo:state', JSON.stringify(s)); localStorage.removeItem('demo:anamnese'); });
   await p.reload(); await espera(1200); await tela('anamnese-boas-vindas');
   await p.click('#next'); await espera(300); await tela('anamnese-1');
-  await p.evaluate(() => { const a = JSON.parse(localStorage.getItem('demo:anamnese')); a.i = 8; localStorage.setItem('demo:anamnese', JSON.stringify(a)); }); await p.reload(); await espera(1200); await tela('anamnese-saude');
-  await p.evaluate(() => { const a = JSON.parse(localStorage.getItem('demo:anamnese')); a.i = 11; localStorage.setItem('demo:anamnese', JSON.stringify(a)); }); await p.reload(); await espera(1200); await tela('anamnese-dia-a-dia');
-  await p.evaluate(() => { const a = JSON.parse(localStorage.getItem('demo:anamnese')); a.i = 16; localStorage.setItem('demo:anamnese', JSON.stringify(a)); }); await p.reload(); await espera(1200); await tela('anamnese-confere');
+  await p.evaluate(() => { const a = JSON.parse(localStorage.getItem('demo:anamnese')); a.i = 13; localStorage.setItem('demo:anamnese', JSON.stringify(a)); }); await p.reload(); await espera(1200); await tela('anamnese-saude');
+  await p.evaluate(() => { const a = JSON.parse(localStorage.getItem('demo:anamnese')); a.i = 17; localStorage.setItem('demo:anamnese', JSON.stringify(a)); }); await p.reload(); await espera(1200); await tela('anamnese-dia-a-dia');
+  await p.evaluate(() => { const a = JSON.parse(localStorage.getItem('demo:anamnese')); a.i = 99; localStorage.setItem('demo:anamnese', JSON.stringify(a)); }); await p.reload(); await espera(1200); await tela('anamnese-confere');
   // Troca de idioma no Perfil re-desenha a tela na hora
-  await p.evaluate(() => { localStorage.removeItem('demo:anamnese'); const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = 'Emagrecer'; localStorage.setItem('demo:state', JSON.stringify(s)); }); await p.reload(); await espera(1200);
+  await p.evaluate(() => { localStorage.removeItem('demo:anamnese'); const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = 'Emagrecer'; s.perfil.anamnese_em = new Date().toISOString(); localStorage.setItem('demo:state', JSON.stringify(s)); }); await p.reload(); await espera(1200);
   await p.click('.tabs [data-go="perfil"]'); await espera(800);
   const outro = L === 'pt' ? 'en' : 'pt';
   await p.click('#idi'); await espera(300); await p.click(`[data-l="${outro}"]`); await espera(700);

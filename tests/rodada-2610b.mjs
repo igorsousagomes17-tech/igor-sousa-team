@@ -65,7 +65,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
 
 // 3. Anamnese: Voltar não apaga o que ela digitou; senha só com espaço é recusada
 { const { ctx, p } = await nova(); await login(p);
-  await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; localStorage.setItem('demo:state', JSON.stringify(s)); localStorage.removeItem('demo:anamnese'); });
+  await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.objetivo = null; s.perfil.anamnese_em = null; localStorage.setItem('demo:state', JSON.stringify(s)); localStorage.removeItem('demo:anamnese'); });
   await p.reload(); await espera(p, 1200); if (!(await p.$('#overlay #m')) && await p.$('#anam')) { await p.click('#anam'); await espera(p, 500); }
   let achou = false;
   for (let k = 0; k < 20 && !achou; k++) {
