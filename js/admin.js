@@ -3,7 +3,7 @@ import { $, $$, esc, toast, overlay, closeOverlay, fmtData } from './ui.js';
 
 const C = window.ISTEAM_CONFIG;
 const msgInativa = (nome, dias) => `Oi ${nome.split(' ')[0]}! Vi aqui que faz ${dias} dias que você não treina. Tá acontecendo alguma coisa? Bora voltar hoje? Me fala o que tá precisando 💪`;
-const msgAcesso = (nome, email) => `Olá ${nome.split(' ')[0]}! Seu acesso ao app tá pronto 🚀\n\nLink: ${location.origin + location.pathname}\nLogin: ${email}\nSenha: seu número de WhatsApp (só números, com DDD)\n\nNo iPhone: abre no Safari → Compartilhar → Adicionar à Tela de Início. No Android: aparece "Instalar" na hora.\n\nPra gente começar bem: todo domingo me manda um feedback de como foi a semana. Qualquer dúvida é só mandar por aqui!\n\nBem-vinda ao time! 🚀 Me segue no Insta: @igorsousa.personal`;
+const msgAcesso = (nome, email) => `Olá ${nome.split(' ')[0]}! Seu acesso ao app tá pronto 🚀\n\nLink: ${location.origin + location.pathname}\nLogin: ${email}\nSenha: seu número de WhatsApp (só números, com DDD)\n\nPra deixar o app na tela do celular (1 minuto): igorsousa.com.br/instalar\n\nPra gente começar bem: todo domingo me manda um feedback de como foi a semana. Qualquer dúvida é só mandar por aqui!\n\nBem-vinda ao time! 🚀 Me segue no Insta: @igorsousa.personal`;
 const wa = (num, txt) => `https://wa.me/55${String(num || '').replace(/\D/g, '').replace(/^55/, '')}?text=${encodeURIComponent(txt)}`;
 
 let db;
