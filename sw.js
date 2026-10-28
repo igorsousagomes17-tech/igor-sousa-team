@@ -1,5 +1,5 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v33';
+const CACHE = 'isteam-v34';
 const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
 // Gerador de PDF, capas, fotos e fontes: não mudam com a versão do app, então ficam de uma versão pra outra
 // (antes cada atualização apagava e o PDF/capas paravam de abrir sem sinal até baixar tudo de novo)
@@ -47,7 +47,13 @@ self.addEventListener('fetch', e => {
 });
 self.addEventListener('push', e => {
   const d = e.data ? e.data.json() : { title: 'Igor Sousa Team', body: 'Bora treinar hoje?' };
-  e.waitUntil(self.registration.showNotification(d.title, { body: d.body, icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: d.tag || 'aviso', renotify: true, data: { url: d.url || './#home' } }));
+  e.waitUntil((async () => {
+    // Alarme do descanso: se o próprio celular já avisou (Android), só troca o aviso sem tocar de novo.
+    // (O iPhone exige mostrar um aviso a cada push, então sempre mostra alguma coisa.)
+    let repetido = false;
+    if (d.alarme) { try { const ja = await self.registration.getNotifications({ tag: 'descanso' }); repetido = ja.some(n => Date.now() - (n.timestamp || 0) < 20000); } catch {} }
+    await self.registration.showNotification(d.title, { body: d.body, icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: d.tag || 'aviso', renotify: !repetido, silent: repetido, ...(d.alarme ? { vibrate: [350, 120, 350, 120, 600], requireInteraction: false } : {}), data: { url: d.url || './#home' } });
+  })());
 });
 
 // Aviso de fim do descanso com o app em segundo plano / tela apagada.

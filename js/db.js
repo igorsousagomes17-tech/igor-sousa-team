@@ -204,6 +204,9 @@ export async function comunidade() { const { data, error } = await sb.rpc('fn_co
 // Avisos com o app fechado (função push, migração 011)
 export const push = {
   async chave() { const r = await fetch(C.SUPABASE_URL + '/functions/v1/push', { headers: { apikey: C.SUPABASE_ANON_KEY } }); if (!r.ok) throw new Error('push ' + r.status); return (await r.json()).chave; },
+  // Alarme do descanso pelo servidor (iPhone com a tela apagada). Só se este celular está inscrito nos avisos.
+  async descanso(d) { const reg = await navigator.serviceWorker?.ready; if (!(await reg?.pushManager?.getSubscription())) return false; const { data: { session } } = await sb.auth.getSession(); if (!session) return false; const r = await fetch(C.SUPABASE_URL + '/functions/v1/push', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json', apikey: C.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ acao: 'descanso', ...d }) }); return r.ok; },
+  async cancelarDescanso(id) { const { data: { session } } = await sb.auth.getSession(); if (!session) return; await fetch(C.SUPABASE_URL + '/functions/v1/push', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json', apikey: C.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ acao: 'cancelar_descanso', id }) }).catch(() => {}); },
   async inscrever(sub) { const { data: { session } } = await sb.auth.getSession(); const r = await fetch(C.SUPABASE_URL + '/functions/v1/push', { method: 'POST', headers: { 'content-type': 'application/json', apikey: C.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + (session?.access_token || '') }, body: JSON.stringify({ acao: 'inscrever', sub }) }); if (!r.ok) throw new Error('push ' + r.status); },
 };
 export const precisaVer = f => !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));

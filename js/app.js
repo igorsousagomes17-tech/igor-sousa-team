@@ -1,7 +1,7 @@
 const C0 = window.ISTEAM_CONFIG;
 const DEMO = !!(C0.DEMO || new URLSearchParams(location.search).has('demo'));
 const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
-import { beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho, avisoAtual, ajustaAbas } from './ui.js';
+import { ligarAvisoRemoto, beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho, avisoAtual, ajustaAbas } from './ui.js';
 import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma, loc } from './i18n.js';
 import * as A from './acolhe.js';
 import * as K from './kcal.js'; // T = t, pra quando "t" já é nome de variável
@@ -1081,6 +1081,12 @@ async function ativarPush() {
     await db.push.inscrever(sub.toJSON()); db.LS.set('pushEm', hoje);
   } catch { /* função ainda não publicada ou sem sinal: tenta de novo amanhã/no próximo treino */ }
 }
+// Alarme do descanso pelo servidor: no iPhone, com a tela apagada, é o único jeito de tocar e vibrar
+if (!DEMO) ligarAvisoRemoto({
+  agendar: d => (S.perfil && S.perfil.role !== 'admin' ? db.push.descanso(d) : Promise.resolve(false)),
+  cancelar: id => db.push.cancelarDescanso(id).catch(() => {}),
+  inscrever: () => { db.LS.del('pushEm'); ativarPush(); }
+});
 // SPINNING GUIADO ---------------------------------------------------------------------
 const cardSpin = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="spin" style="background-image:url(icons/spin_s.jpg)"><b>${t('Spinning')}</b><span>${t('Aulas guiadas · 10 a 30 min')}</span></button>`;
 // Spinning sem sinal e sem o app instalado ainda: o import falha; avisa e tenta de novo com outro endereço

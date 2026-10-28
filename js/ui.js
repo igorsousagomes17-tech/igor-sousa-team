@@ -109,11 +109,13 @@ export function beep(tipo = 'fim') {
 }
 
 // Pede permissão de notificação uma vez, no 1º descanso (o toque dela no ⏱ conta como gesto).
+// Alarme pelo servidor (o app liga em app.js): { agendar({id,em,titulo,corpo}) -> Promise<bool>, cancelar(id), inscrever() }
+let remoto = null; export const ligarAvisoRemoto = r => { remoto = r; };
 function pedirAviso() {
   try {
     if (!('Notification' in window) || Notification.permission !== 'default' || localStorage.getItem('avisoPedido')) return;
     localStorage.setItem('avisoPedido', '1');
-    Notification.requestPermission().then(r => { if (r === 'granted') toast(t('Pronto: te aviso quando o descanso acabar, mesmo com a tela apagada.')); });
+    Notification.requestPermission().then(r => { if (r === 'granted') { remoto?.inscrever?.(); } if (r === 'granted') toast(t('Pronto: te aviso quando o descanso acabar, mesmo com a tela apagada.')); });
   } catch {}
 }
 // Timer em tela cheia (descanso ou exercício de tempo). Conta pelo horário de término, então não atrasa
@@ -162,8 +164,9 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       <p class="muted center" id="rest-p">${esc(proximo || '')}</p>
       <div class="row">${trabalho ? `<button class="btn sm" id="rest-skip" style="flex:2">✓ ${t('Já fiz')}</button><button class="btn ghost sm" id="rest-pausa" style="flex:1">⏸ ${t('Pausar')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>` : `<button class="btn sm" id="rest-skip" style="flex:2">${t('Pular descanso')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>`}</div>${pausarTreino ? `<button class="link-fim" id="rest-pt">⏸ ${t('Pausar o treino')}</button>` : ''}</div>`; // criança chamou no meio do descanso: pausa daqui mesmo
     const q = s => L.querySelector(s);
-    const avisar = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }); } catch {} };
-    const cancelarAviso = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} };
+    let idRemoto = null; // alarme no servidor: garante tocar/vibrar no iPhone com a tela apagada
+    const avisar = () => { try { if (remoto) { if (idRemoto) remoto.cancelar(idRemoto); idRemoto = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); remoto.agendar({ id: idRemoto, em: fim + 1500, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }).catch(() => {}); } } catch {} try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }); } catch {} };
+    const cancelarAviso = (acabou = false) => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} if (idRemoto && !acabou) { try { remoto?.cancelar(idRemoto); } catch {} } idRemoto = null; };
     pedirAviso(); avisar(); fecharToast();
     if (pausarTreino) q('#rest-pt').onclick = () => pausarTreino();
     const left = () => Math.max(0, Math.ceil((fim - (pausado || Date.now())) / 1000)); // parado no ⏸: o tempo que falta não cai
@@ -182,7 +185,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       q('#ring').style.setProperty('--p', (lv / base() * 100) + '%'); if (l <= 0) end(true, Date.now() - fim > 30000);
     };
     // atrasado: acabou com a tela apagada (o código parado) e só agora ela voltou: aviso fixo com "há N min", sem apito
-    const end = (r, atrasado = false) => { if (restAtivo !== me) return; restAtivo = null; cancelarAviso(); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden || atrasado) avisoNaVolta(fim, trabalho); else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
+    const end = (r, atrasado = false) => { if (restAtivo !== me) return; restAtivo = null; cancelarAviso(r === true && (document.hidden || atrasado)); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden || atrasado) avisoNaVolta(fim, trabalho); else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
     me.end = end;
     me.minimizar = () => { me.mini = true; q('#rest').classList.add('mini'); aoMinimizar?.(true); tick(); };
     me.abrir = () => { me.mini = false; q('#rest').classList.remove('mini'); aoMinimizar?.(false); tick(); };

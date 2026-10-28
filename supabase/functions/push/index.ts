@@ -3,6 +3,8 @@
 // - POST {acao:'inscrever'} → guarda a inscrição do celular da aluna logada
 // - POST {acao:'cron'} + cabeçalho x-cron → roda os lembretes (chamado pelo pg_cron a cada 10 min, migração 011)
 // Lembrete hoje: treino iniciado há 1h30 e não finalizado → "Terminou o treino?" (1 vez por treino, até 8h depois).
+// - POST {acao:'descanso', id, em, titulo, corpo} → alarme do fim do descanso (espera e manda; migração 016)
+// - POST {acao:'cancelar_descanso', id}            → ela pulou o descanso: não manda
 // Deploy: painel do Supabase › Edge Functions › push (Verify JWT desligado: a função confere sozinha).
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import webpush from 'npm:web-push@3.6.7';
@@ -35,6 +37,50 @@ Deno.serve(async (req) => {
     if (!s.endpoint || !s.keys?.p256dh || !s.keys?.auth) return json({ erro: 'inscricao_invalida' }, 400);
     const { error } = await db.from('push_inscricoes').upsert({ endpoint: s.endpoint, aluna_id: user.id, p256dh: s.keys.p256dh, auth: s.keys.auth, atualizado_em: new Date().toISOString() }, { onConflict: 'endpoint' });
     return error ? json({ erro: error.message }, 500) : json({ ok: true });
+  }
+
+  const usuario = async () => { const jwt = (req.headers.get('Authorization') || '').replace('Bearer ', ''); return (await createClient(url, anon, { global: { headers: { Authorization: `Bearer ${jwt}` } } }).auth.getUser()).data.user; };
+  const dorme = (ms: number) => new Promise(r => setTimeout(r, ms));
+  // Espera o fim do descanso e manda. A função vive até ~150 s por chamada: descanso maior, ela se chama de novo.
+  const esperarEEnviar = async (id: string) => {
+    for (;;) {
+      const { data: a } = await db.from('avisos_descanso').select('*').eq('id', id).maybeSingle();
+      if (!a || a.cancelado || a.enviado_em) return;
+      const falta = new Date(a.em).getTime() - Date.now();
+      if (falta > 120000) { await dorme(100000); await fetch(url + '/functions/v1/push', { method: 'POST', headers: { 'content-type': 'application/json', 'x-cron': (await ler('cron')) || '' }, body: JSON.stringify({ acao: 'continuar_descanso', id }) }).catch(() => {}); return; }
+      if (falta > 0) { await dorme(Math.min(falta, 20000)); continue; } // acorda a cada 20 s pra ver se foi cancelado
+      if (falta < -60000) return; // passou do ponto (função atrasou): melhor não apitar fora de hora
+      const { data: marcou } = await db.from('avisos_descanso').update({ enviado_em: new Date().toISOString() }).eq('id', id).is('enviado_em', null).eq('cancelado', false).select('id');
+      if (!marcou?.length) return;
+      const msg = { title: a.titulo || 'Descanso acabou! 💪', body: a.corpo || 'Bora a próxima série.', url: './#sessao', tag: 'descanso', alarme: true };
+      const { data: subs } = await db.from('push_inscricoes').select('endpoint,p256dh,auth').eq('aluna_id', a.aluna_id);
+      for (const sub of subs || []) {
+        try { await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(msg), { TTL: 60, urgency: 'high' }); }
+        catch (e: any) { if (e?.statusCode === 404 || e?.statusCode === 410) await db.from('push_inscricoes').delete().eq('endpoint', sub.endpoint); }
+      }
+      return;
+    }
+  };
+  const segundoPlano = (p: Promise<unknown>) => { try { (globalThis as any).EdgeRuntime?.waitUntil ? (globalThis as any).EdgeRuntime.waitUntil(p) : p; } catch { /* */ } };
+
+  if (body.acao === 'descanso') {
+    const user = await usuario(); if (!user) return json({ erro: 'nao_autenticado' }, 401);
+    const em = Number(body.em), id = String(body.id || '').slice(0, 80);
+    if (!id || !(em > Date.now() - 5000) || em - Date.now() > 15 * 60000) return json({ erro: 'tempo_invalido' }, 400);
+    const { error } = await db.from('avisos_descanso').upsert({ id, aluna_id: user.id, em: new Date(em).toISOString(), titulo: String(body.titulo || '').slice(0, 80) || null, corpo: String(body.corpo || '').slice(0, 160) || null, cancelado: false, enviado_em: null });
+    if (error) return json({ erro: error.message }, 500);
+    segundoPlano(esperarEEnviar(id));
+    return json({ ok: true });
+  }
+  if (body.acao === 'cancelar_descanso') {
+    const user = await usuario(); if (!user) return json({ erro: 'nao_autenticado' }, 401);
+    await db.from('avisos_descanso').update({ cancelado: true }).eq('id', String(body.id || '')).eq('aluna_id', user.id);
+    return json({ ok: true });
+  }
+  if (body.acao === 'continuar_descanso') {
+    const segredo = await ler('cron'); if (!segredo || req.headers.get('x-cron') !== segredo) return json({ erro: 'proibido' }, 403);
+    segundoPlano(esperarEEnviar(String(body.id || '')));
+    return json({ ok: true });
   }
 
   if (body.acao === 'cron') {
