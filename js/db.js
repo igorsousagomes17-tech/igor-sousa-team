@@ -22,7 +22,9 @@ export async function login(email, senha) {
   return data.user;
 }
 // scope local: limpa a sessão do celular mesmo sem sinal (o signOut normal precisa de internet e deixava ela logada)
-export async function logout() { try { await sb.auth.signOut({ scope: 'local' }); } catch {} LS.del('plano'); LS.del('perfil'); }
+export async function logout() { try { await sb.auth.signOut({ scope: 'local' }); } catch {} LS.del('plano'); LS.del('perfil'); try { await caches.delete('isteam-fotos'); } catch {} for (const k in blobs) delete blobs[k]; } // fotos dela não ficam pra quem entrar depois
+// Confere a senha de agora antes de trocar (quem pegar o celular dela aberto não troca a senha)
+export async function conferirSenha(senha) { const { data } = await sb.auth.getUser(); const email = data?.user?.email; if (!email) return true; const { error } = await sb.auth.signInWithPassword({ email, password: senha }); if (error) { if (/invalid|credentials/i.test(error.message)) return false; throw error; } return true; }
 export async function trocarSenha(nova) { const { error } = await sb.auth.updateUser({ password: nova }); if (error) throw error; }
 export async function esqueciSenha(email) {
   const { error } = await sb.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: location.origin + location.pathname });
@@ -89,6 +91,8 @@ export async function apagarCarga(sessaoId, exercicioNome) {
   const { error } = await sb.from('series').delete().eq('sessao_id', sessaoId).eq('exercicio_nome', exercicioNome);
   if (error) throw error;
 }
+// Treino pausado de propósito: o aviso "Terminou o treino?" do servidor não vai pra ela (usa a marca do próprio aviso)
+export async function marcarPausa(sessaoId) { if (!sessaoId) return; try { await sb.from('sessoes').update({ lembrete_aberto_em: new Date().toISOString() }).eq('id', sessaoId).is('finalizada_em', null); } catch {} }
 export async function finalizarSessao(sessaoId, patch) {
   // finalizada_em vem do celular (hora em que ela terminou), assim treino enviado depois cai no dia certo
   const { data, error } = await sb.from('sessoes').update({ finalizada_em: new Date().toISOString(), ...patch }).eq('id', sessaoId).select().single();
@@ -138,9 +142,12 @@ export async function ultimasSeries(alunaId, exercicioNome) {
   return por;
 }
 // Guarda a última carga no celular; "ant" = a carga do treino anterior (pra mostrar ↑/↓ em Minhas cargas)
-export function guardarCarga(exercicioNome, kg, reps, sessao) { if (!kg) return; const c = LS.get('cargas', {}), v = c[exercicioNome]; const ant = v && v.sessao && v.sessao === sessao ? v.ant : v?.kg; c[exercicioNome] = { kg, reps, data: new Date().toISOString(), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
+export function guardarCarga(exercicioNome, kg, reps, sessao) { if (!kg) return; const c = LS.get('cargas', {}), v = c[exercicioNome]; const mesma = v && v.sessao && v.sessao === sessao, ant = mesma ? v.ant : v?.kg, prev = mesma ? v.prev ?? null : v ? { ...v, prev: undefined } : null; c[exercicioNome] = { kg, reps, prev, data: new Date().toISOString(), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
+// Treino descartado: a carga que ele gravou no celular volta pra de antes (não fica "Última: 80 kg" de um treino que não existiu)
+export function desfazerCargas(sessao) { if (!sessao) return; const c = LS.get('cargas', {}); let mudou = false; for (const [n, v] of Object.entries(c)) if (v?.sessao === sessao) { mudou = true; if (v.prev) { const { prev, ...r } = v.prev; c[n] = r; } else delete c[n]; } if (mudou) LS.set('cargas', c); }
 // Séries de um treino (Evolução › Meus treinos)
-export async function seriesDe(sessaoId) { const { data, error } = await sb.from('series').select('exercicio_nome,n,kg,reps').eq('sessao_id', sessaoId).order('n'); if (error) throw error; return data || []; }
+export async function editarSerie(id, patch) { const { error } = await sb.from('series').update(patch).eq('id', id); if (error) throw error; }
+export async function seriesDe(sessaoId) { const { data, error } = await sb.from('series').select('id,exercicio_nome,n,kg,reps').eq('sessao_id', sessaoId).order('n'); if (error) throw error; return data || []; }
 export async function minhasSessoes(alunaId, limit = 60) {
   const { data, error } = await sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor,respondida_em')
     .eq('aluna_id', alunaId).not('finalizada_em', 'is', null).order('finalizada_em', { ascending: false }).limit(limit);
@@ -174,14 +181,21 @@ export async function salvarEvolucao(alunaId, row, fotos = {}) {
     const { error } = await sb.storage.from('evolucao').upload(path, file, { contentType: 'image/jpeg', upsert: true });
     if (error) throw error;
     paths[k === 'frente' ? 'foto_path' : 'foto_' + k] = path;
+    delete blobs[path]; caches.open(FOTOS).then(c => c.delete('./_foto/' + path)).catch(() => {}); // foto trocada no mesmo dia: não mostra a velha guardada
   }
   const { data, error } = await sb.from('evolucao').upsert({ aluna_id: alunaId, ...row, ...paths }, { onConflict: 'aluna_id,data' }).select().single();
   if (error) throw error; return data;
 }
+// Foto da evolução: baixa uma vez e guarda no celular (abrir de novo não gasta dados e funciona sem sinal)
+const FOTOS = 'isteam-fotos', blobs = {};
 export async function fotoUrl(path) {
   if (!path) return null;
+  if (blobs[path]) return blobs[path];
+  try { const c = await caches.open(FOTOS), r = await c.match('./_foto/' + path); if (r) return (blobs[path] = URL.createObjectURL(await r.blob())); } catch {}
   const { data } = await sb.storage.from('evolucao').createSignedUrl(path, 3600);
-  return data?.signedUrl || null;
+  const url = data?.signedUrl || null; if (!url) return null;
+  try { const res = await fetch(url); if (res.ok) { const b = await res.blob(); caches.open(FOTOS).then(c => c.put('./_foto/' + path, new Response(b, { headers: { 'content-type': b.type || 'image/jpeg' } }))).catch(() => {}); return (blobs[path] = URL.createObjectURL(b)); } } catch {}
+  return url;
 }
 
 // Admin ----------------------------------------------------------------

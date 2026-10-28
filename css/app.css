@@ -105,7 +105,7 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .hero-entrada{position:relative;flex:1;display:flex;flex-direction:column;justify-content:flex-end;min-height:88vh;margin:calc(-12px - var(--sat)) -16px 0;padding:20px 20px 28px}
 .hero-entrada img{position:absolute;left:0;top:0;width:100%;height:78%;object-fit:cover;object-position:50% 15%;-webkit-mask-image:linear-gradient(180deg,#000 50%,transparent 100%);mask-image:linear-gradient(180deg,#000 50%,transparent 100%)}
 .hero-entrada .c{position:relative;display:flex;flex-direction:column;gap:14px}
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.94);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:9;padding:20px}
+.ov{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:9;padding:20px}
 .ring{width:min(70vw,260px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) var(--p,100%),#2a2a2e 0);position:relative}
 .ring::after{content:"";position:absolute;inset:14px;border-radius:50%;background:#0b0b0c}
 .ring b{position:relative;z-index:1;font-family:var(--display);font-size:min(24vw,92px);font-weight:800;font-variant-numeric:tabular-nums}
@@ -114,7 +114,7 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .modal .area{aspect-ratio:9/14;background:#000;display:grid;place-items:center;color:var(--muted);font-size:0.8125rem;text-align:center;padding:16px}
 .modal .area iframe,.modal .area video{width:100%;height:100%;border:0}
 .toast{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:#0b0b0c;border-radius:12px;padding:13px 16px;font-size:0.9375rem;line-height:1.35;font-weight:600;display:none;z-index:12;max-width:448px;margin:0 auto;box-shadow:0 6px 24px rgba(0,0,0,.5)}
-.toast.on{display:block}
+.toast.on{display:block}.toast.atras{z-index:10}
 .toast.err{background:#c62828;color:#fff}.toast:not(.fixo){pointer-events:none} /* toque passa pro botão de baixo (Iniciar, próxima série) */
 .r{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:0.8125rem}
 .r:last-child{border-bottom:0}
@@ -141,7 +141,7 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .link-fim{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:0.9375rem;min-height:44px;padding:14px;margin-top:4px}
 .ov .x{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;color:var(--fg);font-size:1rem;background:#2a2a2e;border-radius:22px;padding:10px 16px}
 .ov.mini{inset:auto 0 0 0;height:auto;flex-direction:row;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));background:var(--accent);gap:10px;justify-content:space-between}
-.ov.mini > p,.ov.mini .x,.ov.mini .row{display:none}
+.ov.mini > p,.ov.mini .x,.ov.mini .row,.ov.mini #rest-pt{display:none}
 .ov.mini .ring{width:auto;aspect-ratio:auto;background:none;border-radius:0}
 .ov.mini .ring::after{display:none}
 .ov.mini .ring b{font-size:1.125rem;color:var(--accent-ink)}
@@ -350,12 +350,12 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 
 /* Abas com letra grande: nome curto (Pts, Evol.) em vez de "Pon···"; cresce com a fonte dela */
 .tabs .tab{flex:1 1 0;container-type:inline-size}.tabs .tab span.c{display:none}
-@container (max-width:4.4rem){.tabs .tab span.l{display:none}.tabs .tab span.c{display:block;font-size:.6875rem;letter-spacing:-.3px;overflow:visible;text-overflow:clip}}
+@media (min-width:341px) and (max-width:400px){.tabs .tab span.l{font-size:.8125rem;letter-spacing:-.1px}}.tabs .tab.curto span.l{display:none}.tabs .tab.curto span.c{display:block;font-size:.6875rem;letter-spacing:-.3px;overflow:visible;text-overflow:clip}
 /* Treino em 300 px com letra grande: título encolhe em vez de partir no meio */
 .sessao .bloco h1{font-size:clamp(1.25rem,7vw,2rem)!important;hyphens:auto}
 .sessao .bloco .tag+h1{font-size:clamp(1.125rem,6vw,1.625rem)!important}
 .set .h{overflow-wrap:normal;hyphens:auto}
-.chatbar .btn{white-space:nowrap;flex:0 0 auto;width:auto} /* "Enviar ➤" numa linha só */
+.chatbar .btn{white-space:nowrap;flex:0 0 auto;width:auto}.chatbar textarea{flex:1;min-width:0}@media (max-width:340px){.chatbar .envTxt{display:none}.chatbar .btn{min-width:52px}} /* letra grande/tela estreita: só a seta, o campo fica largo */ /* "Enviar ➤" numa linha só */
 /* Painel do Igor (estilo hub: atalhos, blocos, cartões) */
 .painel{gap:14px}
 .atalhos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;background:var(--panel2);border-radius:16px;padding:14px 6px}

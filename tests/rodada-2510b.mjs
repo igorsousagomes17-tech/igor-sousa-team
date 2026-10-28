@@ -30,7 +30,7 @@ const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env
   m = await perguntaIA(p, 'dormi mal essa noite'); ok(!/Se doeu durante o exercício/.test(m.split('dormi mal')[1] || ''), '"dormi mal" não recebe a resposta de dor');
   await p.fill('#tx', 'Como faço o búlgaro do jeito certo?'); await p.click('#env'); await espera(p, 150); await p.click('.tabs [data-go="home"]'); await espera(p, 1500);
   await p.click('[data-go="assistente"]'); await espera(p, 600); ok(/búlgaro do jeito certo/.test(await txt(p, '#msgs')) && /pé de trás apoiado/.test(await txt(p, '#msgs')), 'saiu antes da resposta: pergunta e resposta aparecem ao voltar');
-  await p.click('.tabs [data-go="perfil"]'); await espera(p, 600); await p.click('#out'); await espera(p, 300); await p.click('#q-s'); await espera(p, 600);
+  await p.click('.tabs [data-go="perfil"]'); await espera(p, 600); await p.click('#out'); await espera(p, 300); await p.click('#q-n'); await espera(p, 600);
   ok(!(await p.evaluate(() => localStorage.getItem('demo:chat'))), 'sair da conta apaga a conversa guardada no celular');
   await ctx.close(); }
 

@@ -31,7 +31,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   await p.evaluate(() => window.dispatchEvent(new Event('online'))); await espera(p, 1500);
   ok((await st(p)).sessoes.length === antes && JSON.parse(await p.evaluate(() => localStorage.getItem('demo:fila'))).length === 1, 'treino de outra conta na fila não sobe nesta conta (e não some)');
   await abrirTreino(p, 'C'); await p.click('#pular'); await espera(p, 300); await p.click('.set[data-k="0"] .rest'); await espera(p, 500); await fecharDescanso(p); await p.click('#sair'); await espera(p, 500);
-  await p.click('.tabs [data-go="perfil"]'); await espera(p, 800); await p.click('#out'); await espera(p, 400); await p.click('#q-s'); await espera(p, 800);
+  await p.click('.tabs [data-go="perfil"]'); await espera(p, 800); await p.click('#out'); await espera(p, 400); await p.click('#q-n'); await espera(p, 800);
   ok(!(await p.evaluate(() => localStorage.getItem('demo:sessao'))) && !!(await p.evaluate(() => localStorage.getItem('demo:sessao@demo'))), 'sair guarda o treino pausado só pra dona');
   await login(p); ok(/Treino pausado|Continuar de onde parei/i.test(await txt(p, '.view')), 'entrou de novo: o treino pausado volta'); await ctx.close(); }
 

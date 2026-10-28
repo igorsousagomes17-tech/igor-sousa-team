@@ -339,3 +339,50 @@ Pendente:
 - [ ] SUSPEITA (só no demo): sugestão da pirâmide do Smith fixa em 22/25/28 depois de um treino com 40/42/44 — no demo as séries anteriores são fixas; não dá pra confirmar no app real sem banco.
 - [ ] Seguem: migração 011 (se ainda não rodou), publicar função assistente, WhatsApp, vídeos, fotos dos prêmios, drop set por queda, capa do PDF clara, i18n por idioma, link definitivo da Kiwify.
 
+
+## 2026-10-28 (rodada automática, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~46 únicos)
+**Júlia (23, iniciante, iPhone):** "como faço elevação de quadril?" caía na resposta genérica e as respostas mandavam "ler como fazer" num texto que não existe; nenhuma tela ensina a execução (vídeos em gravação, só a dica curta); IA do demo sem resposta pra 12/10/8, descanso, parciais, vergonha, menstruação, RPE, tênis; abas "Pts/Evol." em iPhone com fonte normal; passeio não mostrava as abas nem como marcar série; botão "⏱ 30s" não dizia que marca a série; bi-set com 3 nomes (emenda com o 3 / 2-3 / A1-A2); IA não dizia o saldo de pontos e o histórico não fechava com o saldo; card "1 min" pra treino de 7 s e "1/7 exercício"; ficha "peso mais pesado (de qualquer mês)", busca "elástico" vazia, aviso do fim do passeio cobrindo a logo, ranking com empate sem prata.
+**Carla (34, Android lento):** treino descartado deixava "Última: 80 kg" fantasma (lista, Minhas cargas e sugestão); pirâmide na 1ª vez gravava séries 2-4 sem kg; 30 kg e depois 300 no mesmo treino passava sem perguntar e copiava; não dava pra corrigir série de treino passado (recorde falso virava card); "Confere a carga" com "Tá certo" em destaque; treino feito sem sinal não mostrava as séries em Meus treinos; gráfico do histórico começando do zero (24→28 kg parecia igual); "Pular exercício" depois do "‹ Corrigir"; troca no meio do exercício sem dizer que a série 1 foi no outro; "1/8 exercício".
+**Márcia (52, zoom 130%):** voltar do celular pulava a troca de senha do 1º acesso; aviso da anamnese aparecia fora da tela/atrás do rodapé; "dor no peito no esforço" recebia "até lá, cardio leve"; aviso fixo ("olha no spam", aviso de saúde) atravessava telas e cobria o título dos pop-ups; senha criada pelo link do e-mail pedia senha de novo e o pop-up não tinha "Salvando…"/cancelar; "22 perguntas" no Início e "21" na abertura; "Sair do app?" com SAIR em destaque; tira-dúvidas com campo espremido em 288 px; aluna de Android lendo "no iPhone chega em breve"; jargão ("kcal parada", "taxa metabólica"), "9 de 21" quebrando, "Senha criada" cobrindo a anamnese; trocar senha sem pedir a atual.
+**Renata (29, mãe, Personalizado):** não dava pra pausar o treino no meio do descanso; celular fechou o app e ela voltou em menos de 5 min: tempo fora contava inteiro; aviso da volta ("tirei 3 min") apagado na hora pelo "✓ exercício" e "Troca de lado" apitando com o tempo já zerado; aviso "Terminou o treino? garantir seus pontos" com treino pausado de propósito; +80 das fotos perdido (e "já contados") se o 4G caísse só nos pontos; resposta do Igor sem aviso no celular; demo dizendo "fotos já contadas" pra quem nunca mandou; fundo do descanso deixava ver a tela de trás; durações diferentes (10 s / 1 min / 0 min no painel); "Treinos por mês" sumia com o mês atual zerado.
+**Bia (19, celular velho, sinal ruim):** versão nova recarregava a página no meio da aula de spinning/do card; 4G lento: a fila refazia as séries e nunca fechava o treino; cada versão baixava ~300 KB, até o que não mudou; fotos da Evolução baixadas de novo a cada visita e sumindo sem sinal; story dá +30 em treino incompleto; vídeo no iPhone repetindo sem controles; Início baixava 84 KB de capas abaixo da dobra; HIIT só "na bike, esteira ou escada" pra quem treina em casa; card "1/3 exercício"/"1 min" e PDF prometendo vídeo de cada exercício; SUSPEITA: compartilhar o story no iPhone virando download que vai pra Arquivos.
+
+### Corrigido
+- [x] Treino descartado (Início, "Descartar treino", "Descartar e começar este", "Apagar e recomeçar", treino esquecido): a carga que ele gravou no celular volta pra de antes (sem "Última" fantasma).
+- [x] Pirâmide sem histórico: a série sem kg digitado herda o peso da série anterior (no ✓ e no "Fiz, marcar").
+- [x] "Confere a carga" também compara com as séries de hoje (30 → 300 pergunta) e o botão em destaque é "Corrigir".
+- [x] Meus treinos › dia: toca na série e corrige kg/vezes (muda só ela; a "Última" acompanha). Treino que ainda não subiu mostra as séries guardadas no celular.
+- [x] Gráfico de cargas do histórico em escala do menor ao maior; "Treinos por mês" sempre com o mês atual.
+- [x] Depois do "‹ Corrigir", o botão diz "Seguir pro próximo ›"; troca no meio mostra "Série 1 feita no {outro}" e fica no título.
+- [x] 1º acesso: voltar do celular/mudar o endereço não pula a troca de senha. Senha criada pelo link do e-mail vale (não pede de novo), com "Salvando…", trava contra toque duplo e "Agora não". Trocar senha no Perfil pede a senha de agora.
+- [x] Anamnese: aviso logo abaixo da pergunta (e rola até ele); dor no peito/desmaio/acompanhamento médico → "antes de qualquer treino, passa no médico"; "Umas 20 perguntas" no Início; contador numa linha; sem "taxa metabólica".
+- [x] Avisos fixos: somem na troca de tela depois de 4 s; com pop-up aberto ficam atrás dele e voltam quando fecha; "Senha criada" não cobre a anamnese.
+- [x] "Sair do app?" com "Ficar" em destaque.
+- [x] Tira-dúvidas estreito/letra grande: botão só com ➤, campo largo.
+- [x] Lembretes: texto do iPhone só no iPhone; nos outros, "abre pelo Chrome e instala". Perfil: "Seu corpo gasta umas N calorias por dia".
+- [x] Descanso: "⏸ Pausar o treino" no descanso e no cronômetro de exercício; fundo preto inteiro; "Troca de lado" não apita com o tempo já zerado.
+- [x] App fechado pelo celular e reaberto em menos de 5 min: desconta o tempo fora e avisa; aviso da volta não é apagado pelo "✓ exercício" (junta os dois).
+- [x] Treino pausado: o servidor não manda mais o "Terminou o treino?" (usa a marca do próprio aviso, sem coluna nova); texto do aviso sem prometer pontos (precisa publicar a função push).
+- [x] Fotos do mês: 4G caiu só nos pontos → os +80 vão pra fila ("entram quando o sinal voltar"). Seed do demo sem "fotos já contadas".
+- [x] Fotos da Evolução guardadas no celular depois da 1ª vez (não baixa de novo, abre sem sinal; apagadas ao sair da conta).
+- [x] Versão nova do app não recarrega no meio da aula, do card, da anamnese ou de pop-up: espera ela ir pra uma aba.
+- [x] Fila no 4G lento: cada volta espera mais (15 → 30 → 60 s) até subir.
+- [x] Atualização do app confere cada arquivo com o servidor e só baixa o que mudou (no-cache/304).
+- [x] Capas dos programas só baixam quando aparecem na tela.
+- [x] Vídeo: com controles; sem saber a rede (iPhone), não fica repetindo.
+- [x] HIIT em casa: "corrida parada, polichinelo ou degrau". PDF: "a dica de cada exercício" (sem prometer vídeo).
+- [x] Card/story: "<1 min" pra treino de segundos, "1/7 exercícios" no plural; Meus treinos e painel do Igor com "<1 min" (não "0 min"). Fontes do story carregam ao abrir o card (compartilhar sai na hora); no iPhone, o aviso do download diz Arquivos.
+- [x] IA do demo: execução passo a passo ("como faço…"), 12/10/8, descanso, parciais, vergonha/1º dia, menstruação, esforço, tênis; diz o saldo de pontos; respostas não mandam mais "ler como fazer".
+- [x] Abas: nome inteiro quando cabe, curto só quando não cabe de verdade (mede na hora, inclusive se a letra mudar depois); letra um pouco menor entre 341 e 400 px.
+- [x] Passeio: último passo mostra a barra de abas inteira; aviso do fim embaixo. Treino: "Toca no botão laranja: marca a série como feita e já começa o descanso"; cabeçalho "FEITO" em todas as séries; bi-set na lista "com o 3 (no treino: A1 + A2)".
+- [x] Pontos: "Aqui aparecem só os mais recentes" quando o histórico não fecha com o saldo. Ranking com empate 🥇🥇🥈. Ficha: "A maior carga de cada dia". Busca: elástico/band/faixa acham a Mini Band.
+- [x] SW v31. Teste novo: `tests/rodada-2810.mjs`; `rodada-2410/2510b/2610` ajustados (Ficar/Corrigir em destaque).
+
+### Pendente
+- [ ] Passo a passo de execução por exercício (texto/foto até o vídeo chegar): conteúdo do Igor (precisaria de um campo "como fazer" no editor).
+- [ ] Descrição dos prêmios (Elástico + Adesivo, Luva, Bag): texto do Igor.
+- [ ] Story dá +30 em treino incompleto: regra de pontos do Igor (o card diz "incompleto: sem pontos" sobre o treino).
+- [ ] Aviso no celular quando o Igor responde: precisa de gatilho no banco + função push (fase 2 do push).
+- [ ] Publicar de novo a função `push` (texto novo do "Terminou o treino?"). Sem publicar, o aviso não vai pra treino pausado, mas o texto antigo continua.
+- [ ] SUSPEITA (sem iPhone aqui): compartilhar o story no iPhone recusado por demora; as fontes agora carregam antes, falta testar num iPhone de verdade.
+- [ ] Seguem: migração 011 (se ainda não rodou), publicar função assistente, WhatsApp, vídeos, fotos dos prêmios, drop set por queda, capa do PDF clara, i18n por idioma, link definitivo da Kiwify, responder o Igor dentro do app.

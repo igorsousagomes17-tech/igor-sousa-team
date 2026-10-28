@@ -73,7 +73,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
   ok(await p.$eval('.set[data-i="1"][data-k="1"]', e => e.classList.contains('done')), 'toque duplo não desmarca a série');
   await p.fill('.set[data-i="2"][data-k="0"] input[data-f="kg"]', '1122'); await p.click('.set[data-i="2"][data-k="0"] .rest'); await espera(p, 400);
   ok(/Confere a carga/i.test(await p.innerText('#overlay')), 'carga absurda (1122 kg) pergunta antes de salvar'); await shot(p, 'carga-absurda');
-  await p.click('#q-n'); await espera(p, 300); ok(!(await p.$eval('.set[data-i="2"][data-k="0"]', e => e.classList.contains('done'))), '"Corrigir" não marca a série');
+  await p.click('#q-s'); await espera(p, 300); ok(!(await p.$eval('.set[data-i="2"][data-k="0"]', e => e.classList.contains('done'))), '"Corrigir" não marca a série');
   await p.fill('.set[data-i="2"][data-k="0"] input[data-f="kg"]', '80'); await p.click('.set[data-i="2"][data-k="0"] .rest'); await espera(p, 600); if (await p.$('#rest-x')) await p.click('#rest-x');
   await encerrar(p); const st = await estado(p); const sm = st.series.filter(x => x.exercicio_nome === 'Agachamento Smith');
   ok(sm.length >= 2 && sm.every(x => x.kg != null), `séries da pirâmide salvas com kg (${sm.map(x => x.kg)})`);
@@ -98,14 +98,14 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
 { const { ctx, p } = await nova(); await login(p); await p.click('.tabs [data-go="perfil"]'); await espera(p, 600);
   await p.click('#ed'); await espera(p, 400); ok(/Tá tudo certo/i.test(await p.innerText('#overlay')), 'editar anamnese abre na tela de conferir'); await shot(p, 'anamnese-revisao');
   await p.goBack(); await espera(p, 400); ok(!(await p.innerText('#overlay')).trim(), 'voltar do celular fecha a revisão');
-  await p.click('#out'); await espera(p, 400); ok(/Sair do app/i.test(await p.innerText('#overlay')), 'Sair pergunta antes'); await p.click('#q-n'); await espera(p, 300);
+  await p.click('#out'); await espera(p, 400); ok(/Sair do app/i.test(await p.innerText('#overlay')), 'Sair pergunta antes'); await p.click('#q-s'); await espera(p, 300);
   ok(/Perfil/i.test(await txt(p, '.view')), '"Ficar" continua logada');
   await p.click('.tabs [data-go="pontos"]'); await espera(p, 600); ok(/Faltam .* pts pra /i.test(await txt(p, '.view')) && !/print/i.test(await txt(p, '.view')), 'Pontos: quanto falta e sem contradição do print'); await shot(p, 'pontos'); await ctx.close(); }
 
 // 11. Tira-dúvidas mostra a conversa guardada na hora; login: e-mail incompleto no "esqueci"
 { const { ctx, p } = await nova(); await login(p); await p.evaluate(() => localStorage.setItem('demo:chat', JSON.stringify([{ papel: 'user', texto: 'pergunta velha' }, { papel: 'assistant', texto: 'resposta velha' }])));
   await p.click('[data-go="assistente"]'); await espera(p, 150); ok(/resposta velha/.test(await txt(p, '#msgs')), 'conversa guardada aparece na hora');
-  await p.click('.tabs [data-go="perfil"]'); await espera(p, 500); await p.click('#out'); await espera(p, 300); await p.click('#q-s'); await espera(p, 500);
+  await p.click('.tabs [data-go="perfil"]'); await espera(p, 500); await p.click('#out'); await espera(p, 300); await p.click('#q-n'); await espera(p, 500);
   await p.click('text=ENTRAR'); await p.fill('#em', 'marcia@gmail'); await p.click('#esq'); await espera(p, 300);
   ok(/Confere o e-mail/i.test(await p.innerText('#err')), 'esqueci a senha com e-mail incompleto avisa embaixo do campo'); await shot(p, 'login'); await ctx.close(); }
 

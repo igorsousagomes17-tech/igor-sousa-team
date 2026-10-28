@@ -8,14 +8,16 @@ let tt, ttEm = 0;
 // Aviso embaixo (não cobre o título), fica mais tempo e fecha com um toque.
 // fixo: fica até ela tocar (ex.: "descanso acabou há 2 min" quando ela volta pro app).
 export function toast(msg, err = false, { fixo = false, curto = false } = {}) {
-  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + (err ? ' err' : '') + (fixo ? ' fixo' : '') + (location.hash === '#fim' || location.hash === '#sessao' || $('#overlay')?.innerHTML ? ' topo' : '') + (location.hash === '#sessao' && !$('#overlay')?.innerHTML ? ' sess' : ''); // na sessão: abaixo do "‹ Pausar" e do relógio // no feedback do fim e com pop-up aberto fica em cima (não cobre o "Enviar" nem o "Fechar")
+  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + ($('#overlay')?.innerHTML && fixo ? ' atras' : '') + (err ? ' err' : '') + (fixo ? ' fixo' : '') + (location.hash === '#fim' || location.hash === '#sessao' || $('#overlay')?.innerHTML ? ' topo' : '') + (location.hash === '#sessao' && !$('#overlay')?.innerHTML ? ' sess' : ''); // na sessão: abaixo do "‹ Pausar" e do relógio // no feedback do fim e com pop-up aberto fica em cima (não cobre o "Enviar" nem o "Fechar")
   t.onclick = () => t.classList.remove('on');
   clearTimeout(tt); if (!fixo) tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : curto ? 2500 : 4500);
 }
 // Troca de tela ou descanso abrindo: o aviso antigo some (não fica cobrindo a tela nova)
 // (aviso de menos de 0,7 s fica: "Treino pausado" logo antes de trocar de tela precisa aparecer)
-export function fecharToast(todos = false) { const t = $('#toast'); if (t && (todos || (!t.classList.contains('fixo') && Date.now() - ttEm > 700))) t.classList.remove('on'); }
+export function fecharToast(todos = false) { const t = $('#toast'); if (t && (todos || (!t.classList.contains('fixo') && Date.now() - ttEm > 700) || (t.classList.contains('fixo') && Date.now() - ttEm > 4000))) t.classList.remove('on'); } // fixo antigo ("olha no spam") também some na troca de tela
 // Texto do aviso que acabou de aparecer (pra juntar dois avisos em vez de um apagar o outro)
+// Aviso que ainda está na tela (fixo, ou curto que acabou de aparecer): quem vem depois junta em vez de apagar
+export const avisoAtual = () => { const t = $('#toast'); if (!t || !t.classList.contains('on')) return null; const fixo = t.classList.contains('fixo'); return fixo || Date.now() - ttEm < 4000 ? { txt: t.textContent, fixo } : null; };
 const avisoRecente = () => { const t = $('#toast'); return t && t.classList.contains('on') && Date.now() - ttEm < 1500 ? t.textContent : ''; };
 // Exercício sem peso (peso do corpo, elástico, mobilidade): esconde a coluna de kg (vale no app e no PDF).
 // Ela também pode marcar "sem peso" num exercício (treino em casa sem halter): fica guardado no celular.
@@ -24,8 +26,8 @@ export const semCarga = e => e.carga === false || semPesoDela().includes(e.nome)
 export function marcarSemPeso(nome, sem) { const l = semPesoDela().filter(x => x !== nome); if (sem) l.push(nome); try { localStorage.setItem('semPeso', JSON.stringify(l.slice(-80))); } catch {} }
 export const semPesoMarcado = nome => semPesoDela().includes(nome);
 
-export function overlay(html) { const o = $('#overlay'); o.innerHTML = html; $('#toast')?.classList.add('topo'); return o; } // aviso aberto sobe pro topo: não fica em cima dos botões do pop-up
-export function closeOverlay() { $('#overlay').innerHTML = ''; }
+export function overlay(html) { const o = $('#overlay'), t = $('#toast'); o.innerHTML = html; if (t?.classList.contains('fixo') && t.classList.contains('on')) t.classList.add('atras'); else t?.classList.add('topo'); return o; } // aviso fixo fica atrás do pop-up (não cobre o título) e volta quando ele fecha // aviso aberto sobe pro topo: não fica em cima dos botões do pop-up
+export function closeOverlay() { $('#overlay').innerHTML = ''; $('#toast')?.classList.remove('atras'); }
 // Mostrar/ocultar senha: qualquer botão .olho ao lado de um input de senha
 document.addEventListener('click', e => { const b = e.target.closest('.olho'); if (!b) return; e.preventDefault(); const i = b.parentElement.querySelector('input'); const ver = i.type === 'password'; i.type = ver ? 'text' : 'password'; b.textContent = ver ? t('ocultar') : t('mostrar'); });
 export const campoSenha = (id, ph = '', ac = 'new-password') => `<div class="senha"><input class="input" id="${id}" type="password" autocomplete="${ac}" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${ph}"><button type="button" class="olho">${t('mostrar')}</button></div>`;
@@ -55,7 +57,7 @@ export function youtubeEmbed(url) {
   const m = url.match(/(?:youtu\.be\/|v=|shorts\/|embed\/)([\w-]{11})/);
   if (!m) return null;
   return redeFraca() ? `https://www.youtube-nocookie.com/embed/${m[1]}?playsinline=1&modestbranding=1&rel=0` // economia de dados: só toca quando ela der play, sem repetir
-    : `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&playsinline=1&loop=1&playlist=${m[1]}&controls=0&modestbranding=1&rel=0`;
+    : `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&playsinline=1${navigator.connection ? `&loop=1&playlist=${m[1]}` : ''}&controls=1&modestbranding=1&rel=0`; // com controle pra pausar; sem saber a rede (iPhone), não fica repetindo e gastando dados
 }
 
 export function videoModal(nome, url, dica) {
@@ -67,7 +69,7 @@ export function videoModal(nome, url, dica) {
     return;
   }
   const inner = yt ? `<iframe src="${yt}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`
-    : url ? `<video src="${esc(url)}" ${redeFraca() ? 'preload="none"' : 'autoplay loop'} muted playsinline controls></video>`
+    : url ? `<video src="${esc(url)}" ${redeFraca() ? 'preload="none"' : navigator.connection ? 'autoplay loop' : 'autoplay'} muted playsinline controls></video>`
     : null;
   const o = overlay(inner ? `<div class="modal" id="vm"><div class="box"><div class="area">${inner}</div>
     <div class="row between" style="padding:10px 14px"><span class="muted small">${esc(dica || nome)}</span><button class="back" style="color:var(--accent)" id="vm-close">${t('Fechar')}</button></div></div></div>`
@@ -133,7 +135,7 @@ function camada() { let l = document.getElementById('rest-layer'); if (!l) { l =
 // intervalos [forte, leve] (ex.: HIIT 30s forte / 30s leve): troca o rótulo e apita a cada troca.
 // No exercício de tempo, "Já fiz" antes do fim resolve { parcial: segundos feitos }.
 // jaFeito: segundos que já tinham passado (recarregou o app no meio do cardio: continua de onde estava)
-export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false, aoMudar, aoMinimizar, intervalos = null, jaFeito = 0, pausadoIni = false } = {}) {
+export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false, aoMudar, aoMinimizar, intervalos = null, jaFeito = 0, pausadoIni = false, pausarTreino = null } = {}) {
   pararDescanso();
   return new Promise(resolve => {
     let total = segundos + jaFeito, fim = Date.now() + segundos * 1000, iv, trocou = jaFeito > total / 2;
@@ -144,11 +146,12 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       <p class="muted ${intervalos ? 'fase' : ''}" id="rest-t" style="letter-spacing:1px;text-transform:uppercase">${meio ? (trocou ? t('Lado 2 de 2') : t('Lado 1 de 2')) : esc(t(titulo))}</p>
       <div class="ring" id="ring"><b id="rest-n"></b></div>
       <p class="muted center" id="rest-p">${esc(proximo || '')}</p>
-      <div class="row">${trabalho ? `<button class="btn sm" id="rest-skip" style="flex:2">✓ ${t('Já fiz')}</button><button class="btn ghost sm" id="rest-pausa" style="flex:1">⏸ ${t('Pausar')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>` : `<button class="btn sm" id="rest-skip" style="flex:2">${t('Pular descanso')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>`}</div></div>`;
+      <div class="row">${trabalho ? `<button class="btn sm" id="rest-skip" style="flex:2">✓ ${t('Já fiz')}</button><button class="btn ghost sm" id="rest-pausa" style="flex:1">⏸ ${t('Pausar')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>` : `<button class="btn sm" id="rest-skip" style="flex:2">${t('Pular descanso')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>`}</div>${pausarTreino ? `<button class="link-fim" id="rest-pt">⏸ ${t('Pausar o treino')}</button>` : ''}</div>`; // criança chamou no meio do descanso: pausa daqui mesmo
     const q = s => L.querySelector(s);
     const avisar = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }); } catch {} };
     const cancelarAviso = () => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} };
     pedirAviso(); avisar(); fecharToast();
+    if (pausarTreino) q('#rest-pt').onclick = () => pausarTreino();
     const left = () => Math.max(0, Math.ceil((fim - (pausado || Date.now())) / 1000)); // parado no ⏸: o tempo que falta não cai
     me.feito = () => total - left();
     // "1 min cada lado": mostra o tempo do lado (1:00 → 0:00 e de novo 1:00 → 0:00), não o total
@@ -156,7 +159,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
     const rotulo = () => meio ? (trocou ? t('Lado 2 de 2') : t('Lado 1 de 2')) : t(titulo);
     const tick = () => {
       if (pausado) return; const l = left(), n = q('#rest-n'); if (!n) return;
-      if (meio && !trocou && l <= total / 2) { trocou = true; beep(); q('#rest-t').textContent = t('Lado 2 de 2 · troca de lado!'); toast(t('Troca de lado 🔄')); }
+      if (meio && !trocou && l <= total / 2 && l > 0) { trocou = true; beep(); q('#rest-t').textContent = t('Lado 2 de 2 · troca de lado!'); toast(t('Troca de lado 🔄')); }
       let resta = 0; // segundos que faltam no intervalo atual (forte/leve)
       if (intervalos && l > 0) { const ciclo = intervalos[0] + intervalos[1], pos = (total - l) % ciclo, f = pos < intervalos[0] ? 0 : 1; resta = f ? ciclo - pos : intervalos[0] - pos; if (f !== fase) { if (fase !== -1) beep(f ? 'leve' : 'forte'); fase = f; q('#rest').classList.toggle('leve', !!f); } q('#rest-t').textContent = `${f ? t('Leve') : t('Forte!')} · ${resta}s`; }
       const rot = intervalos && fase >= 0 ? (fase ? t('Leve') : t('Forte!')) : trouxe(titulo);
@@ -187,6 +190,12 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
   });
 }
 
+// Nome da aba inteiro quando cabe; nome curto (Pts, Evol.) só quando não cabe de verdade (letra grande, tela estreita)
+let roAbas = null, abaPend = false;
+export function ajustaAbas() { $$('.tabs .tab').forEach(b => { b.classList.remove('curto'); const l = b.querySelector('span.l'); if (l && l.scrollWidth > l.clientWidth + 1) b.classList.add('curto'); });
+  // letra do celular mudou depois de abrir (zoom, fonte grande): mede de novo
+  const nav = $('.tabs'); if (nav && 'ResizeObserver' in window) { roAbas?.disconnect(); roAbas = new ResizeObserver(() => { if (abaPend) return; abaPend = true; requestAnimationFrame(() => { abaPend = false; const h = nav.offsetHeight; if (h !== nav._h) { nav._h = h; ajustaAbas(); } }); }); nav._h = nav.offsetHeight; roAbas.observe(nav); } }
+window.addEventListener('resize', () => ajustaAbas()); try { document.fonts?.ready.then(() => ajustaAbas()); } catch {}
 export function tabs(active) {
   const abas = [['home', 'Início', 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'], ['treino', 'Treino', 'M6 8v8M18 8v8M3 10v4M21 10v4M6 12h12'],
     ['videos', 'Vídeos', 'M4 5h16v14H4zM10 9l5 3-5 3z'],
@@ -215,7 +224,7 @@ export async function cardImagem({ nome, titulo, minutos, exercicios, series, st
   x.fillStyle = '#f4f2ee'; x.fillText(l1, 70, 880); x.fillText(l2, 70, 880 + fs * 0.95);
   x.fillStyle = '#ff6a00'; x.fillText("✓", 70 + x.measureText(l2 + " ").width, 880 + fs * 0.95);
   // Palavras por extenso ("semanas", não "sem."): em duas linhas pra caber
-  const stats = [[`${minutos}`, t('min')], stat2 ? stat2 : exercicios === 0 && series ? [`${series}`, tp(series, 'série', 'séries')] : [!completo && total ? `${exercicios}/${total}` : `${exercicios}`, tp(exercicios, 'exercício', 'exercícios')], [`🔥${streak}`, tp(streak, 'semana seguida', 'semanas seguidas')]];
+  const stats = [[`${minutos}`, t('min')], stat2 ? stat2 : exercicios === 0 && series ? [`${series}`, tp(series, 'série', 'séries')] : [!completo && total ? `${exercicios}/${total}` : `${exercicios}`, tp(!completo && total ? total : exercicios, 'exercício', 'exercícios')], [`🔥${streak}`, tp(streak, 'semana seguida', 'semanas seguidas')]];
     stats.forEach(([v, l], j) => { const yy = 1260 + j * 130; x.fillStyle = j === 2 ? '#ff6a00' : '#f4f2ee'; x.font = `800 96px ${DISP}`; x.fillText(v, 70, yy); const wv = x.measureText(v).width; x.fillStyle = '#9a968f'; let fz = 42; x.font = `500 ${fz}px ${BODY}`; while (fz > 26 && x.measureText(l).width > W - 160 - wv) { fz -= 2; x.font = `500 ${fz}px ${BODY}`; } x.fillText(l, 70 + wv + 20, yy); });
   x.fillStyle = '#9a968f'; x.font = `500 36px ${BODY}`;
   let linha = `${nome} · ${titulo}`; if (x.measureText(linha).width > W - 140) { while (x.measureText(linha + '…').width > W - 140 && linha.length > 4) linha = linha.slice(0, -1); linha = linha.trimEnd() + '…'; }

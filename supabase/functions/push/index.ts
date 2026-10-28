@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
       if (!(s as any).profiles?.ativa) continue;
       const nome = String((s as any).profiles?.nome || '').trim().split(' ')[0];
       const treino = /^Treino [A-Z]$/.test(s.titulo || '') ? `seu ${s.titulo}` : 'seu treino';
-      const msg = { title: `Terminou o treino${nome ? ', ' + nome : ''}? 💪`, body: `${treino[0].toUpperCase() + treino.slice(1)} ainda tá aberto. Toca aqui pra finalizar e garantir seus pontos.`, url: './#sessao', tag: 'treino-aberto' };
+      const msg = { title: `Terminou o treino${nome ? ', ' + nome : ''}? 💪`, body: `${treino[0].toUpperCase() + treino.slice(1)} ainda tá aberto. Já terminou? Toca aqui pra registrar o que você fez.`, url: './#sessao', tag: 'treino-aberto' };
       const { data: subs } = await db.from('push_inscricoes').select('endpoint,p256dh,auth').eq('aluna_id', s.aluna_id);
       for (const sub of subs || []) {
         try { await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(msg), { TTL: 3600 }); enviados++; }

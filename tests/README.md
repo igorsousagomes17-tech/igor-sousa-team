@@ -43,3 +43,7 @@ voltar na aba Treino, feedback que diz o que falta, pausa sozinha com 10 min par
 avisado no Início/sessão; desmarcar série tira o ✓; "‹ Corrigir" logo depois de fechar o exercício; série preenchida sem ✓ perguntada no fim; volta depois de 40 min fora sem relógio negativo;
 spinning: toque duplo, voltar pergunta, recarregar retoma, aula curta não pontua e tem story; login vazio; abas "Pts/Evol." com letra grande; treino pausado sem pop-up de pontos):
 `W=360 OUT=/tmp/shots node tests/rodada-2710.mjs`.
+
+`tests/rodada-2810.mjs` testa a rodada 28/10 (treino descartado não deixa carga fantasma, pirâmide na 1ª vez herda o peso, 30 → 300 pergunta com "Corrigir" em destaque,
+"Ficar" em destaque no Sair, senha atual pra trocar, voltar não pula a troca de senha do 1º acesso, aviso fixo antigo some, "Pausar o treino" no descanso, corrigir série de treino passado,
+IA do demo: execução/12-10-8/descanso/saldo, abas com nome inteiro quando cabe, card "<1 min", tira-dúvidas em 300 px): `W=360 OUT=/tmp/shots node tests/rodada-2810.mjs`.

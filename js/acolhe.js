@@ -43,7 +43,7 @@ const PASSOS = [
   ['.card.hero', 'Treino de hoje', 'Aqui aparece o treino do dia. Toca em abrir e é só seguir: o app mostra o exercício, a sua última carga e o cronômetro do descanso.'],
   ['.home-ia', 'Tira-dúvidas 24h', 'Ficou com dúvida no meio do treino? Pergunta aqui. A IA do time responde na hora, com base no seu treino.'],
   ['.home-time', 'O time', 'Você não treina sozinha: aqui você vê quem do time já treinou hoje e o ranking do mês.'],
-  ['.tabs [data-go="perfil"]', 'Perfil', 'Pontos, evolução e prêmios ficam nas abas aqui embaixo. No Perfil tem sua anamnese, as respostas do Igor e este passeio, se quiser ver de novo.'],
+  ['.tabs', 'As abas', 'Aqui embaixo: Treino (todos os seus treinos), Vídeos, Pontos e prêmios, Evolução e Perfil. No Perfil tem sua anamnese, as respostas do Igor e este passeio, se quiser ver de novo.'],
 ];
 export const passeioPendente = perfil => !demoPula() && !LSget('tour@' + perfil.id) && !!perfil.objetivo;
 export function passeio(perfil) {
@@ -54,7 +54,7 @@ export function passeio(perfil) {
   el.innerHTML = `<div class="tour-hole"></div><div class="tour-box" aria-live="polite"><b class="tour-t"></b><p class="tour-x"></p><div class="row between tour-acoes"><button class="back tour-pula">${t('Pular')}</button><span class="tour-dots"></span><button class="btn sm tour-ok"></button></div></div>`;
   document.body.appendChild(el); document.documentElement.style.overflow = 'hidden';
   let i = 0; const hole = el.querySelector('.tour-hole'), box = el.querySelector('.tour-box');
-  const fim = () => { if (!el.isConnected) return; el.remove(); document.documentElement.style.overflow = ''; window.removeEventListener('resize', mostra); scrollTo({ top: 0, behavior: semMovimento() ? 'instant' : 'smooth' }); setTimeout(() => { toast(t('Tudo pronto! Bora pro primeiro treino? 💪')); $('#toast')?.classList.add('topo'); }, 350); };
+  const fim = () => { if (!el.isConnected) return; el.remove(); document.documentElement.style.overflow = ''; window.removeEventListener('resize', mostra); scrollTo({ top: 0, behavior: semMovimento() ? 'instant' : 'smooth' }); setTimeout(() => toast(t('Tudo pronto! Bora pro primeiro treino? 💪')), 350); }; // embaixo: não cobre a logo
   function mostra() {
     const [sel, tit, txt] = passos[i]; const alvo = document.querySelector(sel);
     if (!alvo) { if (++i < passos.length) return mostra(); return fim(); }
@@ -189,8 +189,8 @@ const iniciais = n => String(n || '?').split(/\s+/).map(w => w[0]).join('').slic
 const nomeSessao = x => /^Treino [A-Z]$/.test(x || '') ? t('o Treino {l}', { l: x.slice(-1) }) : (String(x || '').split(' · ')[0] || t('um treino'));
 // Empate = mesma posição; mostra o top 5 e, se ela estiver mais pra baixo, a linha dela.
 function rankComEmpate(d) {
-  const lista = d.ranking || []; let pos = 0, ant = null;
-  const comPos = lista.map((r, k) => { if (r.n !== ant) { pos = k; ant = r.n; } return { r, i: pos }; });
+  const lista = d.ranking || []; let pos = -1, ant = null;
+  const comPos = lista.map(r => { if (r.n !== ant) { pos++; ant = r.n; } return { r, i: pos }; }); // empate: 🥇🥇🥈 (ninguém fica sem a prata)
   const top = comPos.filter(x => x.i < 5); const eu = comPos.find(x => x.r.eu && x.i >= 5) || (d.minha && !comPos.some(x => x.r.eu) ? { r: { nome: t('você'), n: d.minha.n, eu: true }, i: d.minha.pos - 1 } : null);
   return eu && !top.includes(eu) ? [...top, eu] : top;
 }

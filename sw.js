@@ -1,5 +1,5 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v30';
+const CACHE = 'isteam-v31';
 const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
 // Gerador de PDF, capas, fotos e fontes: não mudam com a versão do app, então ficam de uma versão pra outra
 // (antes cada atualização apagava e o PDF/capas paravam de abrir sem sinal até baixar tudo de novo)
@@ -11,18 +11,19 @@ const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js',
 
 self.addEventListener('install', e => {
   // 1ª instalação: reaproveita o que a página acabou de baixar (não gasta o pacote de dados 2x).
-  // Atualização (já tinha cache): baixa a versão nova de verdade, sem pegar arquivo velho guardado.
-  e.waitUntil(caches.keys().then(ks => caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: ks.length ? 'reload' : 'force-cache' }))))).then(() => self.skipWaiting()));
+  // Atualização (já tinha cache): confere cada arquivo com o servidor (no-cache = pergunta "mudou?"); o que não mudou volta
+  // como 304 sem baixar de novo (antes cada versão baixava ~300 KB, até o que não tinha mudado).
+  e.waitUntil(caches.keys().then(ks => caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: ks.length ? 'no-cache' : 'force-cache' }))))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
-    const keys = (await caches.keys()).filter(k => k !== CACHE && k !== DADOS && k !== EXTRAS), novo = await caches.open(CACHE), ex = await caches.open(EXTRAS);
+    const keys = (await caches.keys()).filter(k => k !== CACHE && k !== DADOS && k !== EXTRAS && k !== 'isteam-fotos'), novo = await caches.open(CACHE), ex = await caches.open(EXTRAS);
     const shell = new Set(SHELL.map(u => new URL(u, self.location).href));
     for (const k of keys) { // o que ela já tinha usado (PDF, demo, capas) continua guardado na versão nova
       const c = await caches.open(k);
       for (const req of await c.keys()) {
         if (shell.has(req.url)) continue; const u = new URL(req.url);
-        try { if (ehExtra(u)) { if (!(await ex.match(req))) { const r = await c.match(req); if (r) await ex.put(req, r); } } else if (u.origin === location.origin) { const r = await fetch(req, { cache: 'reload' }); if (r.ok) await novo.put(req, r); } } catch {}
+        try { if (ehExtra(u)) { if (!(await ex.match(req))) { const r = await c.match(req); if (r) await ex.put(req, r); } } else if (u.origin === location.origin) { const r = await fetch(req, { cache: 'no-cache' }); if (r.ok) await novo.put(req, r); } } catch {}
       }
       await caches.delete(k);
     }

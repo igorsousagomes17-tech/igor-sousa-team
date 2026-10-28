@@ -107,7 +107,8 @@ async function clica(p, sel) { for (let t = 0; t < 3; t++) { if (await p.$('#res
   await p.fill('#em', 'ana@demo.com'); await p.press('#pw', 'Enter'); await espera(p, 1000);
   await p.addStyleTag({ content: 'html{font-size:130%}' }); await espera(p, 300);
   const abas = await p.$$eval('.tabs .tab', bs => bs.map(b => [...b.querySelectorAll('span')].filter(s => getComputedStyle(s).display !== 'none').map(s => s.textContent).join('')));
-  console.log('abas 130%', abas); ok(abas.includes('Pts') && !abas.some(a => a.includes('…')), 'abas com letra grande: nome curto inteiro');
+  const cortada = await p.$$eval('.tabs .tab span', ss => ss.some(s => getComputedStyle(s).display !== 'none' && s.scrollWidth > s.clientWidth + 1));
+  console.log('abas 130%', abas); ok(!cortada && abas.every(a => ['Início', 'Treino', 'Vídeos', 'Pontos', 'Pts', 'Evolução', 'Evol.', 'Perfil'].includes(a)), 'abas com letra grande: nome inteiro ou curto, nunca cortado'); // 28/10: nome curto só quando não cabe
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:sessao') || 'null'); }); await shot(p, 'abas130');
   await ctx.close(); }
 { const t0 = new Date('2026-10-27T10:00:00-03:00'); const { ctx, p } = await nova(t0); await login(p); await abrirTreino(p, 'B'); if (await p.$('#q-s')) { await p.click('#q-n'); await espera(p); }

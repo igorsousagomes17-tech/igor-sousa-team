@@ -78,7 +78,7 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
   [...(programa ? [] : ['Siga a ordem A, B, C, D e recomece. Perdeu um dia? Continua de onde parou.']),
     ...(todos.some(e => e.biset_com) ? ['Bi-set (marcado em laranja): faz um exercício e emenda direto no outro, descansa só no fim.'] : []),
     ...(todos.some(e => /\d\s*\/\s*\d/.test(e.reps || '')) ? ['Pirâmide (ex.: 12/10/8): aumenta a carga a cada série e diminui as repetições.'] : []),
-    ...(temCarga ? ['Bateu o topo das repetições com boa técnica? Sobe a carga na próxima.', 'No app você tem o vídeo de cada exercício, o cronômetro do descanso e registra a carga.'] : ['No app você tem o vídeo de cada exercício e o cronômetro do descanso.']),
+    ...(temCarga ? ['Bateu o topo das repetições com boa técnica? Sobe a carga na próxima.', 'No app você tem a dica de cada exercício, o cronômetro do descanso e registra a carga.'] : ['No app você tem a dica de cada exercício e o cronômetro do descanso.']),
     'Treino ficou leve ou pesado demais? Me fala no feedback do app que eu ajusto.']
     .forEach(l => { const ls = doc.splitTextToSize(limpa(T(l)), W - 2 * M - 6); doc.setFillColor(...LARANJA); doc.circle(M + 1.2, y - 1.2, 0.9, 'F'); doc.text(ls, M + 5, y); y += ls.length * 5 + 1.5; });
   rodape(true);
