@@ -87,6 +87,11 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   await p.click('#esf button >> nth=5'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
   const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#share'); await dl; await espera(p, 700);
   ok(/Downloads|Galeria/.test(await p.innerText('#toast')), 'story sem compartilhar diz onde a imagem ficou'); await shot(p, 'story');
+  // story com a foto dela de fundo: arte sem fundo (PNG transparente) pra colar por cima
+  await p.click('#shareFoto'); await espera(p, 1500);
+  ok(await p.isVisible('.xadrez img'), 'arte sem fundo abre com a prévia');
+  const alfa = await p.evaluate(async () => { const im = document.querySelector('.xadrez img'); await im.decode(); const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d'); x.drawImage(im, 0, 0); return [x.getImageData(1000, 1200, 1, 1).data[3], im.naturalWidth, im.naturalHeight]; });
+  ok(alfa[0] === 0 && alfa[1] === 1080, `arte é transparente (alfa ${alfa[0]}, ${alfa[1]}x${alfa[2]})`); await shot(p, 'story-sem-fundo');
   await ctx.close(); }
 
 console.log('erros de página:', errs); await b.close();

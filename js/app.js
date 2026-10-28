@@ -1018,23 +1018,56 @@ routes.card = async (arg) => { try { ['800 54px "Barlow Condensed"', '500 30px B
     <p class="muted mt small">${esc(primeiroNome(S.perfil.nome))} · ${esc(nomeCurto(d.titulo))} · ${esc(C.INSTAGRAM)}</p></div></div>
   ${d.recordes?.length ? `<div class="card" style="border:1px solid var(--accent)"><b>🏆 ${tp(d.recordes.length, 'Recorde!', 'Recordes!')}</b><p class="muted">${esc(d.recordes.join(' · '))} · ${t('mais do que da última vez')}</p></div>` : ''}
   <div class="row"><button class="btn sm" style="flex:1" id="share">${t('Postar no story')}</button><button class="btn ghost sm" style="flex:1" data-go="evolucao">${t('Minha evolução')}</button></div>
+  <button class="btn ghost sm" id="shareFoto">📸 ${t('Story com a sua foto de fundo')}</button>
   ${d.titulo === 'Cardio 20 min' || d.hiit || d.express || d.ex === 0 || d.completo === false ? '' : `<button class="btn ghost sm" data-go="assistente" data-arg='${esc(JSON.stringify({ pergunta: t('Me passa um cardio de 20 minutos pra fazer agora'), contexto: 'Ela acabou de terminar o ' + (d.titulo || 'treino') + '.', enviar: true, cardio: true }))}'>🔥 ${t('Quer um cardio de 20 min agora?')}</button>`}
   ${A.lembreteSuportado() && !A.lembreteLigado() && Notification.permission === 'default' && !db.LS.get('lembretePerg') ? `<div class="card" id="lemb"><b style="font-size:0.9375rem">🔔 ${t('Quer que eu te lembre se passar uns dias sem treinar?')}</b><p class="muted">${t('Um aviso carinhoso, sem cobrança. Dá pra desligar no Perfil.')}</p><div class="row mt"><button class="btn ghost sm" id="lembN" style="flex:1">${t('Agora não')}</button><button class="btn sm" id="lembS" style="flex:1">${t('Quero')}</button></div></div>` : ''}
   <p class="muted center small">${t('Cada story é um convite pra sua amiga entrar no time.')}</p>${amigaBtn(S.perfil)}</div>`, 'home');
   if ($('#lemb')) { $('#lembN').onclick = () => { db.LS.set('lembretePerg', Date.now()); $('#lemb').remove(); }; $('#lembS').onclick = async () => { db.LS.set('lembretePerg', Date.now()); const r = await A.ligarLembrete(); $('#lemb')?.remove(); toast(msgLembrete(r)); }; }
-  $('#share').onclick = async () => {
-    const bt = $('#share'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
-    // Story fala o grupo do treino ("Quadríceps"), não só "Treino A"; em cima, o recorde ou o treino da semana
+  // Story fala o grupo do treino ("Quadríceps"), não só "Treino A"; em cima, o recorde ou o treino da semana
+  const dadosCard = () => {
     const tr = (S.plano?.treinos || []).find(x => d.titulo === `Treino ${x.letra}`), wk = isoWeek(new Date(d.quando || Date.now()));
     const nSem = sessoes.filter(x => isoWeek(new Date(x.finalizada_em)) === wk && treinoCompleto(x) && /^Treino [A-Z]$/.test(x.titulo || '')).length;
     const destaque = d.recordes?.length ? '🏆 ' + d.recordes[0] : d.completo !== false && tr && nSem ? t('{n}º treino da semana', { n: nSem }) : '';
-    let r; try { r = await cardImagem({ nome: primeiroNome(S.perfil.nome), titulo: tr?.nome ? `${nomeTreino(d.titulo)} · ${tr.nome}` : nomeCurto(d.titulo), minutos: d.seg != null && d.seg < 60 ? '<1' : d.min, exercicios: d.ex, series: d.series, streak: st.semanas, data, insta: C.INSTAGRAM, completo: d.completo !== false, total: d.total, destaque }); } catch { r = 'erro'; } finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
+    return { nome: primeiroNome(S.perfil.nome), titulo: tr?.nome ? `${nomeTreino(d.titulo)} · ${tr.nome}` : nomeCurto(d.titulo), minutos: d.seg != null && d.seg < 60 ? '<1' : d.min, exercicios: d.ex, series: d.series, streak: st.semanas, data, insta: C.INSTAGRAM, completo: d.completo !== false, total: d.total, destaque };
+  };
+  $('#shareFoto').onclick = async () => {
+    const bt = $('#shareFoto'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
+    let blob = null; try { blob = await cardImagem({ ...dadosCard(), transparente: true, modo: 'blob' }); } catch {} finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
+    if (!blob) return toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true);
+    artePorCima(blob);
+  };
+  $('#share').onclick = async () => {
+    const bt = $('#share'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
+    let r; try { r = await cardImagem(dadosCard()); } catch { r = 'erro'; } finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
     if (r === 'erro') return toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true);
     if (r === 'cancel') return;
     pontosStory(r);
   };
 };
 
+// Arte sem fundo (igual Strava): ela copia, abre o story com a foto dela e cola por cima.
+function artePorCima(blob) {
+  const url = URL.createObjectURL(blob), podeCopiar = !!(navigator.clipboard?.write && window.ClipboardItem);
+  overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px;margin-top:16px">
+    <h2>${t('Story com a sua foto')}</h2>
+    <div class="xadrez"><img src="${url}" alt="${t('Arte do treino sem fundo')}"></div>
+    <ol class="passos-ig"><li>${podeCopiar ? t('Toca em <b>Copiar a arte</b>.') : t('Toca em <b>Salvar a arte</b>.')}</li><li>${t('No Instagram, abre o story e escolhe a sua foto.')}</li><li>${podeCopiar ? t('Toca em <b>Aa</b>, segura o dedo na tela e escolhe <b>Colar</b>. A arte entra por cima da foto: é só ajustar o tamanho.') : t('Toca no ícone de figurinha, escolhe a arte que você salvou e ajusta o tamanho.')}</li></ol>
+    ${podeCopiar ? `<button class="btn" id="copiaArte">${t('Copiar a arte')}</button>` : ''}
+    <button class="btn ${podeCopiar ? 'ghost' : ''} sm" id="salvaArte">${t('Salvar a arte')}</button>
+    <button class="btn ghost sm" id="c">${t('Fechar')}</button></div></div>`);
+  const fecha = () => { closeOverlay(); URL.revokeObjectURL(url); };
+  $('#c').onclick = fecha;
+  const ok = r => { pontosStory(r); };
+  if ($('#copiaArte')) $('#copiaArte').onclick = async () => {
+    try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); toast(t('Arte copiada ✓ Agora abre o story e cola por cima da sua foto.')); $('#copiaArte').textContent = t('Copiada ✓'); ok('shared'); }
+    catch { toast(t('Não deu pra copiar aqui. Toca em Salvar a arte.'), true); }
+  };
+  $('#salvaArte').onclick = async () => {
+    const file = new File([blob], 'treino-feito-sem-fundo.png', { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); ok('shared'); return; } catch (e) { if (e?.name === 'AbortError') return; } }
+    const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); ok('download');
+  };
+}
 // +30 do story (card do treino e resumo da semana, mesmo limite do dia). Avisa da imagem na hora; os pontos chegam depois.
 async function pontosStory(r) {
   const ref = diaLocal(), onde = r === 'download' ? (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Imagem salva em Arquivos › Downloads: abre ela, toca em compartilhar e escolhe o Instagram.') : t('Imagem salva no celular (Downloads/Galeria): abre o Instagram e escolhe ela.')) + ' ' : t('Card pronto!') + ' ';

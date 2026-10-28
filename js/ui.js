@@ -223,34 +223,40 @@ export function tabs(active) {
 }
 
 // Card compartilhável → imagem PNG (canvas) → Web Share ou download
-export async function cardImagem({ nome, titulo, minutos, exercicios, series, streak, data, insta, completo = true, total = 0, destaque = '', rotulo = '', stat2 = null }) {
+export async function cardImagem({ nome, titulo, minutos, exercicios, series, streak, data, insta, completo = true, total = 0, destaque = '', rotulo = '', stat2 = null, transparente = false, modo = 'compartilhar' }) {
   // a letra da marca precisa estar carregada antes de desenhar (senão o story sai com outra fonte)
   try { await Promise.race([Promise.all(['800 54px "Barlow Condensed"', '500 30px Barlow', '700 48px Barlow'].map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 1500))]); } catch {}
-  const W = 1080, H = 1920, c = document.createElement('canvas'); c.width = W; c.height = H;
-  const x = c.getContext('2d');
-  x.fillStyle = '#0b0b0c'; x.fillRect(0, 0, W, H);
-  const g = x.createRadialGradient(W - 120, 120, 20, W - 120, 120, 620); g.addColorStop(0, 'rgba(255,106,0,.55)'); g.addColorStop(1, 'rgba(255,106,0,0)');
-  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  // transparente: a mesma arte sem o fundo, mais compacta, pra ela colar por cima da foto dela no story (igual Strava)
+  const off = transparente ? -500 : 0, W = 1080, H = transparente ? 1230 : 1920, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'), CINZA = transparente ? '#f4f2ee' : '#9a968f';
+  if (transparente) { x.shadowColor = 'rgba(0,0,0,.55)'; x.shadowBlur = 22; x.shadowOffsetY = 3; } // lê bem em cima de foto clara ou escura
+  else {
+    x.fillStyle = '#0b0b0c'; x.fillRect(0, 0, W, H);
+    const g = x.createRadialGradient(W - 120, 120, 20, W - 120, 120, 620); g.addColorStop(0, 'rgba(255,106,0,.55)'); g.addColorStop(1, 'rgba(255,106,0,0)');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+  }
   const DISP = '"Barlow Condensed", Impact, "Noto Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans Devanagari", system-ui, sans-serif', BODY = 'Barlow, Arial, "Noto Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans Devanagari", system-ui, sans-serif';
   x.fillStyle = '#f4f2ee'; x.font = `800 54px ${DISP}`; x.fillText('IGOR SOUSA', 70, 120);
   x.fillStyle = '#ff6a00'; x.fillText('TEAM', 70 + x.measureText('IGOR SOUSA ').width, 120);
-  x.fillStyle = '#9a968f'; x.font = `500 30px ${BODY}`; x.fillText(data, W - 70 - x.measureText(data).width, 118);
+  x.fillStyle = CINZA; x.font = `500 30px ${BODY}`; x.fillText(data, W - 70 - x.measureText(data).width, 118);
   // "TREINO FEITO ✓" no idioma dela; diminui a letra se a palavra for comprida (francês, espanhol)
   const [l1, l2] = (rotulo || (exercicios === 0 || !completo ? t('TREINO|REGISTRADO') : t('TREINO|FEITO'))).split('|'); let fs = 190;
   x.font = `800 ${fs}px ${DISP}`; while (fs > 90 && Math.max(x.measureText(l1).width, x.measureText(l2 + ' ✓').width) > W - 140) { fs -= 10; x.font = `800 ${fs}px ${DISP}`; }
-  if (destaque) { const dd = destaque.toUpperCase(); x.fillStyle = '#ff6a00'; let fd = 64; x.font = `800 ${fd}px ${DISP}`; while (fd > 36 && x.measureText(dd).width > W - 140) { fd -= 4; x.font = `800 ${fd}px ${DISP}`; } x.fillText(dd, 70, 600); x.font = `800 ${fs}px ${DISP}`; }
-  x.fillStyle = '#f4f2ee'; x.fillText(l1, 70, 880); x.fillText(l2, 70, 880 + fs * 0.95);
-  x.fillStyle = '#ff6a00'; x.fillText("✓", 70 + x.measureText(l2 + " ").width, 880 + fs * 0.95);
+  if (destaque) { const dd = destaque.toUpperCase(); x.fillStyle = '#ff6a00'; let fd = 64; x.font = `800 ${fd}px ${DISP}`; while (fd > 36 && x.measureText(dd).width > W - 140) { fd -= 4; x.font = `800 ${fd}px ${DISP}`; } x.fillText(dd, 70, transparente ? 230 : 600); x.font = `800 ${fs}px ${DISP}`; }
+  x.fillStyle = '#f4f2ee'; x.fillText(l1, 70, 880 + off); x.fillText(l2, 70, 880 + off + fs * 0.95);
+  x.fillStyle = '#ff6a00'; x.fillText("✓", 70 + x.measureText(l2 + " ").width, 880 + off + fs * 0.95);
   // Palavras por extenso ("semanas", não "sem."): em duas linhas pra caber
   const stats = [[`${minutos}`, t('min')], stat2 ? stat2 : exercicios === 0 && series ? [`${series}`, tp(series, 'série', 'séries')] : [!completo && total ? `${exercicios}/${total}` : `${exercicios}`, tp(!completo && total ? total : exercicios, 'exercício', 'exercícios')], [`🔥${streak}`, tp(streak, 'semana seguida', 'semanas seguidas')]];
-    stats.forEach(([v, l], j) => { const yy = 1260 + j * 130; x.fillStyle = j === 2 ? '#ff6a00' : '#f4f2ee'; x.font = `800 96px ${DISP}`; x.fillText(v, 70, yy); const wv = x.measureText(v).width; x.fillStyle = '#9a968f'; let fz = 42; x.font = `500 ${fz}px ${BODY}`; while (fz > 26 && x.measureText(l).width > W - 160 - wv) { fz -= 2; x.font = `500 ${fz}px ${BODY}`; } x.fillText(l, 70 + wv + 20, yy); });
-  x.fillStyle = '#9a968f'; x.font = `500 36px ${BODY}`;
+    stats.forEach(([v, l], j) => { const yy = 1260 + off + j * 130; x.fillStyle = j === 2 ? '#ff6a00' : '#f4f2ee'; x.font = `800 96px ${DISP}`; x.fillText(v, 70, yy); const wv = x.measureText(v).width; x.fillStyle = CINZA; let fz = 42; x.font = `500 ${fz}px ${BODY}`; while (fz > 26 && x.measureText(l).width > W - 160 - wv) { fz -= 2; x.font = `500 ${fz}px ${BODY}`; } x.fillText(l, 70 + wv + 20, yy); });
+  x.fillStyle = CINZA; x.font = `500 36px ${BODY}`;
   let linha = `${nome} · ${titulo}`; if (x.measureText(linha).width > W - 140) { while (x.measureText(linha + '…').width > W - 140 && linha.length > 4) linha = linha.slice(0, -1); linha = linha.trimEnd() + '…'; }
-  x.fillText(linha, 70, 1580);
-  x.fillStyle = '#ff6a00'; x.font = `700 48px ${BODY}`; x.fillText(insta, 70, 1650); // acima da barra de resposta do Instagram
+  x.fillText(linha, 70, 1580 + off);
+  x.fillStyle = '#ff6a00'; x.font = `700 48px ${BODY}`; x.fillText(insta, 70, 1650 + off); // acima da barra de resposta do Instagram
   // JPEG: ~5x mais leve que PNG pra subir no 4G (o Instagram recomprime de qualquer jeito)
-  const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
-  const file = new File([blob], 'treino-feito.jpg', { type: 'image/jpeg' });
+  const tipo = transparente ? 'image/png' : 'image/jpeg', nomeArq = transparente ? 'treino-feito-sem-fundo.png' : 'treino-feito.jpg'; // transparente precisa de PNG
+  const blob = await new Promise(r => c.toBlob(r, tipo, 0.9));
+  if (modo === 'blob') return blob;
+  const file = new File([blob], nomeArq, { type: tipo });
   if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: t('Treino feito') }); return 'shared'; } catch (e) { if (e?.name === 'AbortError') return 'cancel'; } } // compartilhar falhou (não foi ela que desistiu): baixa a imagem
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'treino-feito.jpg'; a.click(); return 'download';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nomeArq; a.click(); return 'download';
 }
