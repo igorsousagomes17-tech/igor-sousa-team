@@ -1,5 +1,5 @@
 // Helpers de interface
-import { t, tp, dataLocal, idioma } from './i18n.js';
+import { t, tp, dataLocal, idioma , tc } from './i18n.js';
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -63,8 +63,8 @@ export function youtubeEmbed(url) {
 export function videoModal(nome, url, dica) {
   const yt = youtubeEmbed(url);
   if (url && navigator.onLine === false) { // sem sinal: explica e mostra a dica, em vez da tela cinza do navegador
-    overlay(`<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">📶 ${t('sem internet')}</span><h2>${esc(nome)}</h2><p>${t('O vídeo precisa de sinal. Assim que a internet voltar, toca de novo.')}</p>
-      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:0.875rem;color:var(--accent)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(dica)}</p></div>` : ''}<button class="btn sm" id="vm-close">${t('Entendi')}</button></div></div>`);
+    overlay(`<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">📶 ${t('sem internet')}</span><h2>${esc(tc(nome))}</h2><p>${t('O vídeo precisa de sinal. Assim que a internet voltar, toca de novo.')}</p>
+      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:0.875rem;color:var(--accent)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(tc(dica))}</p></div>` : ''}<button class="btn sm" id="vm-close">${t('Entendi')}</button></div></div>`);
     $('#vm-close').onclick = closeOverlay; $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });
     return;
   }
@@ -73,8 +73,8 @@ export function videoModal(nome, url, dica) {
     : null;
   const o = overlay(inner ? `<div class="modal" id="vm"><div class="box"><div class="area">${inner}</div>
     <div class="row between" style="padding:10px 14px"><span class="muted small">${esc(dica || nome)}</span><button class="back" style="color:var(--accent)" id="vm-close">${t('Fechar')}</button></div></div></div>`
-    : `<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">🎬 ${t('vídeo em gravação')}</span><h2>${esc(nome)}</h2>
-      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:0.875rem;color:var(--accent)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(dica)}</p></div>` : ''}
+    : `<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">🎬 ${t('vídeo em gravação')}</span><h2>${esc(tc(nome))}</h2>
+      ${dica ? `<div class="card" style="background:#101012"><b style="font-size:0.875rem;color:var(--accent)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(tc(dica))}</p></div>` : ''}
       <p class="muted small">${t('O Igor tá gravando os vídeos de todos os exercícios. Ficou com dúvida na execução?')}</p><button class="btn sm" data-duvida="${esc(nome)}">? ${t('Tirar dúvida da execução com a IA')}</button><a class="btn ghost sm" href="https://wa.me/${esc(window.ISTEAM_CONFIG?.WHATSAPP_IGOR || '')}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a><button class="link-fim" id="vm-close" style="margin-top:0">${t('Fechar')}</button></div></div>`);
   $('#vm-close').onclick = closeOverlay;
   $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });

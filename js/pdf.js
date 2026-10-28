@@ -1,6 +1,6 @@
 // PDF informativo do treino do mês. A biblioteca (jsPDF) vem junto do app e só baixa quando a aluna toca no botão;
 // depois da 1ª vez fica no cache e o PDF sai mesmo sem sinal.
-import { tl, idioma, loc } from './i18n.js';
+import { tl, idioma, loc, tc } from './i18n.js';
 import { semCarga } from './ui.js'; // mesma regra do app: exercício sem peso não ganha linha de carga
 // As fontes do PDF só têm o alfabeto latino: em chinês e hindi o PDF sai em inglês (embutir fonte custaria vários MB).
 const LP = () => ['zh', 'hi'].includes(idioma()) ? 'en' : idioma();
@@ -66,7 +66,7 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
   plano.treinos.forEach(t => {
     doc.setFillColor(28, 28, 30); doc.roundedRect(M, y - 5.5, W - 2 * M, 11, 2, 2, 'F');
     doc.setTextColor(...LARANJA); doc.setFontSize(12); doc.text(limpa(t.letra), M + 5, y + 1.8);
-    doc.setTextColor(...CLARO); doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(limpa(t.nome), M + 14, y + 1.8);
+    doc.setTextColor(...CLARO); doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(limpa(tc(t.nome)), M + 14, y + 1.8);
     doc.setTextColor(...CINZA); doc.setFontSize(9); doc.text(limpa(T('{n} exercícios · ~{d} min', { n: t.exercicios.length, d: t.duracao_min || 40 })), W - M - 4, y + 1.8, { align: 'right' });
     doc.setFont('helvetica', 'bold'); y += 14;
   });
@@ -89,21 +89,21 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
     doc.setFillColor(...PRETO); doc.rect(0, 0, W, 40, 'F');
     doc.setFillColor(...LARANJA); doc.rect(0, 40, W, 1.5, 'F');
     doc.setFont('helvetica', 'bold'); doc.setTextColor(...LARANJA); doc.setFontSize(26); doc.text(limpa(programa ? t.nome : T('Treino {l}', { l: t.letra })), M, 22);
-    doc.setTextColor(...CLARO); doc.setFontSize(13); doc.text(limpa(programa || t.nome), M, 31);
+    doc.setTextColor(...CLARO); doc.setFontSize(13); doc.text(limpa(tc(programa || t.nome)), M, 31);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(limpa(T('~{d} min  ·  {n} exercícios', { n: t.exercicios.length, d: t.duracao_min || 40 })), W - M, 31, { align: 'right' });
     let y = 52;
     const exs = [...t.exercicios].sort((a, b) => a.ordem - b.ordem);
     // Só o último (HIIT opcional) não cabe na folha: aperta o espaço entre os exercícios e tira a dica dele (não gasta uma folha só com ele)
-    const altura = (e, semDica) => { const d = e.dica && !semDica ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16).length : 0, an = !/hiit|cardio/i.test(e.nome) && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || ''); return 13 + d * 4.4 + (e.alternativa && !semDica ? 5 : 0) + (an ? 6 : 0); };
+    const altura = (e, semDica) => { const d = e.dica && !semDica ? doc.splitTextToSize(limpa(tc(e.dica)), W - 2 * M - 16).length : 0, an = !/hiit|cardio/i.test(e.nome) && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || ''); return 13 + d * 4.4 + (e.alternativa && !semDica ? 5 : 0) + (an ? 6 : 0); };
     const ultOpc = exs.length > 1 && /hiit|cardio|opcional/i.test(exs[exs.length - 1].nome);
     const somaAntes = exs.slice(0, -1).reduce((a, e) => a + altura(e) + 3, 52);
     const aperta = ultOpc && somaAntes + altura(exs[exs.length - 1]) > H - 16 && somaAntes <= H - 16 && exs.slice(0, -1).reduce((a, e) => a + altura(e) + 1, 52) + altura(exs[exs.length - 1], true) <= H - 16;
     const gap = aperta ? 1 : 3;
     exs.forEach((e, idx) => {
       const hiit = /hiit|cardio/i.test(e.nome);
-      let dica = e.dica && !(aperta && idx === exs.length - 1) ? doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16) : [];
+      let dica = e.dica && !(aperta && idx === exs.length - 1) ? doc.splitTextToSize(limpa(tc(e.dica)), W - 2 * M - 16) : [];
       // Último item curto (HIIT opcional) que não cabe: encolhe a dica pra 1 linha em vez de gastar uma folha só com ele
-      if (idx === exs.length - 1 && (hiit || /opcional/i.test(e.nome)) && y + 13 + dica.length * 4.4 > H - 16 && y + 17.4 <= H - 16) dica = dica.length ? [doc.splitTextToSize(limpa(e.dica), W - 2 * M - 16)[0] + (dica.length > 1 ? '…' : '')] : [];
+      if (idx === exs.length - 1 && (hiit || /opcional/i.test(e.nome)) && y + 13 + dica.length * 4.4 > H - 16 && y + 17.4 <= H - 16) dica = dica.length ? [doc.splitTextToSize(limpa(tc(e.dica)), W - 2 * M - 16)[0] + (dica.length > 1 ? '…' : '')] : [];
       const alt = e.alternativa && !(aperta && idx === exs.length - 1) ? limpa(T('Ou substitua por: {x}', { x: e.alternativa })) : '';
       const anota = !hiit && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || '');
       const h = 13 + dica.length * 4.4 + (alt ? 5 : 0) + (anota ? 6 : 0);
@@ -116,10 +116,10 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
       }
       doc.setFillColor(...(hiit ? LARANJA : PRETO)); doc.circle(M + 4, y - 0.5, 4, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(255, 255, 255); doc.text(String(e.ordem), M + 4, y + 1, { align: 'center' });
-      doc.setTextColor(...PRETO); doc.setFontSize(11.5); doc.text(limpa(e.nome), M + 12, y + 0.5);
-      if (e.biset_com) { const w = doc.getTextWidth(limpa(e.nome)); doc.setFontSize(7.5); doc.setTextColor(...LARANJA); doc.text(limpa(T('BI-SET COM {n}', { n: e.biset_com })), M + 14 + w, y + 0.3); }
+      doc.setTextColor(...PRETO); doc.setFontSize(11.5); doc.text(limpa(tc(e.nome)), M + 12, y + 0.5);
+      if (e.biset_com) { const w = doc.getTextWidth(limpa(tc(e.nome))); doc.setFontSize(7.5); doc.setTextColor(...LARANJA); doc.text(limpa(T('BI-SET COM {n}', { n: e.biset_com })), M + 14 + w, y + 0.3); }
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...LARANJA);
-      doc.text(limpa(`${e.series > 1 ? e.series + ' x ' : ''}${e.reps}${e.descanso_s ? '  ·  ' + T('descanso {n}s', { n: e.descanso_s }) : ''}`), M + 12, y + 6);
+      doc.text(limpa(`${e.series > 1 ? e.series + ' x ' : ''}${tc(e.reps)}${e.descanso_s ? '  ·  ' + T('descanso {n}s', { n: e.descanso_s }) : ''}`), M + 12, y + 6);
       let yy = y + 11;
       if (dica.length) { doc.setTextColor(...CINZA); doc.setFontSize(9.5); doc.text(dica, M + 12, yy); yy += dica.length * 4.4; }
       if (alt) { doc.setTextColor(140, 140, 145); doc.setFontSize(8.5); doc.setFont('helvetica', 'italic'); doc.text(alt, M + 12, yy); doc.setFont('helvetica', 'normal'); yy += 5; }

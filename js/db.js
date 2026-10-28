@@ -260,6 +260,12 @@ export const admin = {
 };
 
 // Tira-dúvidas (IA). A conversa com a IA acontece na função do servidor "assistente".
+// Tradução do conteúdo do Igor pra outra língua (IA no servidor, guardada no banco). Só logada.
+export async function traduzir(id, textos) {
+  const { data: { session } } = await sb.auth.getSession(); if (!session) return null;
+  const r = await fetch(`${C.SUPABASE_URL}/functions/v1/assistente`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: C.SUPABASE_ANON_KEY }, body: JSON.stringify({ acao: 'traduzir', idioma: id, textos }) });
+  if (!r.ok) return null; return (await r.json()).traducoes || null;
+}
 export const assistente = {
   async historico(alunaId) {
     const { data, error } = await sb.from('assistente_msgs').select('papel,texto,created_at').eq('aluna_id', alunaId).order('created_at', { ascending: false }).limit(30);

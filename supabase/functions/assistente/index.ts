@@ -304,8 +304,34 @@ Deno.serve(async (req) => {
   if (!user) return json({ erro: 'nao_autenticado' }, 401);
   if (!chave) return json({ erro: 'ia_desligada', resposta: 'O tira-dúvidas ainda tá sendo ligado pelo Igor. Enquanto isso, manda sua dúvida no recado do fim do treino ou no WhatsApp dele.' }, 503);
 
-  let body: { texto?: string; contexto?: string; idioma?: string } = {};
+  let body: { texto?: string; contexto?: string; idioma?: string; acao?: string; textos?: string[] } = {};
   try { body = await req.json(); } catch { /* vazio */ }
+
+  // Tradução do que o Igor escreveu (nomes de treino/exercício, dicas, recados) pra quem usa o app em outra língua.
+  // Guarda no banco (traducoes, migração 017): cada frase é traduzida uma vez só, pra todas as alunas.
+  if (body.acao === 'traduzir') {
+    const NOMES: Record<string, string> = { en: 'English', es: 'Spanish', fr: 'French', zh: 'Simplified Chinese', hi: 'Hindi' };
+    const id = String(body.idioma || ''); if (!NOMES[id]) return json({ erro: 'idioma' }, 400);
+    const textos = [...new Set((body.textos || []).map(x => String(x || '').trim()).filter(x => x && x.length <= 600))].slice(0, 40);
+    if (!textos.length) return json({ traducoes: {} });
+    const dbt = createClient(url, service);
+    const { data: ja } = await dbt.from('traducoes').select('pt,texto').eq('idioma', id).in('pt', textos);
+    const out: Record<string, string> = {}; (ja || []).forEach((r: any) => { out[r.pt] = r.texto; });
+    const faltam = textos.filter(x => !out[x]);
+    if (faltam.length) {
+      const sys = `You translate a Brazilian personal trainer's workout app content from Portuguese to ${NOMES[id]}. Items are workout names, gym exercise names, rep schemes and short coaching tips. Use the standard gym terms a ${NOMES[id]}-speaking lifter would use (e.g. "Puxada" = "Lat pulldown", "Cadeira extensora" = "Leg extension", "Elevação de quadril" = "Hip thrust"). Keep numbers, units, emojis and brand names (Smith, Scott, Pallof) as they are. Keep it short and natural, same casual tone. Reply ONLY with a JSON array of strings, same order and same length as the input.`;
+      const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': chave, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: modelo, max_tokens: 4000, thinking: { type: 'disabled' }, system: sys, messages: [{ role: 'user', content: JSON.stringify(faltam) }] }) });
+      if (r.ok) {
+        const o = await r.json(); const txt = (o.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join('');
+        try { const arr = JSON.parse(txt.slice(txt.indexOf('['), txt.lastIndexOf(']') + 1)); if (Array.isArray(arr) && arr.length === faltam.length) {
+          const linhas = faltam.map((pt, i) => ({ pt, idioma: id, texto: String(arr[i] || '').trim() })).filter(x => x.texto);
+          linhas.forEach(x => { out[x.pt] = x.texto; }); if (linhas.length) await dbt.from('traducoes').upsert(linhas, { onConflict: 'idioma,pt' });
+        } } catch { /* resposta fora do formato: tenta na próxima */ }
+      }
+    }
+    return json({ traducoes: out });
+  }
   const texto = String(body.texto || '').trim().slice(0, 1500);
   if (!texto) return json({ erro: 'vazio' }, 400);
 

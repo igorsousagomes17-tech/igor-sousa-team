@@ -1,3 +1,5 @@
+import { traduzConteudo, ligarTradutor } from './conteudo.js';
+export { ligarTradutor };
 // Idiomas do app da aluna: português (padrão), inglês, espanhol, chinês simplificado, hindi e francês.
 // A chave de cada texto é o próprio português, então o código continua legível: t('Iniciar treino').
 // Partes que mudam vão entre chaves: t('Bora, {nome}?', { nome }). Plural: tp(n, '{n} treino', '{n} treinos').
@@ -51,6 +53,8 @@ export function tl(id, pt, v) {
 // Número colado na unidade (40 min, 30 s, 25 kg) e, no francês, ? ! : ; colados na palavra (espaço que não quebra a linha)
 const liga = (id, s) => { s = s.replace(/(\d) (?=(min|s|kg|cm|pts|séances?|séries?|sets?|series)\b)/g, '$1\u00a0'); return id === 'fr' ? s.replace(/ ([?!:;»])/g, '\u00a0$1').replace(/« /g, '«\u00a0') : s; };
 export const t = (pt, v) => tl(atual, pt, v);
+// O que o Igor digita (treino, exercício, reps, dica): traduz na hora de mostrar (js/conteudo.js)
+export const tc = s => traduzConteudo(s, atual);
 export const num = (n, o) => typeof n === 'number' && isFinite(n) ? new Intl.NumberFormat(loc(), o).format(n) : String(n ?? '');
 // Número com o separador decimal do idioma (64,5 / 64.5), sem separador de milhar.
 export const dec = v => v == null || v === '' ? '' : (['pt', 'es', 'fr'].includes(atual) ? String(v).replace('.', ',') : String(v).replace(',', '.'));
