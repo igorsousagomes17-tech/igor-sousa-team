@@ -1,5 +1,5 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v34';
+const CACHE = 'isteam-v35';
 const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
 // Gerador de PDF, capas, fotos e fontes: não mudam com a versão do app, então ficam de uma versão pra outra
 // (antes cada atualização apagava e o PDF/capas paravam de abrir sem sinal até baixar tudo de novo)
