@@ -10,7 +10,13 @@ const C = window.ISTEAM_CONFIG;
 const app = $('#app');
 const S = { user: null, perfil: null, plano: null, programas: null, sessao: null };
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+// Versão nova do app: o celular baixa em segundo plano e, quando ela assume, recarrega sozinho (no máximo 1 vez).
+// Sem isso o app instalado continuava mostrando a versão antiga até fechar e abrir 2 vezes.
+if ('serviceWorker' in navigator) {
+  const tinha = !!navigator.serviceWorker.controller; let recarregou = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!tinha || recarregou || /^#(sessao|fim)/.test(location.hash) || document.querySelector('.modal')) return; recarregou = true; location.reload(); });
+  navigator.serviceWorker.register('sw.js').then(r => { r.update().catch(() => {}); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') r.update().catch(() => {}); }); }).catch(() => {});
+}
 // O que a 1ª abertura baixou antes do SW assumir (demo, capas, fontes) também fica guardado pra abrir sem sinal
 if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => setTimeout(() => { try { const urls = performance.getEntriesByType('resource').map(x => x.name).filter(u => { try { const h = new URL(u); return (h.origin === location.origin && !/sw\.js/.test(h.pathname)) || /fonts\.(googleapis|gstatic)\.com$/.test(h.hostname); } catch { return false; } }); r.active?.postMessage({ tipo: 'guardar', urls: [...new Set(urls)] }); } catch {} }, 4000)).catch(() => {});
 
