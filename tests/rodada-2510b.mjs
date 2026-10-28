@@ -62,7 +62,7 @@ const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env
   await p.click('#enc'); await espera(p, 500); ok(/Você anotou dor em/.test(await txt(p, '.view')), 'feedback mostra a dor anotada em cima');
   await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=6'); await p.click('#env'); await espera(p, 900);
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.logado = false; localStorage.setItem('demo:state', JSON.stringify(s)); });
-  await login(p, 'igor@demo.com'); const pv = await txt(p, '.view'); ok(/⚠ dor: Dead Bug/i.test(pv) && /\bDOR\b/.test(pv), 'painel do Igor recebe a dor com selo');
+  await login(p, 'igor@demo.com'); await p.click('#a-fb'); await espera(p, 300); const pv = await txt(p, '.view'); ok(/⚠ dor: Dead Bug/i.test(pv) && /\bDOR\b/.test(pv), 'painel do Igor recebe a dor com selo');
   await ctx.close(); }
 
 // 5. Semana flexível com zoom (288 px) não estoura; francês sem "?" sozinho na linha

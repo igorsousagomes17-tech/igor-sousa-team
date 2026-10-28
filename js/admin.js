@@ -14,6 +14,24 @@ const parou = f => f.exercicios_total > 0 && (f.exercicios_feitos ?? 0) / f.exer
 const selo = f => (parou(f) ? ' <span class="pill warn">parou no meio</span>' : '') + seloDor(f);
 const seloDor = f => DOR.test(f.comentario || '') ? ' <span class="pill warn">dor</span>' : !String(f.comentario || '').trim() && f.nota != null && f.nota <= 4 ? ' <span class="pill warn">nota baixa</span>' : !String(f.comentario || '').trim() && f.esforco >= 9 ? ' <span class="pill warn">esforço no limite</span>' : '';
 const pl = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+// Ícones do painel (traço simples, herdam a cor)
+const ic = {
+  fb: '<path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3v-3H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M19 9h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v3l-4-3h-4"/>',
+  duv: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><circle cx="12" cy="17.5" r=".6" fill="currentColor"/>',
+  rec: '<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/>',
+  ver: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>',
+  add: '<circle cx="10" cy="8" r="4"/><path d="M3 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/>',
+  lote: '<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><path d="M2 20a6 6 0 0 1 12 0M10 20a6 6 0 0 1 12 0"/>',
+  alunas: '<circle cx="12" cy="7" r="3.5"/><circle cx="5" cy="9" r="2.5"/><circle cx="19" cy="9" r="2.5"/><path d="M6 21a6 6 0 0 1 12 0M1 19a4 4 0 0 1 5-3.9M23 19a4 4 0 0 0-5-3.9"/>',
+  treino: '<path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/>',
+  anam: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8.5 12l2 2 4-4M8 17h8"/>',
+  post: '<circle cx="12" cy="4" r="2"/><path d="M12 6v8M8 9h8M12 14l-3 7M12 14l3 7"/><path d="M4 2v20" stroke-dasharray="2 2"/>',
+  alerta: '<path d="M12 3 2 20h20z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
+  seta: '<path d="m9 5 7 7-7 7"/>'
+};
+const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic[k]}</svg>`;
+let secao = 'inicio', modo = null; // seção aberta do painel; modo = o que acontece ao tocar numa aluna da lista
+
 export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   db = _db;
   let alunas = [], fb = [];
@@ -26,39 +44,117 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   const atencao = ativas.filter(a => a.dias_sem_treinar >= 4).sort((a, b) => b.dias_sem_treinar - a.dias_sem_treinar);
   const semResposta = fb.filter(precisa);
   const semTreino = alunas.filter(a => a.ativa && a.treinos_mes === 0 && a.dias_sem_treinar === 999);
+  const comSaude = alunas.filter(a => alertaSaude(fichas.get(a.id)));
+  let duvidas = null; // carrega quando abre
 
-  render(`<div class="view noTabs fx"><div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div><div class="row"><button class="btn ghost sm" data-go="home">ver como aluna</button><button class="btn ghost sm" id="out">sair</button></div></div>
-  <div class="grid2"><div class="card"><h3>Ativas</h3><div class="big">${ativas.length}</div><p class="muted">${alunas.length - ativas.length} pausadas</p></div><div class="card"><h3>Treinaram hoje</h3><div class="big">${treinaramHoje}</div><p class="muted">${Math.round(treinaramHoje / Math.max(1, ativas.length) * 100)}% das ativas</p></div></div>
-  <div class="row wrap"><button class="btn sm" id="nova">+ Cadastrar aluna</button><button class="btn ghost sm" id="lote">Cadastro em lote</button><button class="btn ghost sm" id="recado">Recado</button></div>
+  const badge = n => n ? `<span class="badge">${n > 99 ? '99+' : n}</span>` : '';
+  const topo = titulo => `<div class="topbar"><button class="back" id="volta" aria-label="Voltar pro início do painel">‹ ${titulo}</button></div>`;
+  const MODOS = { treino: ['Montar treino', 'Toca na aluna pra abrir o treino dela'], ficha: ['Anamneses', 'Toca na aluna pra ver a anamnese'], postural: ['Avaliação postural', 'Toca na aluna pra avaliar pelas fotos'] };
 
-  <div class="card"><div class="row between"><h3>Precisam de atenção</h3><span class="muted small">${pl(atencao.length, 'aluna', 'alunas')}</span></div>
-    ${atencao.length ? atencao.slice(0, 12).map(a => `<div class="r"><div><b>${esc(a.nome)}</b><span>${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : a.dias_sem_treinar + ' dias sem treinar'} · ${a.treinos_mes} no mês</span></div><span class="pill ${a.dias_sem_treinar >= 7 ? 'warn' : ''}">${a.dias_sem_treinar >= 7 ? '7+ dias' : '4-6 dias'}</span><a class="btn wa sm" style="padding:7px 10px;font-size:13px" href="${wa(a.whatsapp, msgInativa(a.nome, a.dias_sem_treinar === 999 ? 'uns' : a.dias_sem_treinar))}" target="_blank" rel="noopener">WhatsApp</a></div>`).join('') : '<p class="muted mt">Todo mundo em dia 🔥</p>'}
-    <p class="muted small mt">Toca em WhatsApp e abre a conversa com a mensagem pronta. Você revisa e envia.</p></div>
+  function telaInicio() {
+    return `<div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div><button class="btn ghost sm" id="out" style="width:auto">sair</button></div>
+    <div class="atalhos">
+      <button class="atalho" id="a-fb"><span class="ico">${svg('fb')}${badge(semResposta.length)}</span>Feedbacks</button>
+      <button class="atalho" id="a-duv"><span class="ico">${svg('duv')}</span>Dúvidas</button>
+      <button class="atalho" id="recado"><span class="ico">${svg('rec')}</span>Recado</button>
+      <button class="atalho" data-go="home"><span class="ico">${svg('ver')}</span>Ver como aluna</button>
+    </div>
+    <section class="bloco"><h3>Suas alunas</h3>
+      <div class="grid2"><button class="tile cheio" id="nova">${svg('add')}<b>Cadastrar aluna</b></button><button class="tile cheio" id="lote">${svg('lote')}<b>Cadastro em lote</b></button></div>
+      <button class="bigcard" id="ir-alunas">${svg('alunas')}<span><b>Alunas</b><span class="row wrap" style="gap:6px;margin-top:6px"><span class="pill good">Ativas: ${ativas.length}</span><span class="pill warn">Pausadas: ${alunas.length - ativas.length}</span></span></span>${svg('seta')}</button>
+      <button class="linhacard" id="ir-atencao"><span>${svg('alerta')}<b>Precisam de atenção</b></span><span class="muted">${atencao.length ? pl(atencao.length, 'aluna', 'alunas') : 'ninguém 🔥'} ${svg('seta')}</span></button>
+      <div class="linhacard est"><span><b>Treinaram hoje</b></span><span class="muted">${treinaramHoje} de ${ativas.length} · ${Math.round(treinaramHoje / Math.max(1, ativas.length) * 100)}%</span></div>
+    </section>
+    <section class="bloco"><h3>Treinos e avaliação</h3>
+      <div class="grid2">
+        <button class="tile" id="t-treino"><span class="ico">${svg('treino')}</span><b>Montar treino</b></button>
+        <button class="tile" id="t-ficha"><span class="ico">${svg('anam')}</span><b>Anamneses</b>${comSaude.length ? `<span class="pill warn" style="align-self:flex-start">${comSaude.length} ⚠ saúde</span>` : ''}</button>
+        <button class="tile" id="t-postural"><span class="ico">${svg('post')}</span><b>Avaliação postural</b></button>
+        <button class="tile" id="t-fb"><span class="ico">${svg('fb')}</span><b>Feedbacks dos treinos</b>${semResposta.length ? `<span class="pill warn" style="align-self:flex-start">${semResposta.length} pra responder</span>` : ''}</button>
+      </div>
+      ${semTreino.length ? `<p class="muted small mt">${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino no app.</p>` : ''}
+    </section>`;
+  }
 
-  <div class="card"><div class="row between"><h3>Feedbacks</h3><span class="muted small">${semResposta.length} sem resposta</span></div>
-    ${fb.length ? fb.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent);padding:6px 4px">editar</button>` : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted mt">Nenhum feedback ainda.</p>'}</div>
+  function linhaAluna(a) {
+    const fi = fichas.get(a.id), attr = modo === 'treino' ? `data-treino="${a.id}" data-n="${esc(a.nome)}"` : modo === 'ficha' ? (fi ? `data-ficha="${a.id}"` : `data-semficha="${a.id}"`) : modo === 'postural' ? `data-postural="${a.id}"` : `data-aluna="${a.id}"`;
+    const sub = modo === 'ficha' && !fi ? 'ainda não respondeu a anamnese' : `${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : a.dias_sem_treinar === 0 ? 'treinou hoje' : pl(a.dias_sem_treinar, 'dia', 'dias') + ' sem treinar'} · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês`;
+    return `<button class="aluna" ${attr} data-nome="${esc(a.nome.toLowerCase())}"><span class="av">${esc(a.nome.trim()[0] || '?').toUpperCase()}</span><span class="t"><b>${esc(a.nome)}</b><span>${sub}</span><span class="row wrap" style="gap:4px">${a.plano === 'personalizado' ? '<span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : '<span class="pill">pausada</span>'}${alertaSaude(fi) ? '<span class="pill warn">⚠ saúde</span>' : ''}</span></span>${svg('seta')}</button>`;
+  }
+  function telaAlunas() {
+    const [tit, dica] = MODOS[modo] || ['Alunas', ''];
+    const lista = [...alunas].sort((a, b) => (b.ativa - a.ativa) || a.nome.localeCompare(b.nome, 'pt-BR'));
+    return `${topo(tit)}${dica ? `<p class="muted">${dica}</p>` : ''}
+    <input class="input" id="busca" placeholder="Buscar aluna" autocomplete="off">
+    <div id="lista" class="lista">${lista.map(linhaAluna).join('') || '<p class="muted mt">Nenhuma aluna ainda.</p>'}</div>`;
+  }
+  function telaAtencao() {
+    return `${topo('Precisam de atenção')}<p class="muted">Ativas há 4 dias ou mais sem treinar. Toca em WhatsApp e a conversa abre com a mensagem pronta. Você revisa e envia.</p>
+    <div class="card">${atencao.length ? atencao.map(a => `<div class="r"><div><b>${esc(a.nome)}</b><span>${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : pl(a.dias_sem_treinar, 'dia', 'dias') + ' sem treinar'} · ${a.treinos_mes} no mês</span></div><span class="pill ${a.dias_sem_treinar >= 7 ? 'warn' : ''}">${a.dias_sem_treinar >= 7 ? '7+ dias' : '4-6 dias'}</span><a class="btn wa sm" style="padding:7px 10px;font-size:13px" href="${wa(a.whatsapp, msgInativa(a.nome, a.dias_sem_treinar === 999 ? 'uns' : a.dias_sem_treinar))}" target="_blank" rel="noopener">WhatsApp</a></div>`).join('') : '<p class="muted">Todo mundo em dia 🔥</p>'}</div>`;
+  }
+  function telaFeedbacks() {
+    const ord = [...semResposta, ...fb.filter(f => !precisa(f))];
+    return `${topo('Feedbacks')}<p class="muted">${semResposta.length ? pl(semResposta.length, 'feedback esperando sua resposta', 'feedbacks esperando sua resposta') + ' (em cima).' : 'Tudo respondido ✓'}</p>
+    <div class="card">${ord.length ? ord.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent);padding:6px 4px">editar</button>` : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted">Nenhum feedback ainda.</p>'}</div>`;
+  }
+  function telaDuvidas() {
+    return `${topo('Dúvidas na IA')}<p class="muted">O que as alunas perguntam pro tira-dúvidas. Bom pra pauta de conteúdo e pra ver quem precisa de você.</p><div class="card" id="duv"><p class="muted">Carregando…</p></div>`;
+  }
 
-  <div class="card"><div class="row between"><h3>Dúvidas na IA</h3><span class="muted small">últimas</span></div><div id="duv"><p class="muted mt">Carregando…</p></div><p class="muted small mt">O que as alunas perguntam pro tira-dúvidas. Bom pra pauta de conteúdo e pra ver quem precisa de você.</p></div>
-  <div class="card"><div class="row between"><h3>Alunas</h3><input class="input" id="busca" placeholder="buscar" style="width:140px;min-height:36px;padding:6px 10px"></div>
-    <div id="lista">${alunas.map(a => linhaAluna(a)).join('')}</div></div>
-  ${semTreino.length ? `<p class="muted small">${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino no app.</p>` : ''}</div>`);
+  function desenhar() {
+    const corpo = { inicio: telaInicio, alunas: telaAlunas, atencao: telaAtencao, feedbacks: telaFeedbacks, duvidas: telaDuvidas }[secao] || telaInicio;
+    render(`<div class="view noTabs fx painel">${corpo()}</div>`);
+    window.scrollTo(0, 0); ligar();
+  }
+  const abrir = (s, m = null) => { secao = s; modo = m; desenhar(); };
 
-  // Botões embaixo do nome (cabe com zoom/fonte grande) e com 44px pra tocar
-  function linhaAluna(a) { const fi = fichas.get(a.id); return `<div class="r" data-nome="${esc(a.nome.toLowerCase())}" style="grid-template-columns:1fr"><div><b>${esc(a.nome)}${a.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : ' <span class="pill">pausada</span>'}${alertaSaude(fi) ? ' <span class="pill warn">⚠ saúde</span>' : ''}</b><span>${a.pontos} pts · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês</span></div><div class="row wrap" style="gap:8px">${fi ? `<button class="btn ghost sm" data-ficha="${a.id}">ficha</button>` : ''}<button class="btn ghost sm" data-postural="${a.id}">postural</button><button class="btn ghost sm" data-treino="${a.id}" data-n="${esc(a.nome)}">treino</button><button class="btn ghost sm" data-ac="${a.id}" data-n="${esc(a.nome)}">acesso</button></div></div>`; }
+  function ligar() {
+    const on = (sel, fn) => { const e = $(sel); if (e) e.onclick = fn; };
+    on('#volta', () => abrir('inicio'));
+    on('#out', async () => { await db.logout(); S.perfil = null; secao = 'inicio'; go('entrada'); });
+    on('#a-fb', () => abrir('feedbacks')); on('#t-fb', () => abrir('feedbacks'));
+    on('#a-duv', () => abrir('duvidas'));
+    on('#ir-alunas', () => abrir('alunas')); on('#ir-atencao', () => abrir('atencao'));
+    on('#t-treino', () => abrir('alunas', 'treino')); on('#t-ficha', () => abrir('alunas', 'ficha')); on('#t-postural', () => abrir('alunas', 'postural'));
+    on('#nova', () => formAluna(null, go)); on('#lote', () => formLote(go)); on('#recado', recado);
+    const bu = $('#busca'); if (bu) bu.oninput = () => { const q = bu.value.toLowerCase().trim(); $$('#lista .aluna').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
+    $$('[data-aluna]').forEach(b => b.onclick = () => fichaAluna(alunas.find(x => x.id === b.dataset.aluna)));
+    $$('[data-ficha]').forEach(b => b.onclick = () => fichaAnamnese(fichas.get(b.dataset.ficha)));
+    $$('[data-semficha]').forEach(b => b.onclick = () => toast('Ela ainda não respondeu a anamnese. Ela vê o aviso quando entra no app.'));
+    $$('[data-postural]').forEach(b => b.onclick = () => avaliacaoPostural(alunas.find(x => x.id === b.dataset.postural)));
+    $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go));
+    $$('[data-resp],[data-edita]').forEach(b => b.onclick = () => responder(b));
+    if (secao === 'duvidas') carregarDuvidas();
+  }
 
-  (db.assistente?.duvidasRecentes?.() || Promise.resolve([])).then(ds => { const el = $('#duv'); if (el) el.innerHTML = ds.length ? ds.map(d => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${esc(d.profiles?.nome || 'Aluna')}</b>${DOR.test(d.texto || '') ? ' <span class="pill warn">dor</span>' : ''} <span class="muted small">· ${new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><p class="muted" style="margin-top:2px">${esc(d.texto)}</p></div>`).join('') : '<p class="muted mt">Nenhuma dúvida ainda.</p>'; }).catch(() => { const el = $('#duv'); if (el) el.innerHTML = '<p class="muted mt">Não deu pra carregar agora.</p>'; });
-  $('#out').onclick = async () => { await db.logout(); S.perfil = null; go('entrada'); };
-  $('#busca').oninput = () => { const q = $('#busca').value.toLowerCase(); $$('#lista .r').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
-  $$('[data-ficha]').forEach(b => b.onclick = () => fichaAnamnese(fichas.get(b.dataset.ficha)));
-  $$('[data-postural]').forEach(b => b.onclick = () => avaliacaoPostural(alunas.find(x => x.id === b.dataset.postural)));
-  // Responder (ou editar a resposta) vendo o que ela escreveu
-  $$('[data-resp],[data-edita]').forEach(b => b.onclick = () => {
-    const id = b.dataset.resp || b.dataset.edita, f = fb.find(x => String(x.id) === String(id)) || {};
-    overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${b.dataset.edita ? 'Editar resposta' : 'Responder'}</h2><div class="card" style="background:#101012"><b>${esc(f.profiles?.nome || '')} · ${esc(f.titulo || '')} · ${fmtData(f.finalizada_em)}</b><p class="muted">esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${Math.round(f.duracao_s / 60)} min` : ''}</p>${f.comentario ? `<p style="margin-top:6px">"${esc(f.comentario)}"</p>` : ''}</div><textarea class="input" id="t" placeholder="No seu jeito...">${esc(b.dataset.edita ? f.resposta_igor || '' : '')}</textarea><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Enviar</button></div></div></div>`);
-    $('#c').onclick = closeOverlay; $('#s').onclick = async () => { const tx = $('#t').value.trim(); if (!tx) { toast('Escreve a resposta antes de enviar.', true); $('#t').focus(); return; } try { await db.admin.responder(id, tx); closeOverlay(); toast('Respondido ✓ (aparece na tela inicial dela)'); go('admin'); } catch (e) { toast(e.message, true); } };
-  });
-  $$('[data-ac]').forEach(b => b.onclick = async () => {
-    const a = alunas.find(x => x.id === b.dataset.ac);
+  async function carregarDuvidas() {
+    try { duvidas = duvidas || await (db.assistente?.duvidasRecentes?.() || Promise.resolve([])); } catch { const el = $('#duv'); if (el) el.innerHTML = '<p class="muted">Não deu pra carregar agora.</p>'; return; }
+    const el = $('#duv'); if (el) el.innerHTML = duvidas.length ? duvidas.map(d => `<div style="padding:8px 0;border-bottom:1px solid var(--line)"><b style="font-size:13px">${esc(d.profiles?.nome || 'Aluna')}</b>${DOR.test(d.texto || '') ? ' <span class="pill warn">dor</span>' : ''} <span class="muted small">· ${new Date(d.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span><p class="muted" style="margin-top:2px">${esc(d.texto)}</p></div>`).join('') : '<p class="muted">Nenhuma dúvida ainda.</p>';
+  }
+
+  // Ficha da aluna: tudo dela num lugar só (no lugar dos 4 botões em cada nome)
+  function fichaAluna(a) {
+    if (!a) return; const fi = fichas.get(a.id);
+    const linha = (id, icone, txt, sub = '') => `<button class="linhacard" ${id}><span>${svg(icone)}<b>${txt}</b></span><span class="muted">${sub} ${svg('seta')}</span></button>`;
+    overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;margin-top:20px">
+      <div class="row between"><h2>${esc(a.nome)}</h2><button class="btn ghost sm" id="c" style="width:auto">Fechar</button></div>
+      <p class="muted">${a.dias_sem_treinar === 999 ? 'Nunca treinou no app' : a.dias_sem_treinar === 0 ? 'Treinou hoje' : pl(a.dias_sem_treinar, 'dia', 'dias') + ' sem treinar'} · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês · ${a.pontos} pts${a.ativa ? '' : ' · <b>pausada</b>'}</p>
+      ${alertaSaude(fi) ? '<p class="pill warn" style="align-self:flex-start">⚠ pede liberação médica antes de HIIT/carga alta</p>' : ''}
+      ${linha(`data-treino="${a.id}" data-n="${esc(a.nome)}"`, 'treino', 'Treino')}
+      ${linha(fi ? `data-ficha="${a.id}"` : `data-semficha="${a.id}"`, 'anam', 'Anamnese', fi ? '' : 'não respondeu')}
+      ${linha(`data-postural="${a.id}"`, 'post', 'Avaliação postural')}
+      ${linha(`data-ac="${a.id}"`, 'ver', 'Acesso ao app', a.ativa ? '' : 'pausado')}
+      ${a.whatsapp ? `<a class="btn wa sm" href="${wa(a.whatsapp, `Oi ${a.nome.split(' ')[0]}! `)}" target="_blank" rel="noopener">Chamar no WhatsApp</a>` : ''}
+    </div></div>`);
+    $('#c').onclick = closeOverlay;
+    const box = $('#m');
+    box.querySelector('[data-treino]').onclick = () => { closeOverlay(); editorTreino(a.id, a.nome, go); };
+    box.querySelector('[data-ficha],[data-semficha]').onclick = () => { if (fi) { closeOverlay(); fichaAnamnese(fi); } else toast('Ela ainda não respondeu a anamnese.'); };
+    box.querySelector('[data-postural]').onclick = () => { closeOverlay(); avaliacaoPostural(a); };
+    box.querySelector('[data-ac]').onclick = () => { closeOverlay(); acesso(a); };
+  }
+
+  async function acesso(a) {
     const { data } = await db.sb.from('profiles').select('nome,whatsapp,ativa').eq('id', a.id).single();
     const { data: u } = await db.sb.rpc('email_de', { uid: a.id }).catch(() => ({ data: null }));
     overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${esc(data.nome)}</h2>
@@ -66,11 +162,17 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
       <button class="btn ghost sm" id="pausa">${data.ativa ? 'Pausar acesso' : 'Reativar acesso'}</button>
       <button class="btn ghost sm" id="c">Fechar</button></div></div>`);
     $('#c').onclick = closeOverlay; $('#pausa').onclick = async () => { await db.admin.setAtiva(a.id, !data.ativa); closeOverlay(); toast(data.ativa ? 'Acesso pausado' : 'Acesso liberado'); go('admin'); };
-  });
-  $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go));
-  $('#nova').onclick = () => formAluna(null, go);
-  $('#lote').onclick = () => formLote(go);
-  $('#recado').onclick = () => { overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Recado da semana</h2><textarea class="input" id="t" placeholder="Essa semana é de carga. Anota tudo!"></textarea><input class="input" id="u" placeholder="Link de áudio/vídeo (opcional)"><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Publicar</button></div></div></div>`); $('#c').onclick = closeOverlay; $('#s').onclick = async () => { try { await db.admin.publicarRecado($('#t').value.trim(), $('#u').value.trim() || null); closeOverlay(); toast('Publicado pra todas ✓'); } catch (e) { toast(e.message, true); } }; };
+  }
+
+  // Responder (ou editar a resposta) vendo o que ela escreveu
+  function responder(b) {
+    const id = b.dataset.resp || b.dataset.edita, f = fb.find(x => String(x.id) === String(id)) || {};
+    overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${b.dataset.edita ? 'Editar resposta' : 'Responder'}</h2><div class="card" style="background:#101012"><b>${esc(f.profiles?.nome || '')} · ${esc(f.titulo || '')} · ${fmtData(f.finalizada_em)}</b><p class="muted">esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${Math.round(f.duracao_s / 60)} min` : ''}</p>${f.comentario ? `<p style="margin-top:6px">"${esc(f.comentario)}"</p>` : ''}</div><textarea class="input" id="t" placeholder="No seu jeito...">${esc(b.dataset.edita ? f.resposta_igor || '' : '')}</textarea><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Enviar</button></div></div></div>`);
+    $('#c').onclick = closeOverlay; $('#s').onclick = async () => { const tx = $('#t').value.trim(); if (!tx) { toast('Escreve a resposta antes de enviar.', true); $('#t').focus(); return; } try { await db.admin.responder(id, tx); closeOverlay(); toast('Respondido ✓ (aparece na tela inicial dela)'); go('admin'); } catch (e) { toast(e.message, true); } };
+  }
+  function recado() { overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Recado da semana</h2><p class="muted small">Aparece na tela inicial de todas as alunas.</p><textarea class="input" id="t" placeholder="Essa semana é de carga. Anota tudo!"></textarea><input class="input" id="u" placeholder="Link de áudio/vídeo (opcional)"><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Publicar</button></div></div></div>`); $('#c').onclick = closeOverlay; $('#s').onclick = async () => { try { await db.admin.publicarRecado($('#t').value.trim(), $('#u').value.trim() || null); closeOverlay(); toast('Publicado pra todas ✓'); } catch (e) { toast(e.message, true); } }; }
+
+  desenhar();
 }
 
 // Cadastro de aluna: chama a Edge Function (cria usuário no Auth + perfil) ------------

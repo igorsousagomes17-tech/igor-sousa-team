@@ -104,9 +104,9 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.logado = false; localStorage.setItem('demo:state', JSON.stringify(s)); });
   await p.goto('http://app.local/?demo'); await espera(p, 600); if (await p.$('text=ENTRAR')) { await p.click('text=ENTRAR'); await p.press('#pw', 'Enter'); await espera(p, 1200); }
   if (!/PAINEL/.test(await txt(p, '.view'))) { await login(p, 'igor@demo.com'); }
-  const v = await txt(p, '.view'); ok(/nota baixa|esforço no limite/i.test(v) && /nota 2/.test(v), 'treino com nota 2 sem texto aparece no painel com selo');
+  await p.click('#a-fb'); await espera(p, 300); const v = await txt(p, '.view'); ok(/nota baixa|esforço no limite/i.test(v) && /nota 2/.test(v), 'treino com nota 2 sem texto aparece no painel com selo');
   const sw = await p.evaluate(() => document.documentElement.scrollWidth); ok(sw <= 289, `painel com zoom não estoura a largura (${sw}px)`); await shot(p, 'painel-288');
-  await p.click('[data-treino]'); await espera(p, 600); ok(/\| bi 3/.test(await p.inputValue('#t')), 'editor do treino mostra o bi-set (não some ao republicar)');
+  await p.click('#volta'); await p.click('#t-treino'); await espera(p, 300); await p.click('[data-treino]'); await espera(p, 600); ok(/\| bi 3/.test(await p.inputValue('#t')), 'editor do treino mostra o bi-set (não some ao republicar)');
   await ctx.close(); }
 
 // 8. Minhas cargas vem do banco (celular sem cache); programa mostra os exercícios; pontos sem contradição; story leve

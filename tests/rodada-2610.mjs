@@ -92,9 +92,9 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   const dl = p.waitForEvent('download', { timeout: 8000 }).catch(() => null); await p.click('#share'); ok(!!(await dl), 'compartilhar falhou: a imagem é baixada'); await ctx.close(); }
 
 // 8. Painel: responder mostra o que ela escreveu; parou no meio aparece; ficha da anamnese
-{ const { ctx, p } = await nova(); await login(p, 'igor@demo.com'); await espera(p, 600);
+{ const { ctx, p } = await nova(); await login(p, 'igor@demo.com'); await espera(p, 600); await p.click('#a-fb'); await espera(p, 300);
   await p.click('[data-resp]'); await espera(p, 400); ok(/"/.test(await txt(p, '#overlay')) && /esforço/i.test(await txt(p, '#overlay')), 'Responder mostra o comentário e a nota dela'); await p.click('#c'); await espera(p, 300);
-  ok(!!(await p.$('[data-ficha]')), 'aluna com anamnese tem botão "ficha"'); await p.click('[data-ficha]'); await espera(p, 400); ok(/Objetivo/i.test(await txt(p, '#overlay')), 'ficha mostra as respostas'); await shot(p, 'ficha');
+  await p.click('#volta'); await p.click('#t-ficha'); await espera(p, 300); ok(!!(await p.$('[data-ficha]')), 'aluna com anamnese tem botão "ficha"'); await p.click('[data-ficha]'); await espera(p, 400); ok(/Objetivo/i.test(await txt(p, '#overlay')), 'ficha mostra as respostas'); await shot(p, 'ficha');
   const sw = await p.evaluate(() => document.documentElement.scrollWidth); ok(sw <= W, `painel não estoura ${W}px (${sw})`); await ctx.close(); }
 
 console.log('erros de página:', errs); await b.close();

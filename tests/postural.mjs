@@ -87,7 +87,7 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
 // 3. Igor: avaliação postural
 { const { ctx, p } = await nova();
   await p.goto('http://app.local/?demo'); await p.waitForTimeout(400); await p.click('text=ENTRAR'); await p.fill('#em', 'igor@demo.com'); await p.press('#pw', 'Enter'); await p.waitForTimeout(1200);
-  await p.click('[data-postural] >> nth=0'); await p.waitForTimeout(700);
+  await p.click('#t-postural'); await p.waitForTimeout(300); await p.click('[data-postural] >> nth=0'); await p.waitForTimeout(700);
   ok(/Postural/i.test(await txt(p, '#m')) && (await p.$$('[data-ach]')).length >= 15, 'abre a avaliação com a lista de achados');
   await p.click('[data-ach="Joelho pra dentro (valgo)"]'); await p.click('[data-ach="Ombros projetados à frente"]'); await p.fill('#obs', 'reforçar glúteo médio');
   await p.screenshot({ path: `${D}/postural-2-painel.png`, fullPage: true });

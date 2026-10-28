@@ -62,7 +62,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
   ok(s.every(Boolean), `as 3 séries ficaram marcadas (${s})`); await ctx.close(); }
 
 // 6. Painel: responder vazio não "responde"
-{ const { ctx, p } = await nova(); await login(p, 'igor@demo.com'); await espera(p, 600); await p.click('[data-resp] >> nth=0'); await espera(p); await p.click('#s'); await espera(p, 400);
+{ const { ctx, p } = await nova(); await login(p, 'igor@demo.com'); await espera(p, 600); await p.click('#a-fb'); await espera(p, 300); await p.click('[data-resp] >> nth=0'); await espera(p); await p.click('#s'); await espera(p, 400);
   ok(await p.$('#t') !== null && /Escreve a resposta/i.test(await p.innerText('#toast')), 'resposta vazia é barrada'); await ctx.close(); }
 
 // 7. Bi-set: ✓ sem digitar salva o número que aparece; carga absurda pergunta; toque duplo não desfaz; Início "treino de hoje feito"
