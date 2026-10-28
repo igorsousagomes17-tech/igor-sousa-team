@@ -360,6 +360,7 @@ const D = {
   "Serra acima": ["Up the hill", "Cuesta arriba", "上坡", "पहाड़ी चढ़ाई", "Ça grimpe"],
   "Pirâmide": ["Pyramid", "Pirámide", "金字塔", "पिरामिड", "Pyramide"],
   "Tiro final": ["Final sprint", "Sprint final", "终极冲刺", "फाइनल स्प्रिंट", "Sprint final"],
+  "Série de reconhecimento antes: {n} reps leves ({s}s de descanso)": ["Warm-up set first: {n} light reps ({s}s rest)", "Serie de reconocimiento antes: {n} reps ligeras ({s}s de descanso)", "先做一组热身：{n}次轻重量（休息{s}秒）", "पहले वार्म-अप सेट: {n} हल्के रेप्स ({s}s आराम)", "Série de reconnaissance avant : {n} reps légères ({s}s de repos)"],
   "Aquecimento": ["Warm-up", "Calentamiento", "热身", "वार्म-अप", "Échauffement"],
   "Sobe a carga": ["Add resistance", "Sube la carga", "加阻力", "लोड बढ़ाओ", "Monte la résistance"],
   "Ritmo em pé": ["Standing on the beat", "Ritmo de pie", "站立节奏", "खड़े होकर रिदम", "Rythme debout"],

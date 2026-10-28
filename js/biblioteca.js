@@ -1,6 +1,7 @@
 // Bibliotecas do Igor: exercícios (nome, grupo, vídeo, dica, alternativa) e treinos-modelo,
 // e o montador visual de treino (o mesmo pra modelo e pro plano da aluna). Tudo em português: é só pro Igor.
 import { $, $$, esc, toast, overlay, closeOverlay } from './ui.js';
+import { aqDe, semAq, comAq } from './conteudo.js';
 
 export const GRUPOS = ['Glúteo', 'Quadríceps', 'Posterior', 'Panturrilha', 'Costas', 'Peito', 'Ombro', 'Braços', 'Core', 'Cardio', 'Mobilidade', 'Outros'];
 const REGRAS = [
@@ -127,8 +128,9 @@ export function construtor({ db, titulo, treinos, cabecalho = '', salvarTxt = 'S
     return `<div class="exc ${bi || doBi ? 'bi' : ''}" data-j="${j}">
       <div class="row between" style="gap:8px"><b class="exn"><span class="num">${j + 1}</span>${esc(e.nome)}</b><div class="row" style="gap:2px"><button class="ib" data-up="${j}" ${j ? '' : 'disabled'} aria-label="Subir">↑</button><button class="ib" data-dn="${j}" ${j < n - 1 ? '' : 'disabled'} aria-label="Descer">↓</button><button class="ib" data-del="${j}" aria-label="Tirar">✕</button></div></div>
       <div class="tres"><label>séries<input class="input" data-f="series" data-j="${j}" type="number" inputmode="numeric" value="${e.series}"></label><label>reps<input class="input" data-f="reps" data-j="${j}" value="${esc(e.reps)}"></label><label>descanso (s)<input class="input" data-f="descanso_s" data-j="${j}" type="number" inputmode="numeric" value="${e.descanso_s}"></label></div>
-      <details ${e.dica || e.alternativa ? '' : ''}><summary>dica, alternativa e vídeo${e.video_url ? ' · ▶' : ''}${e.dica ? ' · dica' : ''}</summary>
-        <label class="campo">Dica<input class="input" data-f="dica" data-j="${j}" value="${esc(e.dica || '')}"></label>
+      <label class="campo">Série de reconhecimento (reps, vazio = sem)<input class="input" data-f="aq" data-j="${j}" value="${esc(aqDe(e.dica) || '')}" placeholder="Ex.: 15 (leve, descanso 45s)"></label>
+      <details ${e.dica || e.alternativa ? '' : ''}><summary>dica, alternativa e vídeo${e.video_url ? ' · ▶' : ''}${semAq(e.dica) ? ' · dica' : ''}</summary>
+        <label class="campo">Dica<input class="input" data-f="dica" data-j="${j}" value="${esc(semAq(e.dica) || '')}"></label>
         <label class="campo">Alternativa<input class="input" data-f="alternativa" data-j="${j}" value="${esc(e.alternativa || '')}"></label>
         <label class="campo">Vídeo<input class="input" data-f="video_url" data-j="${j}" value="${esc(e.video_url || '')}" inputmode="url"></label></details>
       ${j < n - 1 ? `<label class="biset"><input type="checkbox" data-bi="${j}" ${bi ? 'checked' : ''}> bi-set com o próximo (${esc(T[at].exercicios[j + 1].nome)})</label>` : ''}</div>`;
@@ -136,7 +138,8 @@ export function construtor({ db, titulo, treinos, cabecalho = '', salvarTxt = 'S
   function lerCampos() {
     const tr = T[at]; if (!tr || modoTexto) return;
     const n = $('#trN'), d = $('#trD'); if (n) tr.nome = n.value.trim(); if (d) tr.duracao_min = +d.value || 40;
-    $$('[data-f]', box).forEach(i => { const e = tr.exercicios[+i.dataset.j]; if (!e) return; const f = i.dataset.f; e[f] = ['series', 'descanso_s'].includes(f) ? Math.max(0, +i.value || 0) : (i.value.trim() || (f === 'reps' ? '12' : null)); });
+    $$('[data-f]', box).forEach(i => { const e = tr.exercicios[+i.dataset.j]; if (!e) return; const f = i.dataset.f; if (f === 'aq' || f === 'dica') return; e[f] = ['series', 'descanso_s'].includes(f) ? Math.max(0, +i.value || 0) : (i.value.trim() || (f === 'reps' ? '12' : null)); });
+    $$('[data-f="dica"]', box).forEach(i => { const e = tr.exercicios[+i.dataset.j]; const aq = $('[data-f="aq"][data-j="' + i.dataset.j + '"]', box); if (e) e.dica = comAq(i.value, aq ? aq.value : aqDe(e.dica)); });
   }
   function ligar() {
     $('#mtC').onclick = closeOverlay;

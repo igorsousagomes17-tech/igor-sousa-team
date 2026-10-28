@@ -4,6 +4,13 @@
 // Colunas: [en, es, zh, hi, fr]
 const COL = { en: 0, es: 1, zh: 2, hi: 3, fr: 4 };
 
+// Série de reconhecimento (aquecimento no próprio exercício): o Igor marca no exercício e o app cria uma série leve antes das válidas.
+// Fica guardada na dica como [aq:15] (sem mexer no banco); o app tira da dica na hora de mostrar.
+const AQ = /\s*\[aq:([^\]]*)\]\s*/i;
+export const aqDe = d => { const m = String(d || '').match(AQ); return m ? (m[1].trim() || '15') : null; };
+export const semAq = d => { const r = String(d || '').replace(AQ, ' ').trim(); return r || null; };
+export const comAq = (d, reps) => { const base = semAq(d); const r = String(reps || '').trim(); return r ? ((base ? base + ' ' : '') + `[aq:${r}]`) : base; };
+
 // Frases inteiras (nomes de treino e exercícios que já existem nos planos)
 export const EXATO = {
   'Quadríceps': ['Quads', 'Cuádriceps', '股四头肌', 'क्वाड्स', 'Quadriceps'],
@@ -96,6 +103,7 @@ const TERMOS = [
   ['abdominal', ['Crunch', 'Abdominal', '卷腹', 'क्रंच', 'Crunch']],
   ['mobilidade', ['Mobility', 'Movilidad', '灵活性', 'मोबिलिटी', 'Mobilité']],
   ['alongamento', ['Stretch', 'Estiramiento', '拉伸', 'स्ट्रेच', 'Étirement']],
+  ['reconhecimento', ['Warm-up set', 'Serie de reconocimiento', '热身组', 'वार्म-अप सेट', 'Série de reconnaissance']],
   ['aquecimento', ['Warm-up', 'Calentamiento', '热身', 'वार्म-अप', 'Échauffement']],
   ['ativação', ['Activation', 'Activación', '激活', 'एक्टिवेशन', 'Activation']],
   ['caminhada lateral', ['Lateral walk', 'Caminata lateral', '侧向行走', 'लेटरल वॉक', 'Marche latérale']],

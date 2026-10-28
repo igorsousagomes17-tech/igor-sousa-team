@@ -1,6 +1,7 @@
 // Camada de dados: Supabase + cache local do treino (pra abrir sem sinal).
 import { createClient } from './vendor/supabase.js'; // empacotado no app: abre sem internet
 import { idioma } from './i18n.js';
+import { aqDe, semAq } from './conteudo.js';
 
 const C = window.ISTEAM_CONFIG;
 export const sb = createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
@@ -53,7 +54,7 @@ export async function planoAtual(alunaId) {
   if (error || !data?.length) return LS.get('plano');
   const p = data[0];
   p.treinos.sort((a, b) => a.ordem - b.ordem || a.letra.localeCompare(b.letra));
-  p.treinos.forEach(t => t.exercicios.sort((a, b) => a.ordem - b.ordem));
+  p.treinos.forEach(t => { t.exercicios.sort((a, b) => a.ordem - b.ordem); t.exercicios.forEach(e => { const aq = aqDe(e.dica); if (aq) { e.aq = aq; e.dica = semAq(e.dica); } }); });
   LS.set('plano', p); return p;
 }
 
