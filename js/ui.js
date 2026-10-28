@@ -83,14 +83,28 @@ export function videoModal(nome, url, dica) {
 // Apito: um só AudioContext (celular fraco não fica sem som depois de 40 apitos).
 // 'fim' = dois tons (descanso/série acabou) · 'forte' = três agudos curtos · 'leve' = um grave longo
 let ac = null;
-const SONS = { fim: [[880, 0, .18], [1100, .22, .4]], forte: [[1200, 0, .1], [1200, .15, .1], [1200, .3, .1]], leve: [[440, 0, .6]] };
-const VIBRA = { fim: [150, 80, 250], forte: [80, 60, 80, 60, 80], leve: [400] };
+// Fim do descanso: 2 rajadas de 3 bipes bem audíveis + vibração longa. "tic" = contagem 3-2-1.
+const SONS = { fim: [[880, 0, .14], [880, .2, .14], [1320, .4, .32], [880, .95, .14], [880, 1.15, .14], [1320, 1.35, .4]], forte: [[1200, 0, .1], [1200, .15, .1], [1200, .3, .1]], leve: [[440, 0, .6]], tic: [[990, 0, .09]] };
+const VIBRA = { fim: [350, 120, 350, 120, 600], forte: [80, 60, 80, 60, 80], leve: [400], tic: [60] };
+const VOLUME = { fim: .5, forte: .35, leve: .3, tic: .28 };
+// O navegador só libera som depois de um toque na tela: o som é "destravado" no primeiro toque,
+// senão o alarme do descanso (que toca sem ninguém tocar) saía mudo no celular.
+function destravarSom() {
+  try {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'transient'; } catch {} // iPhone: abaixa a música um instante e toca o alarme
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+    const b = ac.createBuffer(1, 1, 22050), s = ac.createBufferSource(); s.buffer = b; s.connect(ac.destination); s.start(0);
+    if (ac.state === 'running') ['pointerdown', 'touchend', 'keydown'].forEach(ev => document.removeEventListener(ev, destravarSom, true));
+  } catch {}
+}
+['pointerdown', 'touchend', 'keydown'].forEach(ev => document.addEventListener(ev, destravarSom, true));
 export function beep(tipo = 'fim') {
+  try { if (navigator.vibrate) navigator.vibrate(VIBRA[tipo] || VIBRA.fim); } catch {}
   try {
     ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume();
-    const g = ac.createGain(); g.gain.value = .18; g.connect(ac.destination);
-    (SONS[tipo] || SONS.fim).forEach(([f, t, d]) => { const o = ac.createOscillator(); o.frequency.value = f; o.connect(g); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + d); });
-    if (navigator.vibrate) navigator.vibrate(VIBRA[tipo] || VIBRA.fim);
+    const g = ac.createGain(); g.gain.value = VOLUME[tipo] ?? .4; g.connect(ac.destination);
+    (SONS[tipo] || SONS.fim).forEach(([f, t, d]) => { const o = ac.createOscillator(); o.type = 'square'; const e = ac.createGain(); e.gain.setValueAtTime(0, ac.currentTime + t); e.gain.linearRampToValueAtTime(.6, ac.currentTime + t + .01); e.gain.setValueAtTime(.6, ac.currentTime + t + d - .02); e.gain.linearRampToValueAtTime(0, ac.currentTime + t + d); o.frequency.value = f; o.connect(e); e.connect(g); o.start(ac.currentTime + t); o.stop(ac.currentTime + t + d + .02); });
   } catch {}
 }
 
@@ -163,6 +177,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       let resta = 0; // segundos que faltam no intervalo atual (forte/leve)
       if (intervalos && l > 0) { const ciclo = intervalos[0] + intervalos[1], pos = (total - l) % ciclo, f = pos < intervalos[0] ? 0 : 1; resta = f ? ciclo - pos : intervalos[0] - pos; if (f !== fase) { if (fase !== -1) beep(f ? 'leve' : 'forte'); fase = f; q('#rest').classList.toggle('leve', !!f); } q('#rest-t').textContent = `${f ? t('Leve') : t('Forte!')} · ${resta}s`; }
       const rot = intervalos && fase >= 0 ? (fase ? t('Leve') : t('Forte!')) : trouxe(titulo);
+      if (!trabalho && !intervalos && l <= 3 && l > 0 && l !== me.ultTic) { me.ultTic = l; beep('tic'); } // contagem 3-2-1 antes de acabar o descanso
       const lv = doLado(l); n.textContent = me.mini ? `${meio ? rotulo() : rot} ${fmtMin(lv)} · ${t('toca pra abrir')}` : (lv >= 60 ? fmtMin(lv) : lv);
       q('#ring').style.setProperty('--p', (lv / base() * 100) + '%'); if (l <= 0) end(true, Date.now() - fim > 30000);
     };

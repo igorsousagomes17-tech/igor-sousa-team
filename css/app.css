@@ -385,3 +385,29 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .aluna .t{display:flex;flex-direction:column;gap:3px;min-width:0}.aluna .t>span:not(.row){color:var(--muted);font-size:.875rem}
 .aluna>svg{width:18px;height:18px;color:var(--muted)}
 .atalho:focus-visible,.tile:focus-visible,.bigcard:focus-visible,.linhacard:focus-visible,.aluna:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+/* Bibliotecas e montador de treino */
+.painel-sec{display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
+.chips .pill{flex-shrink:0;min-height:36px}
+.campo{display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--muted);min-width:0}
+.montador{padding:16px;display:flex;flex-direction:column;gap:12px;margin:12px 0 0;max-width:520px;width:100%;padding-bottom:0}
+.letras{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px}
+.letra{flex-shrink:0;width:56px;height:56px;border-radius:14px;border:1.5px solid var(--line);background:#121214;color:var(--fg);font-family:var(--display);font-weight:800;font-size:1.5rem;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.letra small{font-family:inherit;font-size:.7rem;color:var(--muted);font-weight:600;margin-top:2px}
+.letra.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.letra.on small{color:var(--accent-ink)}
+.letra.mais{border-style:dashed;color:var(--accent)}
+.exs{display:flex;flex-direction:column;gap:8px}
+.exc{background:#121214;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;border-left:4px solid transparent}
+.exc.bi{border-left-color:var(--accent)}
+.exn{display:flex;gap:8px;align-items:flex-start;min-width:0;overflow-wrap:anywhere}
+.exn .num{flex-shrink:0;width:24px;height:24px;border-radius:50%;background:rgba(255,106,0,.16);color:var(--accent);display:grid;place-items:center;font-size:.8rem}
+.ib{width:40px;height:40px;border-radius:10px;border:0;background:#1d1d21;color:var(--fg);font-size:1rem}.ib:disabled{opacity:.3}
+.tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tres label{display:flex;flex-direction:column;gap:3px;font-size:.75rem;color:var(--muted)}
+.tres .input{min-height:42px;padding:8px 10px;text-align:center}
+.exc details summary{color:var(--accent);font-size:.875rem;min-height:32px;display:flex;align-items:center}
+.exc details{display:flex;flex-direction:column;gap:8px}.exc details[open]{gap:8px}
+.biset{display:flex;gap:8px;align-items:center;font-size:.875rem;color:var(--muted);min-height:36px}.biset input{width:20px;height:20px;accent-color:var(--accent);flex-shrink:0}
+.rodape{position:sticky;bottom:0;background:var(--panel2);padding:12px 0 16px;margin-top:4px;box-shadow:0 -10px 16px -6px rgba(0,0,0,.5)}
+.aluna.novo{border:1.5px dashed var(--accent)}
+.aluna.feito .av{background:var(--accent);color:var(--accent-ink)}

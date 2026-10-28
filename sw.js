@@ -1,5 +1,5 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v31';
+const CACHE = 'isteam-v33';
 const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
 // Gerador de PDF, capas, fotos e fontes: não mudam com a versão do app, então ficam de uma versão pra outra
 // (antes cada atualização apagava e o PDF/capas paravam de abrir sem sinal até baixar tudo de novo)
@@ -68,7 +68,7 @@ self.addEventListener('message', e => {
       agendado = null;
       const telas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       if (d.forcar || !telas.some(c => c.visibilityState === 'visible')) {
-        await self.registration.showNotification(d.titulo || 'Descanso acabou! 💪', { body: d.corpo || 'Bora a próxima série.', icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: 'descanso', renotify: true, vibrate: [200, 100, 300] });
+        await self.registration.showNotification(d.titulo || 'Descanso acabou! 💪', { body: d.corpo || 'Bora a próxima série.', icon: './icons/icon-192.png', badge: './icons/icon-192.png', tag: 'descanso', renotify: true, vibrate: [350, 120, 350, 120, 600], silent: false });
       }
       ok();
     }, espera);

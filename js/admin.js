@@ -1,5 +1,6 @@
 // Painel do Igor
 import { $, $$, esc, toast, overlay, closeOverlay, fmtData } from './ui.js';
+import { construtor, montarExercicios, montarModelos } from './biblioteca.js';
 
 const C = window.ISTEAM_CONFIG;
 const msgInativa = (nome, dias) => `Oi ${nome.split(' ')[0]}! Vi aqui que faz ${dias} dias que você não treina. Tá acontecendo alguma coisa? Bora voltar hoje? Me fala o que tá precisando 💪`;
@@ -27,6 +28,8 @@ const ic = {
   anam: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3h6v3H9zM8.5 12l2 2 4-4M8 17h8"/>',
   post: '<circle cx="12" cy="4" r="2"/><path d="M12 6v8M8 9h8M12 14l-3 7M12 14l3 7"/><path d="M4 2v20" stroke-dasharray="2 2"/>',
   alerta: '<path d="M12 3 2 20h20z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
+  libT: '<path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="m16 5 3.5-1 3 15.5-3.5 1z"/>',
+  libE: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M10 12.5v5l4-2.5z"/>',
   seta: '<path d="m9 5 7 7-7 7"/>'
 };
 const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic[k]}</svg>`;
@@ -67,7 +70,9 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     </section>
     <section class="bloco"><h3>Treinos e avaliação</h3>
       <div class="grid2">
-        <button class="tile" id="t-treino"><span class="ico">${svg('treino')}</span><b>Montar treino</b></button>
+        <button class="tile" id="t-modelos"><span class="ico">${svg('libT')}</span><b>Biblioteca de treinos</b></button>
+        <button class="tile" id="t-exercicios"><span class="ico">${svg('libE')}</span><b>Biblioteca de exercícios</b></button>
+        <button class="tile" id="t-treino"><span class="ico">${svg('treino')}</span><b>Montar treino da aluna</b></button>
         <button class="tile" id="t-ficha"><span class="ico">${svg('anam')}</span><b>Anamneses</b>${comSaude.length ? `<span class="pill warn" style="align-self:flex-start">${comSaude.length} ⚠ saúde</span>` : ''}</button>
         <button class="tile" id="t-postural"><span class="ico">${svg('post')}</span><b>Avaliação postural</b></button>
         <button class="tile" id="t-fb"><span class="ico">${svg('fb')}</span><b>Feedbacks dos treinos</b>${semResposta.length ? `<span class="pill warn" style="align-self:flex-start">${semResposta.length} pra responder</span>` : ''}</button>
@@ -97,12 +102,14 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     return `${topo('Feedbacks')}<p class="muted">${semResposta.length ? pl(semResposta.length, 'feedback esperando sua resposta', 'feedbacks esperando sua resposta') + ' (em cima).' : 'Tudo respondido ✓'}</p>
     <div class="card">${ord.length ? ord.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${f.duracao_s < 60 ? "&lt;1" : Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent);padding:6px 4px">editar</button>` : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted">Nenhum feedback ainda.</p>'}</div>`;
   }
+  const telaExercicios = () => `${topo('Biblioteca de exercícios')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
+  const telaModelos = () => `${topo('Biblioteca de treinos')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
   function telaDuvidas() {
     return `${topo('Dúvidas na IA')}<p class="muted">O que as alunas perguntam pro tira-dúvidas. Bom pra pauta de conteúdo e pra ver quem precisa de você.</p><div class="card" id="duv"><p class="muted">Carregando…</p></div>`;
   }
 
   function desenhar() {
-    const corpo = { inicio: telaInicio, alunas: telaAlunas, atencao: telaAtencao, feedbacks: telaFeedbacks, duvidas: telaDuvidas }[secao] || telaInicio;
+    const corpo = { inicio: telaInicio, alunas: telaAlunas, atencao: telaAtencao, feedbacks: telaFeedbacks, duvidas: telaDuvidas, exercicios: telaExercicios, modelos: telaModelos }[secao] || telaInicio;
     render(`<div class="view noTabs fx painel">${corpo()}</div>`);
     window.scrollTo(0, 0); ligar();
   }
@@ -125,6 +132,9 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go));
     $$('[data-resp],[data-edita]').forEach(b => b.onclick = () => responder(b));
     if (secao === 'duvidas') carregarDuvidas();
+    on('#t-exercicios', () => abrir('exercicios')); on('#t-modelos', () => abrir('modelos'));
+    if (secao === 'exercicios') montarExercicios($('#bib'), db);
+    if (secao === 'modelos') montarModelos($('#bib'), db);
   }
 
   async function carregarDuvidas() {
@@ -239,15 +249,33 @@ function serializar(plano) {
 }
 async function editorTreino(alunaId, nome, go) {
   const atual = await db.admin.planoDe(alunaId);
-  const mes = new Date(); mes.setDate(1); const mesStr = mes.toISOString().slice(0, 10);
-  overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;margin:20px 0;max-width:460px"><h2>Treino de ${esc(nome)}</h2>
-    <div class="row between"><input class="input" id="mes" type="month" value="${mesStr.slice(0, 7)}" style="width:160px"><button class="pill" id="ex">colar exemplo</button></div>
-    <p class="muted small">Formato: <b># Letra | Nome | minutos</b> e abaixo <b>exercício | séries | reps | descanso s | vídeo | dica | alternativa | bi N</b> (bi 2 = emenda com o exercício 2). Dá pra pedir pra Claudete gerar nesse formato.</p>
-    <textarea class="input" id="t" style="min-height:300px;font-family:monospace;font-size:13px">${esc(atual ? serializar(atual) : '')}</textarea>
-    <div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Publicar pra aluna</button></div></div></div>`);
-  $('#ex').onclick = () => { $('#t').value = EXEMPLO; };
-  $('#c').onclick = closeOverlay;
-  $('#s').onclick = async () => { const treinos = parseTreinos($('#t').value); if (!treinos.length) return toast('Nenhum treino reconhecido', true); $('#s').disabled = true; try { await db.admin.salvarPlano(alunaId, $('#mes').value + '-01', treinos); closeOverlay(); toast(`Publicado ✓ ${treinos.length} treinos, ${treinos.reduce((n, t) => n + t.exercicios.length, 0)} exercícios`); go('admin'); } catch (e) { toast(e.message, true); $('#s').disabled = false; } };
+  const mes = new Date(); mes.setDate(1); const mesStr = mes.toISOString().slice(0, 7);
+  construtor({
+    db, titulo: `Treino de ${nome.split(' ')[0]}`, treinos: atual?.treinos || [], salvarTxt: 'Publicar pra aluna',
+    cabecalho: `<label class="campo">Mês do treino<input class="input" id="mes" type="month" value="${atual?.mes ? atual.mes.slice(0, 7) : mesStr}" style="max-width:200px"></label>`,
+    textoParaTreinos: parseTreinos, treinosParaTexto: tr => serializar({ treinos: tr.map(t => ({ ...t, exercicios: t.exercicios.map((e, j) => ({ ...e, ordem: j + 1 })) })) }),
+    extras: [
+      { id: 'usarLib', txt: '📚 usar da biblioteca', fn: est => escolherModelo(est) },
+      { id: 'pAlib', txt: '💾 salvar na biblioteca', fn: est => salvarComoModelo(est.get(), nome) }
+    ],
+    onSalvar: async treinos => { await db.admin.salvarPlano(alunaId, ($('#mes').value || mesStr) + '-01', treinos); toast(`Publicado ✓ ${treinos.length} treinos, ${treinos.reduce((n, t) => n + t.exercicios.length, 0)} exercícios`); go('admin'); }
+  });
+}
+async function escolherModelo(est) {
+  let ms = []; try { ms = await db.admin.modelos(); } catch (e) { return toast(e.message, true); }
+  if (!ms.length) return toast('Ainda não tem treino na biblioteca. Salva um primeiro (Biblioteca de treinos).', true);
+  const c = document.createElement('div'); c.className = 'modal camada'; c.style.cssText = 'align-items:flex-start;overflow:auto;z-index:55';
+  c.innerHTML = `<div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;margin:20px 0;max-width:460px;width:100%"><div class="row between"><h2>Usar da biblioteca</h2><button class="btn ghost sm" id="emC" style="width:auto">Voltar</button></div><p class="muted small">Substitui o que está no editor. Depois você ajusta o que quiser antes de publicar.</p><div class="lista">${ms.map(m => `<button class="aluna" data-em="${m.id}"><span class="av">${(m.treinos || []).length}</span><span class="t"><b>${esc(m.nome)}</b><span>${(m.treinos || []).map(t => t.letra + (t.nome ? ' ' + esc(t.nome) : '')).join(' · ')}</span></span></button>`).join('')}</div></div>`;
+  $('#overlay').appendChild(c); $('#emC', c).onclick = () => c.remove();
+  $$('[data-em]', c).forEach(b => b.onclick = () => { const m = ms.find(x => x.id === b.dataset.em); c.remove(); est.set(m.treinos); toast(`"${m.nome}" carregado. Ajusta e publica.`); });
+}
+async function salvarComoModelo(treinos, nomeAluna) {
+  const pronto = treinos.filter(t => t.exercicios.length).map((t, i) => ({ letra: 'ABCDEFGH'[i], nome: t.nome, duracao_min: t.duracao_min, exercicios: t.exercicios.map((e, j, a) => ({ nome: e.nome, series: e.series, reps: String(e.reps), descanso_s: e.descanso_s, video_url: e.video_url || null, dica: e.dica || null, alternativa: e.alternativa || null, biset_com: e.bi ? j + 2 : a[j - 1]?.bi ? j : null })) }));
+  if (!pronto.length) return toast('Monta pelo menos um exercício antes.', true);
+  const c = document.createElement('div'); c.className = 'modal camada'; c.style.cssText = 'z-index:55';
+  c.innerHTML = `<div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:420px;width:100%"><h2>Salvar na biblioteca</h2><label class="campo">Nome do treino<input class="input" id="smN" placeholder="Ex.: Full Body 3x · iniciante" value="${esc(`Treino ${pronto.length}x (de ${nomeAluna.split(' ')[0]})`)}"></label><div class="row"><button class="btn ghost sm" id="smC" style="flex:1">Cancelar</button><button class="btn sm" id="smS" style="flex:1">Salvar</button></div></div>`;
+  $('#overlay').appendChild(c); $('#smC', c).onclick = () => c.remove(); $('#smN', c).select();
+  $('#smS', c).onclick = async () => { const n = $('#smN', c).value.trim(); if (!n) return toast('Dá um nome.', true); try { await db.admin.salvarModelo({ nome: n, treinos: pronto }); c.remove(); toast('Salvo na biblioteca de treinos ✓'); } catch (e) { toast(e.message, true); } };
 }
 
 // Anamnese com problema de saúde ou gestação: o Igor precisa ver antes de passar HIIT/carga

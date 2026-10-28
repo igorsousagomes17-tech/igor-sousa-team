@@ -244,7 +244,16 @@ export const admin = {
     return plano;
   },
   async publicarRecado(texto, midia_url) { const { error } = await sb.from('recados').insert({ texto, midia_url }); if (error) throw error; },
-  async setAtiva(id, ativa) { const { error } = await sb.from('profiles').update({ ativa }).eq('id', id); if (error) throw error; }
+  async setAtiva(id, ativa) { const { error } = await sb.from('profiles').update({ ativa }).eq('id', id); if (error) throw error; },
+  // Bibliotecas do Igor (exercícios e treinos-modelo)
+  async libExercicios() { const { data, error } = await sb.from('biblioteca_exercicios').select('*').order('nome'); if (error) throw error; return data || []; },
+  async salvarExercicioLib(row) { row = { ...row, updated_at: new Date().toISOString() }; const q = row.id ? sb.from('biblioteca_exercicios').update(row).eq('id', row.id) : sb.from('biblioteca_exercicios').insert(row); const { data, error } = await q.select().single(); if (error) throw error; return data; },
+  async apagarExercicioLib(id) { const { error } = await sb.from('biblioteca_exercicios').delete().eq('id', id); if (error) throw error; },
+  // vídeo novo na biblioteca: entra nos treinos das alunas que ainda estão sem vídeo nesse exercício
+  async videoNosTreinos(nome, video_url) { const { data, error } = await sb.from('exercicios').update({ video_url }).ilike('nome', nome).is('video_url', null).select('id'); if (error) throw error; return (data || []).length; },
+  async modelos() { const { data, error } = await sb.from('modelos_treino').select('*').order('updated_at', { ascending: false }); if (error) throw error; return data || []; },
+  async salvarModelo(row) { row = { ...row, updated_at: new Date().toISOString() }; const q = row.id ? sb.from('modelos_treino').update(row).eq('id', row.id) : sb.from('modelos_treino').insert(row); const { data, error } = await q.select().single(); if (error) throw error; return data; },
+  async apagarModelo(id) { const { error } = await sb.from('modelos_treino').delete().eq('id', id); if (error) throw error; }
 };
 
 // Tira-dúvidas (IA). A conversa com a IA acontece na função do servidor "assistente".
