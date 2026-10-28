@@ -9,7 +9,7 @@ function mfitParaSQL(D) {
   const norm = s => limpa(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   // "4x 12/10/8/8 no leg" → {series:4, reps:'12/10/8/8'}; "1x 15, 1x 12, 1x 10 + 1x rest-pause" → {4, '15/12/10/...'}
   function seriesReps(txt) {
-    const t = limpa(txt); const pares = [...t.matchAll(/(\d+)\s*x\s*([\d/\-]+(?:\s*(?:s|seg|min))?)?/gi)];
+    const t = limpa(txt); const pares = [...t.matchAll(/(\d+)\s*x\s*([\d/\-]+(?:\s*(?:s|seg|min)(?![a-zà-ú]))?)?/gi)];
     if (!pares.length) return { series: 3, reps: t.slice(0, 24) || '12' };
     const series = pares.reduce((n, m) => n + (+m[1] || 0), 0) || 3;
     const reps = pares.length > 1 ? pares.map(m => m[2] || '').filter(Boolean).join('/') : (pares[0][2] || '').trim();
@@ -24,7 +24,7 @@ function mfitParaSQL(D) {
         const nomes = e.comb.filter(c => limpa(c.nome)).map(c => limpa(c.nome));
         const linha = e.comb.find(c => limpa(c.rep)) || {}; const txt = limpa(linha.rep); const desc = linha.int || 60;
         const partes = txt.split(/\s+e\s+/); const base = seriesReps(txt);
-        nomes.slice(0, 3).forEach((n, i) => { const p = partes[i] && i ? partes[i] : partes[0] || ''; const num = (limpa(p).replace(/^\d+\s*x\s*/i, '').match(/[\d/\-]+/) || [base.reps])[0];
+        nomes.slice(0, 3).forEach((n, i) => { const p = partes[i] && i ? partes[i] : partes[0] || ''; const num = (limpa(p).replace(/^\d+\s*x\s*/i, '').match(/[\d/\-]+(?:s(?![a-zà-ú]))?/) || [base.reps])[0];
           out.push({ nome: n, series: base.series, reps: i === 0 ? base.reps : num, descanso_s: i === nomes.length - 1 ? desc : 0, dica: txt || null, grupo: nomes.length > 1 ? true : false, idx: i, tam: nomes.length }); });
       } else {
         const s0 = (e.s || [])[0] || {}; let sr = seriesReps(s0.rep || ''); if ((e.s || []).length > 1) sr = { series: e.s.length, reps: e.s.map(x => seriesReps(x.rep).reps).join('/') };
