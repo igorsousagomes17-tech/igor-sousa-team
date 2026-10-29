@@ -71,6 +71,7 @@ export async function comunidade() {
   const ranking = [['Marcela D.', 16], ['Ludimila M.', 15], ['Ana P.', meus, true], ['Patrícia M.', 11], ['Lorena S.', 9], ['Camila T.', 8], ['Fabiana R.', 6]].map(([nome, n, eu]) => ({ nome, n, eu: !!eu })).sort((a, b) => b.n - a.n);
   return { hoje: 5, mes: 214, time: 38, ativas_mes: 24, feed: feed.filter(f => Date.now() - new Date(f.finalizada_em) < 10 * 3600000), ranking };
 }
+export const strava = { async status() { return { conectado: !!LS.get('stv_demo'), atleta: 'Ana (demo)', configurado: true }; }, async url() { LS.set('stv_demo', true); return { url: location.pathname + '?strava=ok' }; }, async desconectar() { LS.del('stv_demo'); }, async enviar() { window.__stravaEnviado = (window.__stravaEnviado || 0) + 1; return { ok: true }; } };
 export const push = { async chave() { throw new Error('demo'); }, async inscrever() {} };
 export const admin = {
   async vencimentos() { await wait(); return state.venc || (state.venc = [{ id: 'v1', aluna_id: 'a0', titulo: 'Treino out/nov', inicio: hojeISO(-30), fim: hojeISO(-2), visto_em: null }, { id: 'v2', aluna_id: 'a1', titulo: 'Treino mensal', inicio: hojeISO(-27), fim: hojeISO(1), visto_em: null }, { id: 'v3', aluna_id: 'a2', titulo: 'Treino out', inicio: hojeISO(-10), fim: hojeISO(18), visto_em: null }]); },

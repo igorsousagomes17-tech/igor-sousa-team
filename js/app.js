@@ -975,6 +975,31 @@ function diaDoTreino(s, fim) {
   return dia === diaLocal(fim) ? fim : Math.max(...em.filter(x => diaLocal(x) === dia));
 }
 // Manda o treino pro banco (ou pra fila, sem sinal). As séries substituem as que já estiverem lá: reenviar nunca duplica.
+// STRAVA --------------------------------------------------------------------------------
+// Ligar uma vez; ao finalizar o treino o app lança a atividade lá (Musculação). Os tokens ficam só no servidor.
+async function cartaoStrava() {
+  const box = $('#stv'); if (!box) return;
+  const pinta = (html) => { if ($('#stv')) $('#stv').innerHTML = `<div class="row between"><b style="font-size:0.9375rem">Strava</b>${html.pill || ''}</div>${html.corpo}`; };
+  let st = null; try { st = await db.strava.status(); db.LS.set('strava_on', !!st.conectado); } catch { /* sem sinal: mostra o último estado */ }
+  if (!st) return pinta({ corpo: `<p class="muted">${t('Sem internet agora. Volta aqui com sinal pra ver o Strava.')}</p>` });
+  if (!st.configurado) return pinta({ corpo: `<p class="muted">${t('O Igor ainda tá ligando o Strava. Em breve você conecta por aqui.')}</p>` });
+  if (!st.conectado) {
+    pinta({ corpo: `<p class="muted">${t('Quando você finalizar o treino, ele já aparece no seu Strava. Você autoriza uma vez e pode desligar quando quiser.')}</p><button class="btn sm" id="stvOn" style="margin-top:8px">${t('Conectar com Strava')}</button>` });
+    $('#stvOn').onclick = async () => { const b = $('#stvOn'); b.disabled = true; try { const { url } = await db.strava.url(); location.href = url; } catch (e) { b.disabled = false; toast(e?.codigo === 'nao_configurado' ? t('O Igor ainda tá ligando o Strava. Em breve você conecta por aqui.') : t('Não deu pra conectar o Strava agora. Tenta de novo.'), true); } };
+    return;
+  }
+  const auto = db.LS.get('strava_auto', true);
+  pinta({ pill: `<span class="pill good">${t('Conectado')}</span>`, corpo: `<p class="muted">${t('Conectado como {x}.', { x: esc(st.atleta || 'Strava') })}</p><label class="row" style="gap:8px;margin-top:8px"><input type="checkbox" id="stvAuto" ${auto ? 'checked' : ''}> <span class="small">${t('Lançar meus treinos no Strava quando eu finalizar')}</span></label><p class="muted small">${t('Se o seu relógio já manda a musculação pro Strava, desliga aqui pra não duplicar.')}</p><button class="btn ghost sm" id="stvOff" style="margin-top:8px;width:auto">${t('Desconectar')}</button>` });
+  $('#stvAuto').onchange = e => db.LS.set('strava_auto', e.target.checked);
+  $('#stvOff').onclick = async () => { try { await db.strava.desconectar(); db.LS.set('strava_on', false); toast(t('Strava desconectado.')); cartaoStrava(); } catch { toast(t('Não deu pra desconectar agora. Tenta de novo.'), true); } };
+}
+// Lança o treino finalizado no Strava (se ela conectou e deixou ligado). Silencioso: nunca atrapalha o fim do treino.
+function lancarNoStrava(s, patch) {
+  if (DEMO && !db.strava) return; if (!db.LS.get('strava_on', false) || !db.LS.get('strava_auto', true)) return;
+  const d = new Date(s.inicio), z = n => String(n).padStart(2, '0');
+  const inicio = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
+  db.strava.enviar({ chave: String(s.chave || s.id), titulo: nomeTreino(s.titulo), inicio, duracao_s: patch.duracao_s, descricao: `${patch.exercicios_feitos}/${patch.exercicios_total} exercícios · Igor Sousa Team 💪` }).catch(e => { if (e?.codigo === 'reconectar' || e?.codigo === 'nao_conectado') db.LS.set('strava_on', false); });
+}
 async function enviarSessao(s, fb) {
   s.enviada = true; salvaSessao();
   const fim = s.fimEm || s.pausadoEm || s.ult || Date.now();
@@ -986,6 +1011,7 @@ async function enviarSessao(s, fb) {
     if (s.local) { novaFila(item()); pontos = false; }
     else { await comLimite(db.salvarSeries(s.id, series), 12000); seriesOk = true; await comLimite(db.finalizarSessao(s.id, patch), 12000); }
   } catch (er) { pontos = false; novaFila(item()); }
+  lancarNoStrava(s, patch);
   if (S.sessao === s) { S.sessao = null; db.LS.del('sessao'); }
   S.sessoes = null;
   return pontos;
@@ -1143,6 +1169,7 @@ if (!DEMO && db.traduzir) ligarTradutor((id, textos) => db.traduzir(id, textos))
 let redesenho = null;
 window.addEventListener('traducoes', () => { clearTimeout(redesenho); redesenho = setTimeout(() => { if (!rotaAtual || !routes[rotaAtual] || ['sessao', 'fim', 'assistente', 'login', 'entrada'].includes(rotaAtual) || document.querySelector('#overlay .modal') || document.activeElement?.matches?.('input,textarea')) return; routes[rotaAtual](argAtual); }, 300); });
 // Alarme do descanso pelo servidor: no iPhone, com a tela apagada, é o único jeito de tocar e vibrar
+{ const ps = new URLSearchParams(location.search), q = ps.get('strava'); if (q) { ps.delete('strava'); history.replaceState(null, '', location.pathname + (ps.toString() ? '?' + ps : '') + location.hash); setTimeout(() => { if (q === 'ok') { db.LS.set('strava_on', true); toast(t('Strava conectado ✓ O próximo treino que você finalizar vai pro seu Strava.')); } else toast(q === 'sem_permissao' ? t('Pra lançar os treinos, o Strava precisa da permissão de publicar. Tenta de novo e deixa essa opção marcada.') : t('Não deu pra conectar o Strava agora. Tenta de novo.'), true); }, 1200); } }
 if (!DEMO) ligarAvisoRemoto({
   agendar: d => (S.perfil && S.perfil.role !== 'admin' ? db.push.descanso(d) : Promise.resolve(false)),
   cancelar: id => db.push.cancelarDescanso(id).catch(() => {}),
@@ -1415,6 +1442,7 @@ routes.perfil = async () => {
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Minha anamnese')}</b><button class="btn ghost sm" id="ed">${t('editar')}</button></div><p class="muted">${esc([rotuloAnam('objetivo', p.objetivo), p.dias_semana ? t('{n}x/semana', { n: p.dias_semana }) : null, p.tempo_treino_min ? t('{n} min', { n: p.tempo_treino_min }) : null, rotuloAnam('local_treino', p.local_treino), (p.foco || []).length ? t('foco: {x}', { x: p.foco.map(f => rotuloAnam('foco', f)).join(', ') }) : null, p.limitacoes ? (/^aten[cç][aã]o/i.test(p.limitacoes) ? p.limitacoes : t('atenção: {x}', { x: p.limitacoes })) : null].filter(Boolean).join(' · ') || t('preencha pro Igor montar seu treino'))}</p>${(() => { const m = tmb(p); return m ? `<p class="muted mt">${t('Seu corpo gasta umas <b style="color:var(--fg)">{g} calorias por dia</b> (num dia sem treino, umas {b}). É uma estimativa e atualiza quando você registra o peso.', { g: num(m.gasto), b: num(m.tmb) })}</p>` : ''; })()}</div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Respostas do Igor')}</b>${novas ? `<span class="pill on">${tp(novas, '{n} nova', '{n} novas')}</span>` : ''}</div>${resp.length ? resp.slice(0, 3).map(s => `<div class="mt"><p class="muted small">${t('Seu {x}', { x: esc(s.titulo ? nomeCurto(s.titulo) : t('treino')) })} · ${fmtData(s.finalizada_em)}${s.comentario ? ': "' + esc(s.comentario) + '"' : ''}</p><p style="margin-top:2px">↳ "${esc(tc(s.resposta_igor))}"</p></div>`).join('') + `<p class="muted small mt">${t('Quer responder? Escreve no recado do próximo treino ou')} <a href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 2px">${t('chama no WhatsApp')}</a>.</p>` : `<p class="muted">${t('Quando você mandar feedback no fim do treino, ele responde aqui.')}</p>`}</div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Indique uma amiga')}</b><b style="color:var(--accent)">${t('+{n} pts', { n: 300 })}</b></div><p class="muted">${t('Seu código:')} <b style="color:var(--fg)">${esc(p.cod_indicacao || '')}</b>. ${t('Quando ela assinar, é só ela falar seu código pro Igor no WhatsApp: os +300 entram pra você.')}</p>${amigaBtn(p, true)}</div>
+  ${'<div class="card" id="stv"><div class="row between"><b style="font-size:0.9375rem">Strava</b></div><p class="muted">…</p></div>'}
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🌐 ${t('Idioma')}</b><button class="btn ghost sm" id="idi">${infoIdioma().flag} ${infoIdioma().nome}</button></div><p class="muted">${t('O app aparece nesse idioma. Treinos, dicas e recados do Igor continuam em português.')}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteSuportado() ? `<button class="sw ${A.lembreteLigado() ? 'on' : ''}" id="notif" aria-label="${t('Lembretes')}"></button>` : ''}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Lembrete de 3 dias sem treinar: no iPhone chega em breve.') + ' ' + t('No descanso, deixa o app aberto: com a tela apagada o iPhone não apita.') : t('Seu navegador não aceita lembrete automático. Abre o app pelo Chrome e instala na tela inicial pra ligar.') + ' ' + t('No descanso, deixa o app aberto: com a tela apagada o celular pode não apitar.'))}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🔥 ${t('Aparecer no time')}</b><button class="sw ${p.comunidade === false ? '' : 'on'}" id="swTime" aria-label="${t('Aparecer no time')}"></button></div><p class="muted">${t('Seu primeiro nome e a inicial aparecem no ranking e em "treinou agora há pouco". Nada de foto, carga ou peso.')}</p></div>
@@ -1422,7 +1450,7 @@ routes.perfil = async () => {
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Senha')}</b><button class="btn ghost sm" id="pw">${t('trocar')}</button></div><p class="muted">${p.senha_trocada === false ? t('Se ainda é o seu número de WhatsApp, troca aqui.') : t('Quer mudar sua senha? Troca aqui quando quiser.')}</p></div>
   <a class="btn ghost sm" style="width:100%" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener">${t('Chamar o Igor')}</a>
   <button class="link-fim" id="out" style="margin-top:14px">${t('Sair da minha conta')}</button></div>`, 'perfil');
-  $('#idi').onclick = escolherIdioma;
+  $('#idi').onclick = escolherIdioma; if ($('#stv')) cartaoStrava();
   $('#out').onclick = async () => {
     const pend = db.LS.get('fila', []).filter(daFila).length;
     if (pend && navigator.onLine !== false) await sincronizarFila();

@@ -210,6 +210,14 @@ export const push = {
   async cancelarDescanso(id) { const { data: { session } } = await sb.auth.getSession(); if (!session) return; await fetch(C.SUPABASE_URL + '/functions/v1/push', { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json', apikey: C.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ acao: 'cancelar_descanso', id }) }).catch(() => {}); },
   async inscrever(sub) { const { data: { session } } = await sb.auth.getSession(); const r = await fetch(C.SUPABASE_URL + '/functions/v1/push', { method: 'POST', headers: { 'content-type': 'application/json', apikey: C.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + (session?.access_token || '') }, body: JSON.stringify({ acao: 'inscrever', sub }) }); if (!r.ok) throw new Error('push ' + r.status); },
 };
+// Strava: a função "strava" guarda os tokens; o celular só pede o endereço de autorização, o status e manda o treino pronto.
+export const strava = {
+  async _post(corpo) { const { data: { session } } = await sb.auth.getSession(); const r = await fetch(C.SUPABASE_URL + '/functions/v1/strava', { method: 'POST', headers: { 'content-type': 'application/json', apikey: C.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + (session?.access_token || '') }, body: JSON.stringify(corpo) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.erro || 'strava ' + r.status), { codigo: j.erro }); return j; },
+  status() { return this._post({ acao: 'status' }); },
+  url() { return this._post({ acao: 'url' }); },
+  desconectar() { return this._post({ acao: 'desconectar' }); },
+  enviar(d) { return this._post({ acao: 'enviar', ...d }); }
+};
 export const precisaVer = f => !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
 export const admin = {
   // Avaliação postural (só o Igor vê): fotos da evolução dela + achados marcados por ele
