@@ -49,7 +49,7 @@ const mesLocal1 = () => { const d = new Date(); return `${d.getFullYear()}-${Str
 export async function planoAtual(alunaId) {
   const mesStr = mesLocal1();
   const { data, error } = await sb.from('planos')
-    .select('id,mes,titulo,obs,treinos(id,letra,nome,duracao_min,ordem,exercicios(id,ordem,nome,series,reps,descanso_s,video_url,dica,alternativa,biset_com))')
+    .select('id,mes,titulo,obs,inicio,fim,treinos(id,letra,nome,duracao_min,ordem,exercicios(id,ordem,nome,series,reps,descanso_s,video_url,dica,alternativa,biset_com))')
     .eq('aluna_id', alunaId).lte('mes', mesStr).order('mes', { ascending: false }).limit(1);
   if (error || !data?.length) return LS.get('plano');
   const p = data[0];
@@ -231,12 +231,12 @@ export const admin = {
   async responder(sessaoId, texto) { const { error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId); if (error) throw error; },
   async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,sexo,horario,academia_tipo,equipamento,cardio,evita,ciclo,dias_semana,tempo_treino_min,local_treino,experiencia,foco,incomoda,limitacoes,saude,gestacao,sono_estresse,atividade,nascimento,nutri,desistiu,peso_kg,altura_m,anamnese_em,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(500); return data || []; },
   async planoDe(alunaId) {
-    const { data } = await sb.from('planos').select('id,mes,titulo,treinos(id,letra,nome,ordem,exercicios(*))').eq('aluna_id', alunaId).order('mes', { ascending: false }).limit(1);
+    const { data } = await sb.from('planos').select('id,mes,titulo,inicio,fim,treinos(id,letra,nome,ordem,exercicios(*))').eq('aluna_id', alunaId).order('mes', { ascending: false }).limit(1);
     return data?.[0] || null;
   },
-  async salvarPlano(alunaId, mesStr, treinos) {
+  async salvarPlano(alunaId, mesStr, treinos, datas = {}) {
     // treinos: [{letra,nome,duracao_min,exercicios:[{nome,series,reps,descanso_s,video_url,dica,alternativa}]}]
-    const { data: plano, error } = await sb.from('planos').upsert({ aluna_id: alunaId, mes: mesStr }, { onConflict: 'aluna_id,mes' }).select().single();
+    const { data: plano, error } = await sb.from('planos').upsert({ aluna_id: alunaId, mes: mesStr, inicio: datas.inicio || null, fim: datas.fim || null, visto_em: null }, { onConflict: 'aluna_id,mes' }).select().single();
     if (error) throw error;
     await sb.from('treinos').delete().eq('plano_id', plano.id);
     for (const [i, t] of treinos.entries()) {
@@ -247,6 +247,9 @@ export const admin = {
     }
     return plano;
   },
+  // Atualizações (igual ao Mfit): último treino de cada aluna com o vencimento. visto_em = "marcar como lida"
+  async vencimentos() { const { data, error } = await sb.from('planos').select('id,aluna_id,mes,titulo,inicio,fim,visto_em').order('mes', { ascending: false }); if (error) throw error; const vistas = new Set(); return (data || []).filter(p => !vistas.has(p.aluna_id) && vistas.add(p.aluna_id)); },
+  async marcarVisto(planoId, visto) { const { error } = await sb.from('planos').update({ visto_em: visto ? new Date().toISOString() : null }).eq('id', planoId); if (error) throw error; },
   async publicarRecado(texto, midia_url) { const { error } = await sb.from('recados').insert({ texto, midia_url }); if (error) throw error; },
   async setAtiva(id, ativa) { const { error } = await sb.from('profiles').update({ ativa }).eq('id', id); if (error) throw error; },
   // Bibliotecas do Igor (exercícios e treinos-modelo)

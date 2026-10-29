@@ -184,6 +184,7 @@ routes.home = async () => {
   const dow = new Date().getDay(), resumoAnt = [1, 2, 3].includes(dow) ? A.resumoSemana({ sessoes, cargas: db.LS.get('cargas', {}), perfil: p, semanaKey: isoWeek(new Date(Date.now() - 7 * 86400000)), isoWeek, kcalDe: x => K.kcalFeito(S.perfil, Math.round((x.duracao_s || 0) / 60), x.esforco), semanasSeguidas: st.semanas }) : null;
   render(`<div class="view fx"><div class="topbar"><div class="logo sm">IGOR SOUSA <b>TEAM</b></div>${st.semanas ? `<span class="pill on" title="${t('semanas seguidas treinando')}">${fogo(st)}</span>` : ''}</div>
   <div><p class="muted">${hoje()}${p.plano === 'personalizado' ? ` <span class="pill" style="vertical-align:middle">${t('Personalizado')}</span>` : ''}</p><h1>${t('Bora, {nome}?', { nome: esc(primeiroNome(p.nome)) })}</h1></div>
+  ${avisoVencimento(plano)}
   ${!p.anamnese_em && p.role !== 'admin' ? (p.objetivo ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1rem">${t('Confere sua anamnese')}</b><p class="muted">${t('O Igor já preencheu o que você respondeu antes. É só conferir e completar o que faltar.')}</p><button class="btn sm mt" id="anam" style="width:100%">${t('Conferir agora')}</button></div>` : `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1rem">${t('Falta me contar de você')}</b><p class="muted">${t('Umas 20 perguntas rápidas (uns 3 min) pro Igor montar o seu treino.')}</p><button class="btn sm mt" id="anam" style="width:100%">${t('Responder agora')}</button></div>`) : ''}
   ${sa && sa.fimEm ? `<div class="card hero"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Falta enviar')}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${t('Seu treino ainda não foi registrado: falta tocar em Enviar (o esforço e o recado pro Igor).')}</p><button class="btn dark" style="margin-top:8px" data-go="fim">${t('Enviar agora')}</button></div>`
     : sa ? `<div class="card hero"><span class="pill" id="pausaPill" style="background:rgba(0,0,0,.18);color:#1a0d00">${pillPausa(sa)}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${tp(sf, '{n} série feita', '{n} séries feitas')} · ${t('{a} de {b} exercícios · tudo salvo', contaObr(sa))}</p><button class="btn dark" style="margin-top:8px" data-go="sessao">${t('Continuar de onde parei')}</button><button class="back" id="desc" style="color:#1a0d00;margin-top:4px;text-decoration:underline">${t('descartar esse treino')}</button></div>`
@@ -303,6 +304,15 @@ routes.treino = async (letra) => {
   $$('[data-ver]').forEach(b => b.onclick = () => { db.LS.set('versaoExpress', b.dataset.ver === '1' ? diaLocal() : false); routes.treino(tr.letra); });
   if (['zh', 'hi'].includes(idioma())) $$('#pdf').forEach(b => b.textContent += ' (English)'); // PDF nesses idiomas sai em inglês: avisa antes
 };
+// Validade do treino (igual ao Mfit): avisa na semana do vencimento e depois que venceu, sem travar nada.
+function avisoVencimento(plano) {
+  if (!plano?.fim) return '';
+  const h = new Date(); h.setHours(12, 0, 0, 0); const dias = Math.round((new Date(plano.fim + 'T12:00') - h) / 86400000);
+  if (dias > 7) return '';
+  const d = dataLocal(plano.fim + 'T12:00', { day: 'numeric', month: 'short' });
+  const txt = dias < 0 ? t('Seu treino venceu em {d}. Pode seguir com ele até o Igor atualizar.', { d }) : dias === 0 ? t('Seu treino vence hoje ({d}). O Igor atualiza pra você.', { d }) : t('Seu treino vai até {d}. Na virada o Igor atualiza pra você.', { d });
+  return `<div class="card" style="border:1px solid ${dias < 0 ? 'var(--warn)' : 'var(--line)'}"><b style="font-size:0.9375rem">⏳ ${txt}</b></div>`;
+}
 const expressHoje = () => db.LS.get('versaoExpress', false) === diaLocal();
 const durExpress = d => Math.max(15, Math.round((d || 40) * 0.6 / 5) * 5);
 // Regra da versão express (o Igor pode mudar aqui): mobilidade/ativação ficam iguais; cardio/HIIT do fim sai;

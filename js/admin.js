@@ -33,19 +33,24 @@ const ic = {
   seta: '<path d="m9 5 7 7-7 7"/>'
 };
 const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic[k]}</svg>`;
-let secao = 'inicio', modo = null; // seção aberta do painel; modo = o que acontece ao tocar numa aluna da lista
+let secao = 'inicio', modo = null, vtab = 'pend'; // seção aberta do painel; modo = o que acontece ao tocar numa aluna da lista
 
 export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   db = _db;
-  let alunas = [], fb = [];
+  let alunas = [], fb = [], venc = [];
   let anam = [];
-  try { [alunas, fb, anam] = await Promise.all([db.admin.alunas(), db.admin.feedbacks(), db.admin.anamneses().catch(() => [])]); } catch (e) { toast(e.message, true); }
+  try { [alunas, fb, anam, venc] = await Promise.all([db.admin.alunas(), db.admin.feedbacks(), db.admin.anamneses().catch(() => []), db.admin.vencimentos().catch(() => [])]); } catch (e) { toast(e.message, true); }
   const fichas = new Map(anam.map(x => [x.id, x]));
   const ativas = alunas.filter(a => a.ativa);
   const dia = d => { d = new Date(d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }; // dia no fuso do celular
   const treinaramHoje = ativas.filter(a => a.ultimo_treino && dia(a.ultimo_treino) === dia(Date.now())).length;
   const atencao = ativas.filter(a => a.dias_sem_treinar >= 4).sort((a, b) => b.dias_sem_treinar - a.dias_sem_treinar);
   const semResposta = fb.filter(precisa);
+  // Atualizações (igual ao Mfit): treino vencido ou vencendo em até 3 dias. Pendentes = ainda não marcou como lida.
+  const hojeD = new Date(); hojeD.setHours(12, 0, 0, 0);
+  let pendentes = [], resolvidas = [];
+  const recalcUpd = () => { const u = venc.filter(v => v.fim && alunas.find(a => a.id === v.aluna_id)?.ativa).map(v => ({ ...v, nome: alunas.find(a => a.id === v.aluna_id).nome, dias: Math.round((new Date(v.fim + 'T12:00') - hojeD) / 86400000) })).filter(v => v.dias <= 3).sort((a, b) => a.dias - b.dias); pendentes = u.filter(v => !v.visto_em); resolvidas = u.filter(v => v.visto_em); };
+  recalcUpd();
   const semTreino = alunas.filter(a => a.ativa && a.treinos_mes === 0 && a.dias_sem_treinar === 999);
   const comSaude = alunas.filter(a => alertaSaude(fichas.get(a.id)));
   let duvidas = null; // carrega quando abre
@@ -57,6 +62,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   function telaInicio() {
     return `<div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div><button class="btn ghost sm" id="out" style="width:auto">sair</button></div>
     <div class="atalhos">
+      <button class="atalho" id="a-upd"><span class="ico">${svg('treino')}${badge(pendentes.length)}</span>Atualizações</button>
       <button class="atalho" id="a-fb"><span class="ico">${svg('fb')}${badge(semResposta.length)}</span>Feedbacks</button>
       <button class="atalho" id="a-duv"><span class="ico">${svg('duv')}</span>Dúvidas</button>
       <button class="atalho" id="recado"><span class="ico">${svg('rec')}</span>Recado</button>
@@ -102,6 +108,13 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     return `${topo('Feedbacks')}<p class="muted">${semResposta.length ? pl(semResposta.length, 'feedback esperando sua resposta', 'feedbacks esperando sua resposta') + ' (em cima).' : 'Tudo respondido ✓'}</p>
     <div class="card">${ord.length ? ord.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${f.duracao_s < 60 ? "&lt;1" : Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent);padding:6px 4px">editar</button>` : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted">Nenhum feedback ainda.</p>'}</div>`;
   }
+  function telaAtualizacoes() {
+    const lista = vtab === 'pend' ? pendentes : resolvidas, dd = v => new Date(v.fim + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const quando = v => v.dias < 0 ? `venceu em ${dd(v)} (há ${pl(-v.dias, 'dia', 'dias')})` : v.dias === 0 ? `vence hoje (${dd(v)})` : `vence em ${dd(v)} (faltam ${pl(v.dias, 'dia', 'dias')})`;
+    return `${topo('Atualizações')}<p class="muted">Treinos vencidos ou que vencem em até 3 dias. Toca em Ver treino pra renovar (o novo treino já sai da lista).</p>
+    <div class="row" style="gap:8px"><button class="pill ${vtab === 'pend' ? 'on' : ''}" data-vtab="pend">Pendentes (${pendentes.length})</button><button class="pill ${vtab === 'res' ? 'on' : ''}" data-vtab="res">Resolvidas (${resolvidas.length})</button></div>
+    <div class="card">${lista.length ? lista.map(v => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(v.nome)}</b><span>${esc(v.titulo || 'Treino')} · ${quando(v)}</span></div><div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" style="width:auto" data-treino="${v.aluna_id}" data-n="${esc(v.nome)}">Ver treino</button><button class="btn ghost sm" style="width:auto" data-visto="${v.id}" data-v="${v.visto_em ? 0 : 1}">${v.visto_em ? 'Reabrir' : 'Marcar como lida'}</button></div></div>`).join('') : `<p class="muted">${vtab === 'pend' ? 'Nenhum treino vencendo agora ✓' : 'Nada resolvido ainda.'}</p>`}</div>`;
+  }
   const telaExercicios = () => `${topo('Biblioteca de exercícios')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
   const telaModelos = () => `${topo('Biblioteca de treinos')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
   function telaDuvidas() {
@@ -109,7 +122,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   }
 
   function desenhar() {
-    const corpo = { inicio: telaInicio, alunas: telaAlunas, atencao: telaAtencao, feedbacks: telaFeedbacks, duvidas: telaDuvidas, exercicios: telaExercicios, modelos: telaModelos }[secao] || telaInicio;
+    const corpo = { inicio: telaInicio, alunas: telaAlunas, atencao: telaAtencao, feedbacks: telaFeedbacks, duvidas: telaDuvidas, atualizacoes: telaAtualizacoes, exercicios: telaExercicios, modelos: telaModelos }[secao] || telaInicio;
     render(`<div class="view noTabs fx painel">${corpo()}</div>`);
     window.scrollTo(0, 0); ligar();
   }
@@ -120,7 +133,9 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     on('#volta', () => abrir('inicio'));
     on('#out', async () => { await db.logout(); S.perfil = null; secao = 'inicio'; go('entrada'); });
     on('#a-fb', () => abrir('feedbacks')); on('#t-fb', () => abrir('feedbacks'));
-    on('#a-duv', () => abrir('duvidas'));
+    on('#a-duv', () => abrir('duvidas')); on('#a-upd', () => abrir('atualizacoes'));
+    $$('[data-vtab]').forEach(b => b.onclick = () => { vtab = b.dataset.vtab; desenhar(); });
+    $$('[data-visto]').forEach(b => b.onclick = async () => { try { await db.admin.marcarVisto(b.dataset.visto, b.dataset.v === '1'); const v = venc.find(x => x.id === b.dataset.visto); if (v) v.visto_em = b.dataset.v === '1' ? new Date().toISOString() : null; recalcUpd(); desenhar(); } catch (e) { toast(e.message, true); } });
     on('#ir-alunas', () => abrir('alunas')); on('#ir-atencao', () => abrir('atencao'));
     on('#t-treino', () => abrir('alunas', 'treino')); on('#t-ficha', () => abrir('alunas', 'ficha')); on('#t-postural', () => abrir('alunas', 'postural'));
     on('#nova', () => formAluna(null, go)); on('#lote', () => formLote(go)); on('#recado', recado);
@@ -249,17 +264,24 @@ function serializar(plano) {
 }
 async function editorTreino(alunaId, nome, go) {
   const atual = await db.admin.planoDe(alunaId);
-  const mes = new Date(); mes.setDate(1); const mesStr = mes.toISOString().slice(0, 7);
+  const hojeStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  // Igual ao Mfit: início + duração = vencimento. Renovação (treino já vencido ou sem datas) começa hoje; senão mantém as datas dela.
+  const venceu = !atual?.fim || atual.fim < hojeStr;
+  const ini0 = !atual?.inicio || venceu ? hojeStr : atual.inicio;
+  const sem0 = atual?.inicio && atual?.fim && !venceu ? Math.max(1, Math.round((new Date(atual.fim) - new Date(atual.inicio)) / 604800000)) : 4;
+  const somaFim = (ini, sem) => { const d = new Date(ini + 'T12:00'); d.setDate(d.getDate() + sem * 7 - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const brDia = iso => iso ? iso.split('-').reverse().join('/') : '';
   construtor({
     db, titulo: `Treino de ${nome.split(' ')[0]}`, treinos: atual?.treinos || [], salvarTxt: 'Publicar pra aluna',
-    cabecalho: `<label class="campo">Mês do treino<input class="input" id="mes" type="month" value="${atual?.mes ? atual.mes.slice(0, 7) : mesStr}" style="max-width:200px"></label>`,
+    cabecalho: `<div class="grid2"><label class="campo">Início<input class="input" id="ini" type="date" value="${ini0}"></label><label class="campo">Duração<select class="input" id="sem">${[1, 2, 3, 4, 5, 6, 8, 12].map(n => `<option value="${n}" ${n === sem0 ? 'selected' : ''}>${n} ${n === 1 ? 'semana' : 'semanas'}</option>`).join('')}</select></label></div><p class="muted small" id="venceEm">Vence em ${brDia(somaFim(ini0, sem0))}</p>`,
     textoParaTreinos: parseTreinos, treinosParaTexto: tr => serializar({ treinos: tr.map(t => ({ ...t, exercicios: t.exercicios.map((e, j) => ({ ...e, ordem: j + 1 })) })) }),
     extras: [
       { id: 'usarLib', txt: '📚 usar da biblioteca', fn: est => escolherModelo(est) },
       { id: 'pAlib', txt: '💾 salvar na biblioteca', fn: est => salvarComoModelo(est.get(), nome) }
     ],
-    onSalvar: async treinos => { await db.admin.salvarPlano(alunaId, ($('#mes').value || mesStr) + '-01', treinos); toast(`Publicado ✓ ${treinos.length} treinos, ${treinos.reduce((n, t) => n + t.exercicios.length, 0)} exercícios`); go('admin'); }
+    onSalvar: async treinos => { const ini = $('#ini').value || hojeStr, fim = somaFim(ini, +$('#sem').value || 4); await db.admin.salvarPlano(alunaId, ini.slice(0, 7) + '-01', treinos, { inicio: ini, fim }); toast(`Publicado ✓ ${treinos.length} treinos, ${treinos.reduce((n, t) => n + t.exercicios.length, 0)} exercícios · vence em ${brDia(fim)}`); go('admin'); }
   });
+  setTimeout(() => { const f = () => { const e = $('#venceEm'); if (e) e.textContent = 'Vence em ' + brDia(somaFim($('#ini').value || hojeStr, +$('#sem').value || 4)); }; document.addEventListener('input', f); document.addEventListener('change', f); }, 50);
 }
 async function escolherModelo(est) {
   let ms = []; try { ms = await db.admin.modelos(); } catch (e) { return toast(e.message, true); }
