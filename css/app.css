@@ -423,3 +423,6 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 details.mais .rapidos{margin-top:8px}
 /* Aparelho ocupado: chamativo (laranja) mas sem competir com o ✓ da série, que é o laranja cheio */
 .btn.sm.ocup{width:100%;min-height:44px;padding:6px 10px;font-size:.9375rem;letter-spacing:.2px;background:transparent;color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+/* Esforço/nota 0–10: os 11 numa linha, o "0" e o "10" das legendas ficam embaixo dos botões certos */
+.scale{grid-template-columns:repeat(11,1fr);gap:3px}.scale button{min-height:48px;font-size:1rem}
+@media (max-width:340px){.scale{grid-template-columns:repeat(11,1fr);gap:2px}.scale button{font-size:.875rem}}
