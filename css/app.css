@@ -418,3 +418,8 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 /* Técnica do exercício (pausa, pico de contração...): sempre à vista */
 .tecnica{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:rgba(255,106,0,.12);color:#ffb27a;font-weight:600;font-size:.9375rem;line-height:1.35}
 .tecnica.mini{display:block;margin-top:4px;padding:4px 8px;font-size:.8125rem}
+/* Tela do treino: atalhos numa linha só (as séries aparecem na 1ª tela) */
+.rapidos{display:flex;gap:6px}.rapidos .btn.sm{flex:1 1 0;min-width:0;padding:6px 4px;font-size:.875rem;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details.mais .rapidos{margin-top:8px}
+/* Aparelho ocupado: chamativo (laranja) mas sem competir com o ✓ da série, que é o laranja cheio */
+.btn.sm.ocup{width:100%;min-height:44px;padding:6px 10px;font-size:.9375rem;letter-spacing:.2px;background:transparent;color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}

@@ -13,7 +13,7 @@ await p.click('#ini'); await p.waitForTimeout(600);
 const nomes=await p.$$eval('.passos button',bs=>bs.map(x=>x.textContent.trim())); console.log('pílulas:', nomes);
 if(!nomes.includes('R')) errs.push('sem pílula R');
 const idx=nomes.indexOf('R'); await p.click(`.passos button >> nth=${idx}`); await p.waitForTimeout(400);
-const h=await p.innerText('h1'); console.log('passo R:', h, '|', (await p.innerText('.bloco')).replace(/\s+/g,' ').slice(0,200));
+const h=await p.innerText('.bloco .row'); /* "Reconhecimento" agora é uma etiqueta em cima do nome (crítica 30/10: o "·" quebrava sozinho) */ console.log('passo R:', h, '|', (await p.innerText('.bloco')).replace(/\s+/g,' ').slice(0,200));
 if(!/reconhecimento/i.test(h)) errs.push('título sem reconhecimento');
 // o exercício válido vem logo depois, com as 3 séries
 await p.click(`.passos button >> nth=${idx+1}`); await p.waitForTimeout(400); console.log('próximo:', await p.innerText('h1'), (await p.$$('.set')).length,'séries');
