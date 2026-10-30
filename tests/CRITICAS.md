@@ -386,3 +386,7 @@ Pendente:
 - [ ] Publicar de novo a função `push` (texto novo do "Terminou o treino?"). Sem publicar, o aviso não vai pra treino pausado, mas o texto antigo continua.
 - [ ] SUSPEITA (sem iPhone aqui): compartilhar o story no iPhone recusado por demora; as fontes agora carregam antes, falta testar num iPhone de verdade.
 - [ ] Seguem: migração 011 (se ainda não rodou), publicar função assistente, WhatsApp, vídeos, fotos dos prêmios, drop set por queda, capa do PDF clara, i18n por idioma, link definitivo da Kiwify, responder o Igor dentro do app.
+
+### 30/10 noite — lançamento (SW v48)
+- [x] Juntadas no main as correções da crítica (proxima) e o programa Hyrox (hyrox); conflito no app.js resolvido mantendo os dois (card Hyrox nas abas + rótulo "Circuito" com o texto novo de "Pausar treino"). Testes hyrox, sessao-critica, fluxo-treino e regressao ok.
+- [ ] Seguem no servidor: publicar funções push e assistente, migração 011 (se não rodou).
