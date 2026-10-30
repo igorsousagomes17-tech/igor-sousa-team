@@ -170,6 +170,7 @@ const D = {
   "{x} ocupado?": ["{x} busy?", "¿{x} ocupado?", "{x} 被占用？", "{x} व्यस्त है?", "{x} occupé ?"],
   "Faz um desses no lugar, só hoje:": ["Do one of these instead, today only:", "Haz uno de estos en su lugar, solo hoy:", "今天改做下面其中一个：", "आज इनमें से कोई एक करें:", "Fais l'un de ceux-ci à la place, juste aujourd'hui :"],
   "Sem equivalente cadastrado. Faz outro exercício e volta nesse depois.": ["No equivalent set. Do another exercise and come back to this one.", "Sin equivalente cargado. Haz otro ejercicio y vuelve a este después.", "没有设置替代动作。先做别的动作，稍后再回来。", "कोई विकल्प नहीं है। दूसरा व्यायाम करें और बाद में इस पर लौटें।", "Pas d'équivalent défini. Fais un autre exercice et reviens à celui-ci après."],
+  "Aparelho ocupado? Toca aqui pra trocar": ["Machine busy? Tap here to swap", "¿Aparato ocupado? Toca aquí para cambiar", "器械被占用？点这里替换", "मशीन व्यस्त है? बदलने के लिए यहाँ दबाएँ", "Appareil occupé ? Touche ici pour changer"],
   "Descartar treino?": ["Discard workout?", "¿Descartar el entreno?", "放弃这次训练？", "वर्कआउट हटा दें?", "Supprimer la séance ?"],
   "O que você marcou nesse treino vai ser apagado.": ["Everything you logged in this workout will be deleted.", "Lo que marcaste en este entreno se va a borrar.", "这次训练里记录的内容会被删除。", "इस वर्कआउट में जो मार्क किया है, वह मिट जाएगा।", "Ce que tu as noté dans cette séance sera effacé."],
   "em breve": ["coming soon", "próximamente", "即将推出", "जल्द आ रहा है", "bientôt"],
