@@ -389,4 +389,4 @@ Pendente:
 
 ### 30/10 noite — lançamento (SW v48)
 - [x] Juntadas no main as correções da crítica (proxima) e o programa Hyrox (hyrox); conflito no app.js resolvido mantendo os dois (card Hyrox nas abas + rótulo "Circuito" com o texto novo de "Pausar treino"). Testes hyrox, sessao-critica, fluxo-treino e regressao ok.
-- [ ] Seguem no servidor: publicar funções push e assistente, migração 011 (se não rodou).
+- [x] Servidor conferido 30/10 20:35: migração 011 (só treino completo pontua) rodada pelo Igor; funções push, assistente e strava já iguais ao repositório.
