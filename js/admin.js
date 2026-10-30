@@ -1,6 +1,6 @@
 // Painel do Igor
 import { $, $$, esc, toast, overlay, closeOverlay, fmtData } from './ui.js';
-import { construtor, montarExercicios, montarModelos } from './biblioteca.js';
+import { construtor, montarExercicios, montarModelos, hojeStr as hojeIso, somaFim, somaDias, brDia, camposDatas, ligarDatas } from './biblioteca.js';
 
 const C = window.ISTEAM_CONFIG;
 const msgInativa = (nome, dias) => `Oi ${nome.split(' ')[0]}! Vi aqui que faz ${dias} dias que você não treina. Tá acontecendo alguma coisa? Bora voltar hoje? Me fala o que tá precisando 💪`;
@@ -33,13 +33,13 @@ const ic = {
   seta: '<path d="m9 5 7 7-7 7"/>'
 };
 const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic[k]}</svg>`;
-let secao = 'inicio', modo = null, vtab = 'pend'; // seção aberta do painel; modo = o que acontece ao tocar numa aluna da lista
+let secao = 'inicio', modo = null, vtab = 'pend', filtroA = 'todas'; // seção aberta do painel; modo = o que acontece ao tocar numa aluna da lista; filtroA = pílula da lista de alunas
 
 export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   db = _db;
-  let alunas = [], fb = [], venc = [];
+  let alunas = [], fb = [], venc = [], vencOk = true;
   let anam = [];
-  try { [alunas, fb, anam, venc] = await Promise.all([db.admin.alunas(), db.admin.feedbacks(), db.admin.anamneses().catch(() => []), db.admin.vencimentos().catch(() => [])]); } catch (e) { toast(e.message, true); }
+  try { [alunas, fb, anam, venc] = await Promise.all([db.admin.alunas(), db.admin.feedbacks(), db.admin.anamneses().catch(() => []), db.admin.vencimentos().catch(() => { vencOk = false; return []; })]); } catch (e) { toast(e.message, true); }
   const fichas = new Map(anam.map(x => [x.id, x]));
   const ativas = alunas.filter(a => a.ativa);
   const dia = d => { d = new Date(d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }; // dia no fuso do celular
@@ -51,16 +51,23 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   let pendentes = [], resolvidas = [];
   const recalcUpd = () => { const u = venc.filter(v => v.fim && alunas.find(a => a.id === v.aluna_id)?.ativa).map(v => ({ ...v, nome: alunas.find(a => a.id === v.aluna_id).nome, dias: Math.round((new Date(v.fim + 'T12:00') - hojeD) / 86400000) })).filter(v => v.dias <= 3).sort((a, b) => a.dias - b.dias); pendentes = u.filter(v => !v.visto_em); resolvidas = u.filter(v => v.visto_em); };
   recalcUpd();
-  const semTreino = alunas.filter(a => a.ativa && a.treinos_mes === 0 && a.dias_sem_treinar === 999);
+  // Plano de cada aluna (o último, com o vencimento). Sem a lista de planos (erro), cai no jeito antigo: nunca treinou e nada no mês
+  const planoDa = new Map(venc.map(v => [v.aluna_id, v]));
+  const diasPraVencer = a => { const f = planoDa.get(a.id)?.fim; return f ? Math.round((new Date(f + 'T12:00') - hojeD) / 86400000) : null; };
+  const semPlano = a => vencOk ? !planoDa.has(a.id) : a.treinos_mes === 0 && a.dias_sem_treinar === 999;
+  const semTreino = alunas.filter(a => a.ativa && semPlano(a));
+  // Filtros da lista (pra 130 alunas não ficar só na ordem alfabética). Personalizado só aparece se alguma tiver esse plano.
+  const FILTROS = [['todas', 'Todas', () => true], ['vencendo', 'Vencendo', a => a.ativa && diasPraVencer(a) != null && diasPraVencer(a) <= 7], ['parada', 'Sem treinar 7+ dias', a => a.ativa && a.dias_sem_treinar >= 7], ['semplano', 'Sem plano', a => a.ativa && semPlano(a)], ...(alunas.some(a => a.plano === 'personalizado') ? [['personalizado', 'Personalizado', a => a.plano === 'personalizado']] : [])];
   const comSaude = alunas.filter(a => alertaSaude(fichas.get(a.id)));
   let duvidas = null; // carrega quando abre
+  let recarregar = false;
 
   const badge = n => n ? `<span class="badge">${n > 99 ? '99+' : n}</span>` : '';
   const topo = titulo => `<div class="topbar"><button class="back" id="volta" aria-label="Voltar pro início do painel">‹ ${titulo}</button></div>`;
   const MODOS = { treino: ['Montar treino', 'Toca na aluna pra abrir o treino dela'], ficha: ['Anamneses', 'Toca na aluna pra ver a anamnese'], postural: ['Avaliação postural', 'Toca na aluna pra avaliar pelas fotos'] };
 
   function telaInicio() {
-    return `<div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div><button class="btn ghost sm" id="out" style="width:auto">sair</button></div>
+    return `<div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div></div>
     <div class="atalhos">
       <button class="atalho" id="a-upd"><span class="ico">${svg('treino')}${badge(pendentes.length)}</span>Atualizações</button>
       <button class="atalho" id="a-fb"><span class="ico">${svg('fb')}${badge(semResposta.length)}</span>Feedbacks</button>
@@ -81,23 +88,28 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
         <button class="tile" id="t-treino"><span class="ico">${svg('treino')}</span><b>Montar treino da aluna</b></button>
         <button class="tile" id="t-ficha"><span class="ico">${svg('anam')}</span><b>Anamneses</b>${comSaude.length ? `<span class="pill warn" style="align-self:flex-start">${comSaude.length} ⚠ saúde</span>` : ''}</button>
         <button class="tile" id="t-postural"><span class="ico">${svg('post')}</span><b>Avaliação postural</b></button>
-        <button class="tile" id="t-fb"><span class="ico">${svg('fb')}</span><b>Feedbacks dos treinos</b>${semResposta.length ? `<span class="pill warn" style="align-self:flex-start">${semResposta.length} pra responder</span>` : ''}</button>
+        <button class="tile" id="t-fb"><span class="ico">${svg('fb')}</span><b>Feedbacks dos treinos</b>${semResposta.length ? `<span class="pill warn quebra" style="align-self:flex-start;max-width:100%">${semResposta.length} pra responder</span>` : ''}</button>
       </div>
-      ${semTreino.length ? `<p class="muted small mt">${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino no app.</p>` : ''}
-    </section>`;
+      ${semTreino.length ? `<button class="linhacard mt" id="ir-semplano"><span>${svg('alerta')}<b>${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino</b></span><span class="muted">montar ${svg('seta')}</span></button>` : ''}
+    </section>
+    <button class="btn ghost sm" id="out" style="margin:8px 0 24px">Sair do painel</button>`;
   }
 
   function linhaAluna(a) {
     const fi = fichas.get(a.id), attr = modo === 'treino' ? `data-treino="${a.id}" data-n="${esc(a.nome)}"` : modo === 'ficha' ? (fi ? `data-ficha="${a.id}"` : `data-semficha="${a.id}"`) : modo === 'postural' ? `data-postural="${a.id}"` : `data-aluna="${a.id}"`;
-    const sub = modo === 'ficha' && !fi ? 'ainda não respondeu a anamnese' : `${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : a.dias_sem_treinar === 0 ? 'treinou hoje' : pl(a.dias_sem_treinar, 'dia', 'dias') + ' sem treinar'} · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês`;
-    return `<button class="aluna" ${attr} data-nome="${esc(a.nome.toLowerCase())}"><span class="av">${esc(a.nome.trim()[0] || '?').toUpperCase()}</span><span class="t"><b>${esc(a.nome)}</b><span>${sub}</span><span class="row wrap" style="gap:4px">${a.plano === 'personalizado' ? '<span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : '<span class="pill">pausada</span>'}${alertaSaude(fi) ? '<span class="pill warn">⚠ saúde</span>' : ''}</span></span>${svg('seta')}</button>`;
+    const dv = diasPraVencer(a), fim = planoDa.get(a.id)?.fim, venceTxt = !vencOk ? '' : semPlano(a) ? ' · sem plano' : fim ? ` · ${dv < 0 ? 'venceu' : 'vence'} ${brDia(fim).slice(0, 5)}` : '';
+    const sub = modo === 'ficha' && !fi ? 'ainda não respondeu a anamnese' : `${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : a.dias_sem_treinar === 0 ? 'treinou hoje' : pl(a.dias_sem_treinar, 'dia', 'dias') + ' sem treinar'} · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês${venceTxt}`;
+    return `<button class="aluna" ${attr} data-nome="${esc(a.nome.toLowerCase())}"><span class="av">${esc(a.nome.trim()[0] || '?').toUpperCase()}</span><span class="t"><b>${esc(a.nome)}</b><span>${sub}</span><span class="row wrap" style="gap:4px">${a.plano === 'personalizado' ? '<span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : '<span class="pill">pausada</span>'}${a.ativa && dv != null && dv <= 7 ? `<span class="pill warn">${dv < 0 ? 'vencido' : dv === 0 ? 'vence hoje' : 'vencendo'}</span>` : ''}${alertaSaude(fi) ? '<span class="pill warn">⚠ saúde</span>' : ''}</span></span>${svg('seta')}</button>`;
   }
   function telaAlunas() {
     const [tit, dica] = MODOS[modo] || ['Alunas', ''];
-    const lista = [...alunas].sort((a, b) => (b.ativa - a.ativa) || a.nome.localeCompare(b.nome, 'pt-BR'));
+    const [, , fn] = FILTROS.find(f => f[0] === filtroA) || FILTROS[0];
+    // Vencendo: quem vence primeiro em cima. Os outros: ativas primeiro, alfabética
+    const lista = alunas.filter(fn).sort((a, b) => (filtroA === 'vencendo' ? diasPraVencer(a) - diasPraVencer(b) : 0) || (b.ativa - a.ativa) || a.nome.localeCompare(b.nome, 'pt-BR'));
     return `${topo(tit)}${dica ? `<p class="muted">${dica}</p>` : ''}
     <input class="input" id="busca" placeholder="Buscar aluna" autocomplete="off">
-    <div id="lista" class="lista">${lista.map(linhaAluna).join('') || '<p class="muted mt">Nenhuma aluna ainda.</p>'}</div>`;
+    <div class="chips" role="group" aria-label="Filtrar alunas">${FILTROS.map(([k, txt, f]) => `<button class="pill big-pill ${k === filtroA ? 'on' : ''}" style="min-height:44px" data-fa="${k}" aria-pressed="${k === filtroA}">${txt} (${alunas.filter(f).length})</button>`).join('')}</div>
+    <div id="lista" class="lista">${lista.map(linhaAluna).join('') || `<p class="muted mt">${alunas.length ? 'Nenhuma aluna nesse filtro.' : 'Nenhuma aluna ainda.'}</p>`}</div>`;
   }
   function telaAtencao() {
     return `${topo('Precisam de atenção')}<p class="muted">Ativas há 4 dias ou mais sem treinar. Toca em WhatsApp e a conversa abre com a mensagem pronta. Você revisa e envia.</p>
@@ -110,10 +122,10 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   }
   function telaAtualizacoes() {
     const lista = vtab === 'pend' ? pendentes : resolvidas, dd = v => new Date(v.fim + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    const quando = v => v.dias < 0 ? `venceu em ${dd(v)} (há ${pl(-v.dias, 'dia', 'dias')})` : v.dias === 0 ? `vence hoje (${dd(v)})` : `vence em ${dd(v)} (faltam ${pl(v.dias, 'dia', 'dias')})`;
-    return `${topo('Atualizações')}<p class="muted">Treinos vencidos ou que vencem em até 3 dias. Toca em Ver treino pra renovar (o novo treino já sai da lista).</p>
-    <div class="row" style="gap:8px"><button class="pill ${vtab === 'pend' ? 'on' : ''}" data-vtab="pend">Pendentes (${pendentes.length})</button><button class="pill ${vtab === 'res' ? 'on' : ''}" data-vtab="res">Resolvidas (${resolvidas.length})</button></div>
-    <div class="card">${lista.length ? lista.map(v => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(v.nome)}</b><span>${esc(v.titulo || 'Treino')} · ${quando(v)}</span></div><div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" style="width:auto" data-treino="${v.aluna_id}" data-n="${esc(v.nome)}">Ver treino</button><button class="btn ghost sm" style="width:auto" data-visto="${v.id}" data-v="${v.visto_em ? 0 : 1}">${v.visto_em ? 'Reabrir' : 'Marcar como lida'}</button></div></div>`).join('') : `<p class="muted">${vtab === 'pend' ? 'Nenhum treino vencendo agora ✓' : 'Nada resolvido ainda.'}</p>`}</div>`;
+    const quando = v => v.dias < 0 ? `venceu em ${dd(v)} (há ${pl(-v.dias, 'dia', 'dias')})` : v.dias === 0 ? `vence hoje (${dd(v)})` : `vence em ${dd(v)} (${v.dias === 1 ? 'falta 1 dia' : `faltam ${v.dias} dias`})`;
+    return `${topo('Atualizações')}<p class="muted">Treinos vencidos ou que vencem em até 3 dias. Toca em Renovar: o novo treino começa no dia seguinte ao vencimento e já sai da lista.</p>
+    <div class="row" style="gap:8px"><button class="pill big-pill ${vtab === 'pend' ? 'on' : ''}" data-vtab="pend">Pendentes (${pendentes.length})</button><button class="pill big-pill ${vtab === 'res' ? 'on' : ''}" data-vtab="res">Resolvidas (${resolvidas.length})</button></div>
+    <div class="card">${lista.length ? lista.map(v => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(v.nome)}</b><span>${esc(v.titulo || 'Treino')} · ${quando(v)}</span></div><div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" style="flex:1;white-space:nowrap" data-treino="${v.aluna_id}" data-n="${esc(v.nome)}" data-renova="1">Renovar</button><button class="btn ghost sm" style="flex:1;white-space:nowrap" data-visto="${v.id}" data-v="${v.visto_em ? 0 : 1}">${v.visto_em ? 'Reabrir' : 'Já resolvi'}</button></div></div>`).join('') : `<p class="muted">${vtab === 'pend' ? 'Nenhum treino vencendo agora ✓' : 'Nada resolvido ainda.'}</p>`}</div>`;
   }
   const telaExercicios = () => `${topo('Biblioteca de exercícios')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
   const telaModelos = () => `${topo('Biblioteca de treinos')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
@@ -130,26 +142,28 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
 
   function ligar() {
     const on = (sel, fn) => { const e = $(sel); if (e) e.onclick = fn; };
-    on('#volta', () => abrir('inicio'));
+    on('#volta', () => { if (recarregar) { recarregar = false; secao = 'inicio'; modo = null; go('admin'); } else abrir('inicio'); }); // mandou treino pra várias: recarrega os vencimentos
+    $$('[data-fa]').forEach(b => b.onclick = () => { filtroA = b.dataset.fa; const q = $('#busca')?.value || ''; desenhar(); const bu = $('#busca'); if (bu && q) { bu.value = q; bu.oninput(); } });
+    on('#ir-semplano', () => { filtroA = 'semplano'; abrir('alunas', 'treino'); });
     on('#out', async () => { await db.logout(); S.perfil = null; secao = 'inicio'; go('entrada'); });
     on('#a-fb', () => abrir('feedbacks')); on('#t-fb', () => abrir('feedbacks'));
     on('#a-duv', () => abrir('duvidas')); on('#a-upd', () => abrir('atualizacoes'));
     $$('[data-vtab]').forEach(b => b.onclick = () => { vtab = b.dataset.vtab; desenhar(); });
     $$('[data-visto]').forEach(b => b.onclick = async () => { try { await db.admin.marcarVisto(b.dataset.visto, b.dataset.v === '1'); const v = venc.find(x => x.id === b.dataset.visto); if (v) v.visto_em = b.dataset.v === '1' ? new Date().toISOString() : null; recalcUpd(); desenhar(); } catch (e) { toast(e.message, true); } });
-    on('#ir-alunas', () => abrir('alunas')); on('#ir-atencao', () => abrir('atencao'));
-    on('#t-treino', () => abrir('alunas', 'treino')); on('#t-ficha', () => abrir('alunas', 'ficha')); on('#t-postural', () => abrir('alunas', 'postural'));
+    on('#ir-alunas', () => { filtroA = 'todas'; abrir('alunas'); }); on('#ir-atencao', () => abrir('atencao'));
+    on('#t-treino', () => { filtroA = 'todas'; abrir('alunas', 'treino'); }); on('#t-ficha', () => { filtroA = 'todas'; abrir('alunas', 'ficha'); }); on('#t-postural', () => { filtroA = 'todas'; abrir('alunas', 'postural'); });
     on('#nova', () => formAluna(null, go)); on('#lote', () => formLote(go)); on('#recado', recado);
     const bu = $('#busca'); if (bu) bu.oninput = () => { const q = bu.value.toLowerCase().trim(); $$('#lista .aluna').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
     $$('[data-aluna]').forEach(b => b.onclick = () => fichaAluna(alunas.find(x => x.id === b.dataset.aluna)));
     $$('[data-ficha]').forEach(b => b.onclick = () => fichaAnamnese(fichas.get(b.dataset.ficha)));
     $$('[data-semficha]').forEach(b => b.onclick = () => toast('Ela ainda não respondeu a anamnese. Ela vê o aviso quando entra no app.'));
     $$('[data-postural]').forEach(b => b.onclick = () => avaliacaoPostural(alunas.find(x => x.id === b.dataset.postural)));
-    $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go));
+    $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go, { renovar: b.dataset.renova === '1' }));
     $$('[data-resp],[data-edita]').forEach(b => b.onclick = () => responder(b));
     if (secao === 'duvidas') carregarDuvidas();
     on('#t-exercicios', () => abrir('exercicios')); on('#t-modelos', () => abrir('modelos'));
     if (secao === 'exercicios') montarExercicios($('#bib'), db);
-    if (secao === 'modelos') montarModelos($('#bib'), db);
+    if (secao === 'modelos') montarModelos($('#bib'), db, { aoEnviar: () => { recarregar = true; } });
   }
 
   async function carregarDuvidas() {
@@ -262,18 +276,21 @@ function parseTreinos(txt) {
 function serializar(plano) {
   return plano.treinos.map(t => `# ${t.letra} | ${t.nome} | ${t.duracao_min || 40}\n` + t.exercicios.sort((a, b) => a.ordem - b.ordem).map(e => [e.nome, e.series, e.reps, e.descanso_s, e.video_url || '', e.dica || '', e.alternativa || '', e.biset_com ? 'bi ' + e.biset_com : ''].join(' | ').replace(/( \| )+$/, '')).join('\n')).join('\n\n');
 }
-async function editorTreino(alunaId, nome, go) {
+async function editorTreino(alunaId, nome, go, { renovar = false } = {}) {
   const atual = await db.admin.planoDe(alunaId);
-  const hojeStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
-  // Igual ao Mfit: início + duração = vencimento. Renovação (treino já vencido ou sem datas) começa hoje; senão mantém as datas dela.
+  const hojeStr = hojeIso();
+  // Igual ao Mfit: início + duração = vencimento. Treino já vencido ou sem datas começa hoje; senão mantém as datas dela.
+  // Vindo das Atualizações (renovar): começa no dia seguinte ao vencimento, com a mesma duração do anterior.
+  // (Se venceu há mais de 7 dias, começa hoje: não faz sentido um treino novo que já nasce com uma semana gasta.)
   const venceu = !atual?.fim || atual.fim < hojeStr;
-  const ini0 = !atual?.inicio || venceu ? hojeStr : atual.inicio;
-  const sem0 = atual?.inicio && atual?.fim && !venceu ? Math.max(1, Math.round((new Date(atual.fim) - new Date(atual.inicio)) / 604800000)) : 4;
-  const somaFim = (ini, sem) => { const d = new Date(ini + 'T12:00'); d.setDate(d.getDate() + sem * 7 - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
-  const brDia = iso => iso ? iso.split('-').reverse().join('/') : '';
+  const durAnt = atual?.inicio && atual?.fim ? Math.max(1, Math.round((new Date(atual.fim) - new Date(atual.inicio)) / 604800000)) : 4;
+  const depois = atual?.fim ? somaDias(atual.fim, 1) : null;
+  const ini0 = renovar && depois ? (depois < somaDias(hojeStr, -7) ? hojeStr : depois) : !atual?.inicio || venceu ? hojeStr : atual.inicio;
+  const sem0 = [1, 2, 3, 4, 5, 6, 8, 12].reduce((m, n) => Math.abs(n - durAnt) < Math.abs(m - durAnt) ? n : m, 4); // o select só tem essas durações
+  const sem0b = renovar || !venceu ? sem0 : 4;
   construtor({
     db, titulo: `Treino de ${nome.split(' ')[0]}`, treinos: atual?.treinos || [], salvarTxt: 'Publicar pra aluna',
-    cabecalho: `<div class="grid2"><label class="campo">Início<input class="input" id="ini" type="date" value="${ini0}"></label><label class="campo">Duração<select class="input" id="sem">${[1, 2, 3, 4, 5, 6, 8, 12].map(n => `<option value="${n}" ${n === sem0 ? 'selected' : ''}>${n} ${n === 1 ? 'semana' : 'semanas'}</option>`).join('')}</select></label></div><p class="muted small" id="venceEm">Vence em ${brDia(somaFim(ini0, sem0))}</p>`,
+    cabecalho: camposDatas(ini0, sem0b) + (renovar && depois ? `<p class="muted small">Renovação: o anterior vence em ${brDia(atual.fim)}.</p>` : ''),
     textoParaTreinos: parseTreinos, treinosParaTexto: tr => serializar({ treinos: tr.map(t => ({ ...t, exercicios: t.exercicios.map((e, j) => ({ ...e, ordem: j + 1 })) })) }),
     extras: [
       { id: 'usarLib', txt: '📚 usar da biblioteca', fn: est => escolherModelo(est) },
@@ -281,7 +298,7 @@ async function editorTreino(alunaId, nome, go) {
     ],
     onSalvar: async treinos => { const ini = $('#ini').value || hojeStr, fim = somaFim(ini, +$('#sem').value || 4); await db.admin.salvarPlano(alunaId, ini.slice(0, 7) + '-01', treinos, { inicio: ini, fim }); toast(`Publicado ✓ ${treinos.length} treinos, ${treinos.reduce((n, t) => n + t.exercicios.length, 0)} exercícios · vence em ${brDia(fim)}`); go('admin'); }
   });
-  setTimeout(() => { const f = () => { const e = $('#venceEm'); if (e) e.textContent = 'Vence em ' + brDia(somaFim($('#ini').value || hojeStr, +$('#sem').value || 4)); }; document.addEventListener('input', f); document.addEventListener('change', f); }, 50);
+  ligarDatas($('#mt')); // escuta no pop-up do editor (antes somava um listener no document a cada abertura)
 }
 async function escolherModelo(est) {
   let ms = []; try { ms = await db.admin.modelos(); } catch (e) { return toast(e.message, true); }
