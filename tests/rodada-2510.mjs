@@ -117,7 +117,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   ok(/Agachamento búlgaro/.test(await txt(p, '.view')), 'programa extra lista os exercícios antes de começar');
   await p.click('.tabs [data-go="pontos"]'); await espera(p, 600); const pv = await txt(p, '.view');
   ok(!/pode trocar!/.test(pv) && /pts pra/.test(pv), 'pontos dizem quanto falta pro próximo prêmio sem "pode trocar!" em todos');
-  await abrirTreino(p, 'A'); await p.click('.rest.tm'); await espera(p, 500); await p.click('#rest-skip'); await espera(p, 600); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 600); } await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await abrirTreino(p, 'A'); await p.click('.rest.tm'); await espera(p, 500); await p.click('#rest-skip'); await espera(p, 600); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 600); } for (let j = 0; j < 14 && await p.$('#sw'); j++) { await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 700); } } /* termina o treino inteiro: card de treino incompleto não tem story (crítica 30/10) */ await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
   const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#share'); const d = await dl;
   ok(d && /\.jpg$/.test(d.suggestedFilename()), `imagem do story em JPEG (${d?.suggestedFilename()})`);
   await ctx.close(); }

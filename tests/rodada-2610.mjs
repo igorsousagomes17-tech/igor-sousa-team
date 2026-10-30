@@ -88,7 +88,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
 
 // 7. Story: compartilhar que falha (não foi ela que cancelou) baixa a imagem
 { const { ctx, p } = await nova(); await p.addInitScript(() => { navigator.canShare = () => true; navigator.share = async () => { const e = new Error('x'); e.name = 'NotAllowedError'; throw e; }; });
-  await login(p); await abrirTreino(p, 'C'); await p.click('#sw'); await espera(p, 400); await p.click('#q-s'); await espera(p, 700); await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await login(p); await abrirTreino(p, 'C'); await p.click('#sw'); await espera(p, 400); await p.click('#q-s'); await espera(p, 700); for (let j = 0; j < 14 && await p.$('#sw'); j++) { await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 700); } } /* termina o treino inteiro: card de treino incompleto não tem story (crítica 30/10) */ await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
   const dl = p.waitForEvent('download', { timeout: 8000 }).catch(() => null); await p.click('#share'); ok(!!(await dl), 'compartilhar falhou: a imagem é baixada'); await ctx.close(); }
 
 // 8. Painel: responder mostra o que ela escreveu; parou no meio aparece; ficha da anamnese

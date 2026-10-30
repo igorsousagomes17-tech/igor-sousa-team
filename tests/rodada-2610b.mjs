@@ -51,7 +51,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   await p.click('#pular'); await espera(p, 300); // bi-set Smith (pirâmide) + Goblet
   // fora de ordem: Goblet (A2) antes do Smith (A1) → o descanso diz que a próxima é o Smith série 1
   await p.click('.set[data-i="2"][data-k="0"] .rest'); await espera(p, 600);
-  ok(/Agachamento Smith · série 1/i.test(await txt(p, '#rest-p')), `marcou o A2 antes: descanso aponta a série 1 do Smith (${await txt(p, '#rest-p')})`);
+  ok(/Agachamento Smith · série 1|série 1 de 3 · Agachamento Smith/i.test(await txt(p, '#rest-p')), `marcou o A2 antes: descanso aponta a série 1 do Smith (${await txt(p, '#rest-p')})`);
   await fecharDescanso(p);
   for (const [k, kg, r] of [[0, '22', '12'], [1, '25', '10'], [2, '29', '3']]) { await p.fill(`.set[data-i="1"][data-k="${k}"] input[data-f="kg"]`, kg); await p.fill(`.set[data-i="1"][data-k="${k}"] input[data-f="reps"]`, r); await p.click(`.set[data-i="1"][data-k="${k}"] .rest`); await espera(p, 500); await fecharDescanso(p); }
   await terminar(p); const v = await txt(p, '.view');
