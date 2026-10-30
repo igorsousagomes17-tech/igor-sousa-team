@@ -273,8 +273,8 @@ const EQUIV = [
   [/supino inclinado/i, ['Supino inclinado articulado', 'Supino inclinado com halteres', 'Flexão de braço com pés elevados']],
   [/supino|peitoral|chest press/i, ['Supino articulado (máquina)', 'Supino com halteres', 'Flexão de braço']],
   [/crucifixo|voador|peck|crossover/i, ['Voador (peck deck)', 'Crossover na polia', 'Crucifixo com halteres']],
-  [/leg press|leg 45/i, ['Hack machine', 'Agachamento no Smith', 'Agachamento goblet']],
-  [/extensora/i, ['Leg press', 'Agachamento no Smith', 'Afundo']],
+  [/leg press|leg 45/i, ['Hack machine', 'Agachamento no Smith', 'Agachamento goblet', 'Agachamento livre']],
+  [/extensora/i, ['Leg press', 'Agachamento no Smith', 'Afundo', 'Agachamento livre', 'Extensão de joelho com caneleira']],
   [/flexora/i, ['Flexora em pé', 'Flexora sentada', 'Stiff com halteres']],
   [/hack/i, ['Leg press 45', 'Agachamento no Smith', 'Agachamento goblet']],
   [/smith|agachamento/i, ['Hack machine', 'Leg press 45', 'Agachamento goblet']],
@@ -290,10 +290,22 @@ const EQUIV = [
   [/afundo|passada|b[uú]lgaro/i, ['Passada com halteres', 'Agachamento no Smith', 'Agachamento sumô com halter']],
   [/stiff|terra|romeno/i, ['Stiff no Smith', 'Stiff com halteres', 'Bom dia com halter']],
 ];
+// Família do exercício: sinônimos viram a mesma chave (Agachamento hack = Hack machine; búlgaro = afundo = passada)
+export function familia(n) {
+  const s = String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\(.*?\)/g, ' ');
+  if (/panturrilha|gemeos/.test(s)) return 'panturrilha';
+  if (/hack/.test(s)) return 'hack';
+  if (/leg ?press|leg 45|prensa/.test(s)) return 'legpress';
+  if (/bulgaro|afundo|passada|lunge/.test(s)) return 'afundo';
+  if (/goblet/.test(s)) return 'goblet';
+  if (/smith/.test(s)) return 'smith:' + (/stiff|terra/.test(s) ? 'stiff' : /supino/.test(s) ? 'supino' : 'agach');
+  return s.replace(/\b(com|na|no|nos|de|da|do|em|e|o|a)\b/g, ' ').replace(/\s+/g, ' ').trim();
+}
 export function equivalentes(nome, alternativa, original, jaNoTreino = []) {
   const base = original || nome, tem = new Set([nome, ...jaNoTreino].map(x => String(x).toLowerCase()));
-  const lista = [alternativa, ...((EQUIV.find(([r]) => r.test(base)) || [])[1] || [])].filter(Boolean);
-  const vistos = new Set(), out = [];
-  for (const x of lista) { const k = x.toLowerCase(); if (tem.has(k) || vistos.has(k)) continue; vistos.add(k); out.push(x); if (out.length === 2) break; }
+  // a alternativa do Igor vale como ele escreveu; as genéricas não repetem o exercício de agora (nem sinônimo dele) nem o que já está no treino
+  const fams = new Set([nome, original, ...jaNoTreino].filter(Boolean).map(familia)), vistos = new Set(), out = [];
+  if (alternativa && !tem.has(alternativa.toLowerCase())) { out.push(alternativa); vistos.add(familia(alternativa)); }
+  for (const x of (EQUIV.find(([r]) => r.test(base)) || [])[1] || []) { if (out.length === 2) break; const f = familia(x); if (fams.has(f) || vistos.has(f)) continue; vistos.add(f); out.push(x); }
   return out;
 }
