@@ -1110,9 +1110,9 @@ routes.card = async (arg) => { try { ['800 54px "Barlow Condensed"', '500 30px B
   <div class="share"><div class="row between"><div class="logo sm">IGOR SOUSA <b>TEAM</b></div><span class="pill">${data}</span></div>
     <div><div class="logo" style="font-size:2.5rem">${d.ex === 0 || d.completo === false ? t('Treino<br>registrado') : t('Treino<br>feito')} <b>✓</b></div><div class="row wrap" style="gap:6px 18px;margin-top:14px"><div class="big" style="font-size:1.875rem">${d.seg != null && d.seg < 60 ? '&lt;1' : d.min}<small> ${t('min')}</small></div>${d.kcal ? `<div class="big" style="font-size:1.875rem">~${num(d.kcal)}<small> kcal</small></div>` : ''}${d.ex === 0 && d.series ? `<div class="big" style="font-size:1.875rem">${d.series}<small> ${tp(d.series, 'série', 'séries')}</small></div>` : `<div class="big" style="font-size:1.875rem">${d.completo === false && d.total ? `${d.ex}/${d.total}` : d.ex}<small> ${tp(d.completo === false && d.total ? d.total : d.ex, 'exercício', 'exercícios')}</small></div>`}<div class="big" style="font-size:1.875rem;color:var(--accent)">🔥${st.semanas}<small> ${tp(st.semanas, 'semana seguida', 'semanas seguidas')}</small></div></div>
     <p class="muted mt small">${esc(primeiroNome(S.perfil.nome))} · ${esc(nomeCurto(d.titulo))} · ${esc(C.INSTAGRAM)}</p></div></div>
-  ${d.recordes?.length ? `<div class="card" style="border:1px solid var(--accent)"><b>🏆 ${tp(d.recordes.length, 'Recorde!', 'Recordes!')}</b><p class="muted">${esc(d.recordes.join(' · '))} · ${t('mais do que da última vez')}</p></div>` : ''}
-  <div class="row"><button class="btn sm" style="flex:1" id="share">${t('Postar no story')}</button><button class="btn ghost sm" style="flex:1" data-go="evolucao">${t('Minha evolução')}</button></div>
-  <button class="btn ghost sm" id="shareFoto">📸 ${t('Story com a sua foto de fundo')}</button>
+  ${d.recordes?.length && d.completo !== false ? `<div class="card" style="border:1px solid var(--accent)"><b>🏆 ${tp(d.recordes.length, 'Recorde!', 'Recordes!')}</b><p class="muted">${esc(d.recordes.join(' · '))} · ${t('mais do que da última vez')}</p></div>` : ''}
+  ${d.completo === false ? `<button class="btn ghost sm" data-go="evolucao">${t('Minha evolução')}</button>` : `<div class="row"><button class="btn sm" style="flex:1" id="share">${t('Postar no story')}</button><button class="btn ghost sm" style="flex:1" data-go="evolucao">${t('Minha evolução')}</button></div>
+  <button class="btn ghost sm" id="shareFoto">📸 ${t('Story com a sua foto de fundo')}</button>`}
   ${d.titulo === 'Cardio 20 min' || d.hiit || d.express || d.ex === 0 || d.completo === false ? '' : `<button class="btn ghost sm" data-go="assistente" data-arg='${esc(JSON.stringify({ pergunta: t('Me passa um cardio de 20 minutos pra fazer agora'), contexto: 'Ela acabou de terminar o ' + (d.titulo || 'treino') + '.', enviar: true, cardio: true }))}'>🔥 ${t('Quer um cardio de 20 min agora?')}</button>`}
   ${A.lembreteSuportado() && !A.lembreteLigado() && Notification.permission === 'default' && !db.LS.get('lembretePerg') ? `<div class="card" id="lemb"><b style="font-size:0.9375rem">🔔 ${t('Quer que eu te lembre se passar uns dias sem treinar?')}</b><p class="muted">${t('Um aviso carinhoso, sem cobrança. Dá pra desligar no Perfil.')}</p><div class="row mt"><button class="btn ghost sm" id="lembN" style="flex:1">${t('Agora não')}</button><button class="btn sm" id="lembS" style="flex:1">${t('Quero')}</button></div></div>` : ''}
   <p class="muted center small">${t('Cada story é um convite pra sua amiga entrar no time.')}</p>${amigaBtn(S.perfil)}</div>`, 'home');
@@ -1124,13 +1124,13 @@ routes.card = async (arg) => { try { ['800 54px "Barlow Condensed"', '500 30px B
     const destaque = d.recordes?.length ? '🏆 ' + d.recordes[0] : d.completo !== false && tr && nSem ? t('{n}º treino da semana', { n: nSem }) : '';
     return { nome: primeiroNome(S.perfil.nome), titulo: tr?.nome ? `${nomeTreino(d.titulo)} · ${tr.nome}` : nomeCurto(d.titulo), minutos: d.seg != null && d.seg < 60 ? '<1' : d.min, exercicios: d.ex, series: d.series, streak: st.semanas, data, insta: C.INSTAGRAM, completo: d.completo !== false, total: d.total, destaque };
   };
-  $('#shareFoto').onclick = async () => {
+  if ($('#shareFoto')) $('#shareFoto').onclick = async () => {
     const bt = $('#shareFoto'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
     let blob = null; try { blob = await cardImagem({ ...dadosCard(), transparente: true, modo: 'blob' }); } catch {} finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
     if (!blob) return toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true);
     artePorCima(blob);
   };
-  $('#share').onclick = async () => {
+  if ($('#share')) $('#share').onclick = async () => {
     const bt = $('#share'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
     let r; try { r = await cardImagem(dadosCard()); } catch { r = 'erro'; } finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
     if (r === 'erro') return toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true);
