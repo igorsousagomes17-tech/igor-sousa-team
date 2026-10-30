@@ -43,7 +43,7 @@ export const EXATO = {
   'Abdominal Infra Solo': ['Floor reverse crunch', 'Abdominal inferior en el suelo', '地面反向卷腹', 'फ़र्श पर रिवर्स क्रंच', 'Relevé de jambes au sol'],
   'Abs infra no banco declinado': ['Reverse crunch on decline bench', 'Abdominal inferior en banco declinado', '下斜凳反向卷腹', 'डिक्लाइन बेंच पर रिवर्स क्रंच', 'Relevé de jambes sur banc décliné'],
   // Programas extras e exercícios dos planos (nome inteiro)
-  'Fortalecimento pra corrida': ['Strength for running', 'Fortalecimiento para correr', '跑步力量训练', 'दौड़ के लिए स्ट्रेंथ', 'Renforcement pour la course'],
+  'Fortalecimento pra corrida': ['Strength for running', 'Fortalecimiento para correr', '跑步力量训练', 'दौड़ के लिए स्ट्रेंथ', 'Renfo pour la course'],
   'Treino em casa': ['Home workout', 'Entreno en casa', '居家训练', 'घर पर वर्कआउट', 'Séance à la maison'],
   'Treino na casa': ['Home workout', 'Entreno en casa', '居家训练', 'घर पर वर्कआउट', 'Séance à la maison'],
   'sem aparelho': ['no equipment', 'sin equipo', '无需器械', 'बिना उपकरण', 'sans matériel'],
