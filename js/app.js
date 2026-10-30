@@ -758,10 +758,10 @@ routes.sessao = () => {
       // O que aparece no campo é o que fica salvo: sugestão vira o número de verdade (dá pra corrigir depois)
       if (!semCarga(e) && st.kg === '') { const sug = sugKg(s, i, k); if (sug != null) st.kg = String(sug); }
       if (st.reps === '') { const r = repsAlvo(e.reps, k); if (r) st.reps = String(r); }
-      const hojeMax = Math.max(0, ...s.sets[i].filter((x, j) => j !== k && x.done).map(x => numero(x.kg) || 0)), v = semCarga(e) ? null : numero(st.kg), ref = Math.max(+e.ultima?.kg || 0, hojeMax); // 30 kg na série 1 e 300 na 2: pergunta também
-      if (v != null && (v > 400 || (ref && v > ref * 2.5 && v - ref > 20))) {
-        if (await perguntar(T('Confere a carga'), T('{v} kg na série {n}? Parece bem mais que o normal.', { v: dec(v), n: k + 1 }), T('Corrigir'), T('Tá certo')) !== false) { /* "Corrigir" em destaque: toque rápido não confirma o erro */ const x = $(`.set[data-i="${i}"][data-k="${k}"] input[data-f="kg"]`); if (x) x.focus(); return; }
-        if (S.sessao !== s) return;
+      const v = cargaEstranha(s, i, k);
+      if (v != null) {
+        if (await perguntar(T('Confere a carga'), T('{v} kg na série {n}? Parece bem mais que o normal.', { v: dec(v), n: k + 1 }), T('Corrigir'), T('Tá certo')) !== false) return corrigirCarga(s, i, k); /* "Corrigir" em destaque: toque rápido não confirma o erro */
+        if (S.sessao !== s) return; st.kgOk = true;
       }
     }
     let parcial = 0;
@@ -904,6 +904,18 @@ function guardaCargaDo(s, i) {
 }
 // Sugestão de carga da série: pirâmide usa a da mesma série da última vez; na 1ª vez herda o peso da série anterior (não grava série sem carga)
 function sugKg(s, i, k) { const e = s.exs[i], st = s.sets[i][k]; if (!piramide(e.reps)) return e.ultima?.kg; const u = e.porSerie?.[serieN(e, k)]; if (u != null) return u; const ant = s.sets[i].slice(0, k).reverse().find(x => x.kg !== '' && (x.nome || e.nome) === (st.nome || e.nome)); return ant ? numero(ant.kg) : null; }
+// Carga que parece erro de digitação (300 kg na puxada, 30 → 300 entre as séries): devolve o valor pra conferir, ou null
+function cargaEstranha(s, i, k) {
+  const e = s.exs[i], st = s.sets[i][k]; if (semCarga(e) || tempo(e.reps) || st.kgOk) return null;
+  const v = numero(st.kg), hojeMax = Math.max(0, ...s.sets[i].filter((x, j) => j !== k && x.done).map(x => numero(x.kg) || 0)), ref = Math.max(+e.ultima?.kg || 0, hojeMax); // 30 kg na série 1 e 300 na 2: pergunta também
+  return v != null && (v > 400 || (ref && v > ref * 2.5 && v - ref > 20)) ? v : null;
+}
+// "Corrigir": limpa o número errado (e as cópias dele nas séries de baixo) e põe o cursor no campo
+function corrigirCarga(s, i, k) {
+  const ruim = s.sets[i][k].kg; s.sets[i].forEach((x, j) => { if (j === k || (j > k && !x.done && !x.kgMan && x.kg === ruim)) { x.kg = ''; if (j === k) x.kgMan = false; } }); salvaSessao();
+  if (rotaAtual !== 'sessao') return; if (s.passos[s.p] && !s.passos[s.p].includes(i)) { const p = s.passos.findIndex(g => g.includes(i)); if (p >= 0) s.p = p; }
+  routes.sessao(); const x = $(`.set[data-i="${i}"][data-k="${k}"] input[data-f="kg"]`); if (x) { x.scrollIntoView({ block: 'center' }); x.focus(); }
+}
 function concluirPasso() {
   const s = S.sessao; if (!s) return; const passo = s.passos[s.p]; if (!passo) return go('fim');
   passo.forEach(i => { s.feito[i] = true; guardaCargaDo(s, i); }); s.corrigir = { p: s.p, em: Date.now() }; // 3 min pra voltar e corrigir a última série
@@ -926,9 +938,15 @@ function confirmarFim() {
     const nomes = [...new Set(preench.map(([i]) => s.exs[i].nome))].join(', ');
     return escolher(tp(preench.length, '{n} série preenchida sem marcar', '{n} séries preenchidas sem marcar'), t('{x}: você digitou e não tocou no ✓. Marco como feitas?', { x: nomes }), [t('Marcar como feitas'), t('Não fiz essas')]).then(o => {
       if (o < 0 || S.sessao !== s) return;
-      if (o === 0) { preench.forEach(([i, k]) => marcarFeita(s, i, k)); [...new Set(preench.map(([i]) => i))].forEach(i => { if (s.sets[i].every(x => x.done)) s.feito[i] = true; guardaCargaDo(s, i); }); }
-      else s.semMarcarOk = true;
-      salvaSessao(); if (rotaAtual === 'sessao') routes.sessao(); confirmarFim();
+      if (o !== 0) { s.semMarcarOk = true; salvaSessao(); return confirmarFim(); }
+      // "Marcar como feitas" passa pela mesma conferência do ✓: 300 kg digitado e não marcado não vira "recorde"
+      const marcar = () => {
+        const estranha = preench.find(([i, k]) => cargaEstranha(s, i, k) != null);
+        if (estranha) { const [i, k] = estranha; return perguntar(T('Confere a carga'), T('{x}: {v} kg na série {n}? Parece bem mais que o normal.', { x: s.exs[i].nome, v: dec(cargaEstranha(s, i, k)), n: k + 1 }), T('Corrigir'), T('Tá certo')).then(r => { if (S.sessao !== s) return; if (r !== false) { if (rotaAtual !== 'sessao') go('sessao'); return corrigirCarga(s, i, k); } s.sets[i][k].kgOk = true; salvaSessao(); marcar(); }); }
+        preench.forEach(([i, k]) => marcarFeita(s, i, k)); [...new Set(preench.map(([i]) => i))].forEach(i => { if (s.sets[i].every(x => x.done)) s.feito[i] = true; guardaCargaDo(s, i); });
+        salvaSessao(); if (rotaAtual === 'sessao') routes.sessao(); confirmarFim();
+      };
+      marcar();
     });
   }
   const n = feitosCount(s);
