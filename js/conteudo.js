@@ -262,3 +262,35 @@ export function traduzConteudo(txt, id) {
   if (!ex && (out === s || PT_SOBRA.test(out) || ((id === 'zh' || id === 'hi') && /[a-z]{4,}/i.test(out)))) pedir(id, s); // sobrou português: pede a tradução de verdade
   cache.set(k, out || s); return out || s;
 }
+
+// Aparelho ocupado: exercícios equivalentes (mesmo movimento, outro equipamento). A alternativa que o Igor cadastrou vem sempre primeiro.
+const EQUIV = [
+  [/puxada|pulldown|pull ?down|barra fixa/i, ['Remada unilateral com halter', 'Puxada com elástico']],
+  [/remada (baixa|sentada|cavalinho|m[aá]quina)|remada na polia/i, ['Remada curvada com halteres', 'Remada unilateral com halter']],
+  [/remada/i, ['Remada unilateral com halter', 'Remada baixa na polia']],
+  [/supino inclinado/i, ['Supino inclinado com halteres', 'Flexão de braço com pés elevados']],
+  [/supino|peitoral|chest press/i, ['Supino com halteres', 'Flexão de braço']],
+  [/crucifixo|voador|peck|crossover/i, ['Crucifixo com halteres', 'Crossover na polia']],
+  [/leg press|leg 45/i, ['Agachamento goblet', 'Agachamento búlgaro']],
+  [/extensora/i, ['Agachamento sumô com halter', 'Afundo']],
+  [/flexora|mesa flexora|cadeira flexora/i, ['Stiff com halteres', 'Flexora com bola ou deslizante']],
+  [/hack|smith|agachamento/i, ['Agachamento goblet', 'Leg press']],
+  [/abdutora|abdu[cç][aã]o/i, ['Abdução com mini band', 'Caminhada lateral com mini band']],
+  [/adutora|adu[cç][aã]o/i, ['Agachamento sumô com halter', 'Adução na polia']],
+  [/eleva[cç][aã]o p[eé]lvica|hip ?thrust|ponte/i, ['Ponte de glúteo com halter', 'Elevação pélvica no banco']],
+  [/coice|glute kick|kickback/i, ['Coice com caneleira', 'Coice na polia']],
+  [/panturrilha|g[eê]meos/i, ['Panturrilha em pé com halter', 'Panturrilha no degrau']],
+  [/desenvolvimento/i, ['Desenvolvimento com halteres', 'Elevação lateral com halteres']],
+  [/eleva[cç][aã]o lateral/i, ['Elevação lateral na polia', 'Elevação lateral com halteres']],
+  [/tr[ií]ceps/i, ['Tríceps testa com halteres', 'Mergulho no banco']],
+  [/rosca/i, ['Rosca direta com halteres', 'Rosca martelo']],
+  [/afundo|passada|b[uú]lgaro/i, ['Passada com halteres', 'Agachamento sumô com halter']],
+  [/stiff|terra|romeno/i, ['Stiff com halteres', 'Bom dia com halter']],
+];
+export function equivalentes(nome, alternativa, original, jaNoTreino = []) {
+  const base = original || nome, tem = new Set([nome, ...jaNoTreino].map(x => String(x).toLowerCase()));
+  const lista = [alternativa, ...((EQUIV.find(([r]) => r.test(base)) || [])[1] || [])].filter(Boolean);
+  const vistos = new Set(), out = [];
+  for (const x of lista) { const k = x.toLowerCase(); if (tem.has(k) || vistos.has(k)) continue; vistos.add(k); out.push(x); if (out.length === 2) break; }
+  return out;
+}

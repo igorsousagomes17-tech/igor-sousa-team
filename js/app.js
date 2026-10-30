@@ -4,6 +4,7 @@ const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
 import { ligarAvisoRemoto, beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho, avisoAtual, ajustaAbas } from './ui.js';
 import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma, loc, tc, ligarTradutor } from './i18n.js';
 import * as A from './acolhe.js';
+import { equivalentes } from './conteudo.js';
 import * as K from './kcal.js'; // T = t, pra quando "t" já é nome de variável
 
 const C = window.ISTEAM_CONFIG;
@@ -673,6 +674,7 @@ routes.sessao = () => {
       ${ehHiit(e) ? `<p class="small hiit-explica">${T(/casa/.test(S.perfil?.local_treino || '') ? HIIT_CASA : HIIT_TXT)}</p>` : ''}${t && intervalosDe(e) ? `<p class="muted small">${T('Eu aviso com apito a cada troca: forte e leve.')}</p>` : ''}
       ${!t && !sc && !s.programa_treino_id && e.ultima?.kg == null && !(pir && e.porSerie) && !sets.some(x => x.done) ? `<p class="muted small">${T('1ª vez nesse? Escolhe um peso que dá pra fazer todas as reps com folga e anota.')} ${/anilha|leg press|leg 45|smith|hack/i.test(e.nome) ? T('Anilhas: anota a soma das anilhas (sem contar a barra ou o aparelho).') : /halter|dumbbell|goblet|kettle/i.test(e.nome) ? T('Halter: anota o peso de um.') : /m[aá]quina|cadeira|mesa|leg|polia|cabo|puxada|graviton|panturrilha|abdu|adu|crucifixo|voador/i.test(e.nome) ? T('Máquina: anota o número da placa.') : ''}</p>` : ''}
       <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">${rapidos}</div>
+      ${s.sets[i].every(x => x.done) ? '' : `<button class="btn ghost sm ocup" style="width:auto;margin-top:8px" data-i="${i}">🚧 ${T('Aparelho ocupado')}</button>`}
       ${e.dica || e.alternativa || e.nome !== e.original || (!t && (s.programa_treino_id || /casa|ambos/.test(S.perfil?.local_treino || '')) && (!sc || semPesoMarcado(e.nome))) ? `<details class="mais" ${s.p === 0 && !seriesFeitas(s) && !bi ? 'open' : ''}><summary>${T('Dica e opções')} ▾</summary>` : '<div>'}
       ${e.dica ? `<p class="dica">${esc(tc(e.dica))}</p>` : ''}
       <div class="row" style="margin:8px 0;gap:8px;flex-wrap:wrap">${e.alternativa ? `<button class="btn ghost sm swap" style="width:auto" data-i="${i}">⇄ ${T('Trocar por {x}', { x: esc(tc(e.alternativa)) })}</button>` : e.nome !== e.original ? `<button class="btn ghost sm swap" style="width:auto" data-i="${i}">↺ ${T('Voltar pro {x}', { x: esc(e.original) })}</button>` : ''}${!t && (s.programa_treino_id || /casa|ambos/.test(S.perfil?.local_treino || '')) && (!sc || semPesoMarcado(e.nome)) ? `<button class="btn ghost sm" style="width:auto" data-sempeso="${i}">${sc ? T('Usar peso') : T('Sem peso (peso do corpo)')}</button>` : ''}</div>
@@ -792,8 +794,10 @@ routes.sessao = () => {
     }
   }
   $$('.hist').forEach(a => a.onclick = ev => { ev.preventDefault(); abrirHistorico(s.exs[+a.dataset.i].nome); });
-  $$('.swap').forEach(b => b.onclick = async () => {
-    const i = +b.dataset.i, e = s.exs[i];
+  // Troca o exercício de hoje (novo = nome do equivalente; sem nome = o botão "Trocar por"/"Voltar pro" de sempre)
+  const trocar = async (i, novo) => {
+    const e = s.exs[i];
+    if (novo) { e.alternativa = novo; }
     // Trocar por um exercício que já está no treino mistura as cargas dos dois (pirâmide x drop): avisa antes
     const jaTem = e.alternativa && s.exs.findIndex((x, j) => j !== i && x.nome === e.alternativa);
     if (e.alternativa && jaTem >= 0) { const ok = await perguntar(t('Esse já está no seu treino'), t('{x} é também o exercício nº {n} de hoje. Se trocar, as cargas dos dois ficam juntas no histórico.', { x: e.alternativa, n: s.exs[jaTem].ordem ?? jaTem + 1 }), t('Trocar mesmo assim'), t('Manter o {x}', { x: e.nome })); if (!ok || S.sessao !== s) return; }
@@ -805,6 +809,15 @@ routes.sessao = () => {
     const nome = e.nome;
     if (piramide(e.reps)) rapido(db.ultimasSeries(S.perfil.id, nome), null, 6000).then(ps => { if (ps && S.sessao === s && e.nome === nome) { e.porSerie = ps; salvaSessao(); if (rotaAtual === 'sessao' && !document.activeElement?.matches('input')) routes.sessao(); } });
     rapido(db.ultimaCarga(S.perfil.id, nome), null, 6000).then(u => { if (u && S.sessao === s && e.nome === nome) { e.ultima = u; salvaSessao(); if (rotaAtual === 'sessao' && !document.activeElement?.matches('input')) routes.sessao(); } });
+  };
+  $$('.swap').forEach(b => b.onclick = () => trocar(+b.dataset.i));
+  // Aparelho ocupado: mostra 2 exercícios equivalentes pra fazer no lugar (só hoje)
+  $$('.ocup').forEach(b => b.onclick = async () => {
+    const i = +b.dataset.i, e = s.exs[i], opts = equivalentes(e.nome, e.alternativa, e.original, s.exs.map(x => x.nome));
+    if (!opts.length) return toast(t('Sem equivalente cadastrado. Faz outro exercício e volta nesse depois.'), false, { curto: true });
+    const r = await escolher(t('{x} ocupado?', { x: tc(e.nome) }), t('Faz um desses no lugar, só hoje:'), [...opts.map(x => tc(x)), t('Cancelar')]);
+    if (r < 0 || r >= opts.length || S.sessao !== s) return;
+    await trocar(i, opts[r]);
   });
   $('#sw').onclick = async function () {
     if (this.dataset.ocupado) return; // toque duplo não pula o próximo exercício (nem abre a pergunta duas vezes)
