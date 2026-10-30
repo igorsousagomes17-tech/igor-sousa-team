@@ -160,7 +160,7 @@ export const chipDescanso = (() => {
   return {
     suportado: () => 'mediaSession' in navigator && typeof Audio !== 'undefined',
     atualiza(resta, total, rotulo, sub) {
-      if (!this.suportado()) return;
+      if (!this.suportado() || localStorage.getItem('chip_off') === '1') return;
       try {
         if (!ativo) { sil = sil || wav(); au = au || Object.assign(new Audio(sil), { loop: true, volume: 0.01 }); au.play().then(() => { ativo = true; }).catch(() => {}); ativo = true; navigator.mediaSession.playbackState = 'playing'; ['play', 'pause', 'stop'].forEach(a => { try { navigator.mediaSession.setActionHandler(a, () => { try { au.play(); } catch {} }); } catch {} }); }
         const m = Math.floor(resta / 60), sg = String(resta % 60).padStart(2, '0'), titulo = `${rotulo} · ${m}:${sg}`;
