@@ -1,4 +1,4 @@
-import { traduzConteudo, ligarTradutor } from './conteudo.js';
+import { traduzConteudo, traduzLivre, ligarTradutor } from './conteudo.js';
 export { ligarTradutor };
 // Idiomas do app da aluna: português (padrão), inglês, espanhol, chinês simplificado, hindi e francês.
 // A chave de cada texto é o próprio português, então o código continua legível: t('Iniciar treino').
@@ -55,6 +55,8 @@ const liga = (id, s) => { s = s.replace(/(\d) (?=(min|s|kg|cm|pts|séances?|sér
 export const t = (pt, v) => tl(atual, pt, v);
 // O que o Igor digita (treino, exercício, reps, dica): traduz na hora de mostrar (js/conteudo.js)
 export const tc = s => traduzConteudo(s, atual);
+// Recado, resposta e observação do Igor: frase inteira pela IA ou o português dele (nunca palavra a palavra)
+export const tlivre = s => traduzLivre(s, atual);
 export const num = (n, o) => typeof n === 'number' && isFinite(n) ? new Intl.NumberFormat(loc(), o).format(n) : String(n ?? '');
 // Número com o separador decimal do idioma (64,5 / 64.5), sem separador de milhar.
 export const dec = v => v == null || v === '' ? '' : (['pt', 'es', 'fr'].includes(atual) ? String(v).replace('.', ',') : String(v).replace(',', '.'));
@@ -173,6 +175,11 @@ const D = {
   "Aparelho ocupado? Toca aqui pra trocar": ["Machine busy? Tap here to swap", "¿Aparato ocupado? Toca aquí para cambiar", "器械被占用？点这里替换", "मशीन व्यस्त है? बदलने के लिए यहाँ दबाएँ", "Appareil occupé ? Touche ici pour changer"],
   "Cronômetro na tela de bloqueio": ["Timer on the lock screen", "Cronómetro en la pantalla de bloqueo", "锁屏上的计时器", "लॉक स्क्रीन पर टाइमर", "Minuteur sur l'écran de verrouillage"],
   "Mostra o descanso em cima, como o Spotify, e apita quando acaba. Pode pausar a música enquanto o descanso roda.": ["Shows the rest timer up top, like Spotify, and beeps when it ends. May pause your music while rest runs.", "Muestra el descanso arriba, como Spotify, y suena al terminar. Puede pausar tu música durante el descanso.", "像 Spotify 一样在上方显示休息计时，结束时提示音。休息期间可能会暂停你的音乐。", "Spotify की तरह ऊपर आराम का टाइमर दिखाता है और खत्म होने पर बीप करता है। आराम के दौरान संगीत रुक सकता है।", "Affiche le repos en haut, comme Spotify, et sonne à la fin. Peut mettre ta musique en pause pendant le repos."],
+  "até {d}": ["until {d}", "hasta {d}", "到 {d}", "{d} तक", "jusqu’au {d}"],
+  "Buscar exercício": ["Search exercise", "Buscar ejercicio", "搜索动作", "एक्सरसाइज़ खोजो", "Chercher un exercice"],
+  "Os vídeos do Igor estão sendo gravados": ["Igor's videos are being recorded", "Los videos de Igor se están grabando", "Igor 的视频正在录制中", "Igor के वीडियो रिकॉर्ड हो रहे हैं", "Les vidéos d'Igor sont en cours de tournage"],
+  "Enquanto isso, toca no exercício pra ler a dica dele de como fazer.": ["Meanwhile, tap an exercise to read his tip on how to do it.", "Mientras tanto, toca el ejercicio para leer su consejo de cómo hacerlo.", "在此期间，点按动作即可阅读他的动作要领。", "तब तक, एक्सरसाइज़ पर टैप करके उनकी टिप पढ़ो कि कैसे करना है।", "En attendant, touche l'exercice pour lire son conseil d'exécution."],
+  "Dica do Igor (vídeo chegando)": ["Igor's tip (video coming soon)", "Consejo de Igor (video en camino)", "Igor 的要领（视频即将上线）", "Igor की टिप (वीडियो जल्द आ रहा है)", "Conseil d'Igor (vidéo bientôt)"],
   "Descartar treino?": ["Discard workout?", "¿Descartar el entreno?", "放弃这次训练？", "वर्कआउट हटा दें?", "Supprimer la séance ?"],
   "O que você marcou nesse treino vai ser apagado.": ["Everything you logged in this workout will be deleted.", "Lo que marcaste en este entreno se va a borrar.", "这次训练里记录的内容会被删除。", "इस वर्कआउट में जो मार्क किया है, वह मिट जाएगा।", "Ce que tu as noté dans cette séance sera effacé."],
   "em breve": ["coming soon", "próximamente", "即将推出", "जल्द आ रहा है", "bientôt"],

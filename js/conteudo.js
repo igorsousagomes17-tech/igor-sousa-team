@@ -1,5 +1,6 @@
 // Tradução do que o Igor digita (nome do treino, nome do exercício, repetições, dicas) pra quem usa o app em outra língua.
-// 1º procura a frase inteira (EXATO, preenchido com os treinos reais); senão troca termo a termo pelo glossário de academia.
+// Só traduz frase inteira: EXATO (treinos reais), um termo inteiro do glossário ("Agachamento búlgaro", "12 cada lado")
+// ou a tradução da IA. Nunca troca palavra solta (é, de, na, pra...): se não tem a frase inteira, fica o original em português.
 // A chave continua sendo o português: histórico de carga, vídeo e bi-set seguem ligados pelo nome original.
 // Colunas: [en, es, zh, hi, fr]
 const COL = { en: 0, es: 1, zh: 2, hi: 3, fr: 4 };
@@ -40,7 +41,32 @@ export const EXATO = {
   'Tríceps Acima da Cabeça na Polia': ['Overhead cable triceps extension', 'Tríceps sobre la cabeza en polea', '绳索过头臂屈伸', 'ओवरहेड केबल ट्राइसेप्स एक्सटेंशन', 'Extension triceps au-dessus de la tête à la poulie'],
   'Tríceps polia barra reta': ['Cable triceps pushdown, straight bar', 'Tríceps en polea con barra recta', '直杆绳索下压', 'स्ट्रेट बार केबल पुशडाउन', 'Triceps poulie barre droite'],
   'Abdominal Infra Solo': ['Floor reverse crunch', 'Abdominal inferior en el suelo', '地面反向卷腹', 'फ़र्श पर रिवर्स क्रंच', 'Relevé de jambes au sol'],
-  'Abs infra no banco declinado': ['Reverse crunch on decline bench', 'Abdominal inferior en banco declinado', '下斜凳反向卷腹', 'डिक्लाइन बेंच पर रिवर्स क्रंच', 'Relevé de jambes sur banc décliné']
+  'Abs infra no banco declinado': ['Reverse crunch on decline bench', 'Abdominal inferior en banco declinado', '下斜凳反向卷腹', 'डिक्लाइन बेंच पर रिवर्स क्रंच', 'Relevé de jambes sur banc décliné'],
+  // Programas extras e exercícios dos planos (nome inteiro)
+  'Fortalecimento pra corrida': ['Strength for running', 'Fortalecimiento para correr', '跑步力量训练', 'दौड़ के लिए स्ट्रेंथ', 'Renforcement pour la course'],
+  'Treino em casa': ['Home workout', 'Entreno en casa', '居家训练', 'घर पर वर्कआउट', 'Séance à la maison'],
+  'Treino na casa': ['Home workout', 'Entreno en casa', '居家训练', 'घर पर वर्कआउट', 'Séance à la maison'],
+  'sem aparelho': ['no equipment', 'sin equipo', '无需器械', 'बिना उपकरण', 'sans matériel'],
+  'Abdômen 10 min': ['Abs 10 min', 'Abdomen 10 min', '腹部 10 分钟', 'एब्स 10 मिनट', 'Abdos 10 min'],
+  'pernas e core': ['legs & core', 'piernas y core', '腿部和核心', 'पैर और कोर', 'jambes et gainage'],
+  'Quadril e lombar': ['Hips & lower back', 'Cadera y lumbar', '髋部和下背', 'हिप और लोअर बैक', 'Hanches et lombaires'],
+  'Mobilidade de quadril': ['Hip mobility', 'Movilidad de cadera', '髋关节灵活性', 'हिप मोबिलिटी', 'Mobilité de hanche'],
+  'Agachamento Smith': ['Smith machine squat', 'Sentadilla en Smith', '史密斯机深蹲', 'स्मिथ मशीन स्क्वाट', 'Squat au Smith'],
+  'Agachamento Cossaco (mobilidade)': ['Cossack squat (mobility)', 'Sentadilla cosaca (movilidad)', '哥萨克深蹲（灵活性）', 'कोसैक स्क्वाट (मोबिलिटी)', 'Squat cosaque (mobilité)'],
+  'Agachamento búlgaro com halter': ['Bulgarian split squat with dumbbell', 'Sentadilla búlgara con mancuerna', '哑铃保加利亚分腿蹲', 'डम्बल से बल्गेरियन स्प्लिट स्क्वाट', 'Squat bulgare à l’haltère'],
+  'Afundo com Halteres entre Steps': ['Dumbbell lunge between steps', 'Zancada con mancuernas entre steps', '踏板间哑铃弓步', 'स्टेप्स के बीच डम्बल लंज', 'Fente aux haltères entre deux steps'],
+  'Levantamento terra Sumo': ['Sumo deadlift', 'Peso muerto sumo', '相扑硬拉', 'सूमो डेडलिफ़्ट', 'Soulevé de terre sumo'],
+  'Puxada Pronada': ['Lat pulldown, overhand grip', 'Jalón con agarre prono', '正握高位下拉', 'ओवरहैंड ग्रिप लैट पुलडाउन', 'Tirage vertical prise pronation'],
+  'Puxada Pegada Supinada': ['Lat pulldown, underhand grip', 'Jalón con agarre supino', '反握高位下拉', 'अंडरहैंड ग्रिप लैट पुलडाउन', 'Tirage vertical prise supination'],
+  'Remada curvada pegada pronada': ['Bent-over row, overhand grip', 'Remo inclinado con agarre prono', '正握俯身划船', 'ओवरहैंड ग्रिप बेंट-ओवर रो', 'Rowing buste penché prise pronation'],
+  'Rosca Inclinada com Halteres': ['Incline dumbbell curl', 'Curl inclinado con mancuernas', '上斜哑铃弯举', 'इनक्लाइन डम्बल कर्ल', 'Curl incliné aux haltères'],
+  'Rosca Scott maquina': ['Machine preacher curl', 'Curl predicador en máquina', '器械牧师椅弯举', 'मशीन प्रीचर कर्ल', 'Curl pupitre à la machine'],
+  'Supino inclinado maquina': ['Incline machine press', 'Press inclinado en máquina', '器械上斜推胸', 'मशीन इनक्लाइन प्रेस', 'Développé incliné à la machine'],
+  'Crucifixo na maquina': ['Machine chest fly', 'Aperturas en máquina', '器械飞鸟', 'मशीन चेस्ट फ़्लाई', 'Écarté à la machine'],
+  'Prancha com toque no ombro': ['Plank shoulder taps', 'Plancha con toque de hombro', '平板支撑触肩', 'प्लैंक शोल्डर टैप', 'Gainage avec touche d’épaule'],
+  'Elevação de panturrilha unilateral': ['Single-leg calf raise', 'Elevación de talón a una pierna', '单腿提踵', 'सिंगल-लेग काफ़ रेज़', 'Extension des mollets unilatérale'],
+  'Ponte unilateral': ['Single-leg glute bridge', 'Puente de glúteo a una pierna', '单腿臀桥', 'सिंगल-लेग ग्लूट ब्रिज', 'Pont fessier unilatéral'],
+  'Alongamento do piriforme': ['Piriformis stretch', 'Estiramiento del piriforme', '梨状肌拉伸', 'पिरिफ़ॉर्मिस स्ट्रेच', 'Étirement du piriforme']
 };
 
 // Termos de academia, do mais longo pro mais curto (o primeiro que casa vence)
@@ -178,6 +204,9 @@ const TERMOS = [
   ['iniciante', ['beginner', 'principiante', '初学者', 'शुरुआती', 'débutant']],
   ['opcional', ['optional', 'opcional', '可选', 'वैकल्पिक', 'facultatif']],
   // pedaços de repetição e dica
+  ['parciais', ['partials', 'parciales', '半程', 'पार्शियल', 'partielles']],
+  ['cada', ['each', 'cada uno', '每侧', 'हर तरफ़', 'chacun']],
+  ['até', ['up to', 'hasta', '最多', 'अधिकतम', 'jusqu’à']],
   ['cada lado', ['each side', 'cada lado', '每侧', 'हर तरफ़', 'de chaque côté']],
   ['cada perna', ['each leg', 'cada pierna', '每条腿', 'हर पैर', 'chaque jambe']],
   ['cada braço', ['each arm', 'cada brazo', '每只手臂', 'हर हाथ', 'chaque bras']],
@@ -210,10 +239,7 @@ const TERMOS = [
   ['e', ['&', 'y', '和', 'और', 'et']]
 ];
 const sem = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-// Regex única: termos sem acento, casando palavra inteira (\b não serve com acento, então usa limites próprios)
 const ORD = TERMOS.map(([pt, tr]) => [sem(pt), tr]).sort((a, b) => b[0].length - a[0].length);
-const RE = new RegExp(`(^|[^a-z0-9])(${ORD.map(([p]) => esc(p)).join('|')})(?=$|[^a-z0-9])`, 'g');
 const MAPA = new Map(ORD);
 const EXATO_N = new Map(Object.entries(EXATO).map(([k, v]) => [sem(k.trim()), v]));
 const cache = new Map();
@@ -221,7 +247,6 @@ const cache = new Map();
 const CH = 'trad-v1'; let REM = {}; try { REM = JSON.parse(localStorage.getItem(CH) || '{}') || {}; } catch {}
 let remotoFn = null; export const ligarTradutor = fn => { remotoFn = fn; };
 const fila = new Map(), tentados = new Set(); let timer = null;
-const PT_SOBRA = /[ãõçâêôáéíóú]|\b(de|do|da|com|que|não|nao|pra|mais|tudo|você|voce|seu|sua|bem|até|ate|faz|fica|sempre|anota|carga|mês|mes|treino|sem|mantém|mantem|tensão|tempo|todo)\b/i;
 function pedir(id, s) {
   if (!remotoFn || tentados.has(id + '|' + s) || s.length < 3 || s.length > 600 || !/\p{L}{3}/u.test(s)) return;
   tentados.add(id + '|' + s); if (!fila.has(id)) fila.set(id, new Set()); fila.get(id).add(s);
@@ -243,23 +268,41 @@ async function enviar() {
   }
 }
 
+// Conectivos não viram tradução sozinhos ("de" → "", "e" → "&"): era isso que embaralhava as frases
+const SOLTAS = new Set(['ou', 'com', 'sem', 'de', 'da', 'do', 'na', 'no', 'em', 'e', 'a cada']);
+const UNID = /^(s|seg|min|kg|x|reps?|rep)(\s+|$)/;
+const maiuscula = (out, s) => s === s.toUpperCase() && /\p{Lu}/u.test(s) ? out.toUpperCase() : /\p{Lu}/u.test(s.trim()[0] || '') && out ? out[0].toUpperCase() + out.slice(1) : out;
+// Cada pedaço de palavras (entre números e sinais) tem que ser um termo inteiro do glossário; senão não traduz nada
+function porTermos(s, c) {
+  let ok = true, achou = false;
+  const out = s.replace(/\p{L}+(?:[ '’-]+\p{L}+)*/gu, w => {
+    if (!ok) return w;
+    const u = sem(w).match(UNID), un = u ? w.slice(0, u[0].length) : '', resto = u ? w.slice(u[0].length) : w;
+    if (!resto) return w; // só unidade (30s, 1 min)
+    const k = sem(resto), tr = SOLTAS.has(k) ? null : MAPA.get(k);
+    if (!tr || !tr[c]) { ok = false; return w; }
+    achou = true; return un + maiuscula(tr[c], resto);
+  });
+  return ok && achou ? out : null;
+}
+// Texto livre do Igor (recado, resposta, observação do plano): só a frase inteira traduzida pela IA; enquanto não tem, fica em português
+export function traduzLivre(txt, id) {
+  const s = String(txt ?? '').normalize('NFC'); if (!s.trim() || id === 'pt' || !(id in COL)) return s;
+  const rem = REM[id]?.[s]; if (rem) return rem;
+  pedir(id, s); return s;
+}
 export function traduzConteudo(txt, id) {
   const s = String(txt ?? '').normalize('NFC'); if (!s.trim() || id === 'pt' || !(id in COL)) return s;
   const k = id + '|' + s; if (cache.has(k)) return cache.get(k);
   const rem = REM[id]?.[s]; if (rem) { cache.set(k, rem); return rem; }
   const c = COL[id], ex = EXATO_N.get(sem(s.trim()));
-  let out;
-  if (ex) out = ex[c];
-  else {
-    // troca termo a termo mantendo números, sinais e o que não se conhece (nomes próprios: Smith, Scott, Pallof...)
-    const base = sem(s); let res = '', i = 0;
-    base.replace(RE, (m, pre, termo, pos) => { const ini = pos + pre.length; res += s.slice(i, ini); const tr = MAPA.get(termo)[c]; res += tr; i = ini + termo.length; return m; });
-    res += s.slice(i);
-    out = res.replace(/\s+/g, ' ').replace(/\s+([,.)·])/g, '$1').replace(/\(\s+/g, '(').trim();
-    if (id === 'zh') out = out.replace(/([一-鿿])\s+(?=[一-鿿])/g, '$1');
-    if (out && /[a-zà-ú]/.test(out[0]) && /[A-ZÀ-Ú]/.test(s.trim()[0])) out = out[0].toUpperCase() + out.slice(1);
+  let out = ex ? ex[c] : porTermos(s, c), inteiro = !!out;
+  if (!out && s.includes(' · ')) { // "Base 1 · pernas e core": cada pedaço só traduz inteiro (o que não tem fica como está)
+    const ps = s.split(' · '), tr = ps.map(x => { const e = EXATO_N.get(sem(x.trim())); return e ? e[c] : porTermos(x, c); });
+    if (tr.some(Boolean)) out = tr.map((x, i) => x || ps[i]).join(' · ');
+    inteiro = tr.every(Boolean);
   }
-  if (!ex && (out === s || PT_SOBRA.test(out) || ((id === 'zh' || id === 'hi') && /[a-z]{4,}/i.test(out)))) pedir(id, s); // sobrou português: pede a tradução de verdade
+  if (!inteiro && /\p{L}{3}/u.test(s.replace(/\b(min|seg|reps?|kg)\b/gi, ''))) pedir(id, s); // sem a frase inteira: pede a tradução de verdade (a IA traduz a frase toda)
   cache.set(k, out || s); return out || s;
 }
 
