@@ -792,12 +792,12 @@ routes.sessao = () => {
     if (!seguinte && passo.every(x => s.sets[x].every(z => z.done))) {
       routes.sessao();
       const p0 = s.p;
-      return setTimeout(() => { if (S.sessao !== s || rotaAtual !== 'sessao' || s.p !== p0) return; const prx = s.passos[s.p + 1]; concluirPasso(); if (prx && e.descanso_s && S.sessao === s && rotaAtual === 'sessao') descanso(e.descanso_s, T('Próximo: {x}', { x: s.exs[prx[0]].nome })); }, 450);
+      return setTimeout(() => { if (S.sessao !== s || rotaAtual !== 'sessao' || s.p !== p0) return; const prx = s.passos[s.p + 1]; concluirPasso(); if (prx && e.descanso_s && S.sessao === s && rotaAtual === 'sessao') descanso(e.descanso_s, proxDescanso(s, null, s.p)); }, 450);
     }
     routes.sessao(); rolarProximo();
     const atrasada = Date.now() - (s.pulouEm || 0) < 8000; // pulou o descanso e já marcou a seguinte: tá só anotando o que já fez
     if (ultimoDoPar && e.descanso_s && !atrasada) { // também depois de série de tempo (prancha 30s → descanso 20s)
-      const txt = seguinte ? T('Próxima: {x} · série {n}', { x: tc(s.exs[seguinte[0]].nome), n: seguinte[1] + 1 }) : (s.passos[s.p + 1] ? T('Próximo: {x}', { x: tc(s.exs[s.passos[s.p + 1][0]].nome) }) : T('Última série!'));
+      const txt = seguinte ? proxDescanso(s, seguinte) : s.passos[s.p + 1] ? proxDescanso(s, null, s.p + 1) : T('Última série!');
       const r = await descanso(e.descanso_s, txt);
       if (r === false && S.sessao === s && !s.pausadoEm) s.pulouEm = Date.now();
       if (S.sessao === s && rotaAtual === 'sessao') rolarProximo();
@@ -912,6 +912,19 @@ function guardaCargaDo(s, i) {
 }
 // Sugestão de carga da série: pirâmide usa a da mesma série da última vez; na 1ª vez herda o peso da série anterior (não grava série sem carga)
 function sugKg(s, i, k) { const e = s.exs[i], st = s.sets[i][k]; if (!piramide(e.reps)) return e.ultima?.kg; const u = e.porSerie?.[serieN(e, k)]; if (u != null) return u; const ant = s.sets[i].slice(0, k).reverse().find(x => x.kg !== '' && (x.nome || e.nome) === (st.nome || e.nome)); return ant ? numero(ant.kg) : null; }
+// Cartão do "Próximo" no descanso (Igor 30/10): exercício novo = nome grande + séries, reps e última carga; mesmo exercício = "série 2 de 3"
+function proxDescanso(s, seguinte, pi) {
+  const limpa = e => tc(e.nome.replace(/\s*·\s*reconhecimento$/i, ''));
+  if (seguinte) {
+    const [a, c] = seguinte, e = s.exs[a], tot = s.sets[a].length, nome = limpa(e), kg = semCarga(e) || tempo(e.reps) ? null : s.sets[a][c].kg !== '' ? numero(s.sets[a][c].kg) : sugKg(s, a, c);
+    return { tipo: 'serie', nome, titulo: c === tot - 1 ? `${T('Última série!')} · ${nome}` : T('Próxima: série {n} de {t} · {x}', { n: c + 1, t: tot, x: nome }), detalhe: kg != null ? T('carga: {kg} kg', { kg: dec(kg) }) : '', texto: T('Próxima: {x} · série {n}', { x: nome, n: c + 1 }) };
+  }
+  const g = s.passos[pi]; if (!g) return T('Última série!');
+  const e = s.exs[g[0]], nomes = g.map(i => limpa(s.exs[i])).join(' + '), n = s.sets[g[0]].length, reps = String(e.reps || '');
+  const detalhe = [tp(n, '{n} série', '{n} séries'), reps ? (/^[\d\s/+-]+$/.test(reps) ? T('{r} reps', { r: reps }) : tc(reps)) : '', !semCarga(e) && !tempo(e.reps) && e.ultima?.kg != null ? T('última vez {kg} kg', { kg: dec(e.ultima.kg) }) : ''].filter(Boolean).join(' · ');
+  const tec = tecnicaDe(e).split(' · ')[0]; // só a 1ª técnica, curta: é pra ela se preparar, não pra ler
+  return { tipo: 'exercicio', nome: nomes, detalhe, dica: tec ? tc(tec).slice(0, 90) : '', texto: T('Próximo: {x}', { x: nomes }) };
+}
 // Carga que parece erro de digitação (300 kg na puxada, 30 → 300 entre as séries): devolve o valor pra conferir, ou null
 function cargaEstranha(s, i, k) {
   const e = s.exs[i], st = s.sets[i][k]; if (semCarga(e) || tempo(e.reps) || st.kgOk) return null;

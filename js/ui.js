@@ -188,16 +188,21 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
   return new Promise(resolve => {
     let total = segundos + jaFeito, fim = Date.now() + segundos * 1000, iv, trocou = jaFeito > total / 2;
     const trabalho = titulo !== 'Descanso', L = camada();
+    // próximo: texto (como antes) ou { tipo: 'exercicio'|'serie', nome, titulo, detalhe, dica, texto }; o texto simples vai pro chip e pro aviso
+    const px = proximo && typeof proximo === 'object' ? proximo : null, pxTxt = px ? (px.texto || px.titulo || px.nome || '') : String(proximo || '');
+    const cartao = !px ? `<p class="muted center" id="rest-p">${esc(pxTxt)}</p>` : px.tipo === 'exercicio'
+      ? `<div class="prox ex" id="rest-p"><span class="prox-l">${t('Próximo exercício')}</span><b class="prox-n">${esc(px.nome || '')}</b>${px.detalhe ? `<span class="prox-d">${esc(px.detalhe)}</span>` : ''}${px.dica ? `<span class="prox-t">⚡ ${esc(px.dica)}</span>` : ''}</div>`
+      : `<div class="prox" id="rest-p"><b>${esc(px.titulo || px.nome || '')}</b>${px.detalhe ? `<span class="prox-d">${esc(px.detalhe)}</span>` : ''}</div>`; // Igor (30/10): o "Próximo" era uma linha cinza que ninguém via
     const me = { mini: false, trabalho, fim: () => pausado ? null : fim }; let fase = -1, pausado = 0; // pausado: o cronômetro parado não conta como tempo de treino rodando
     L.innerHTML = `<div class="ov" id="rest">
       <button class="back x" id="rest-x" aria-label="${trabalho ? t('minimizar') : t('Minimizar pra anotar')}">${trabalho ? '▾ ' + t('minimizar') : '✎ ' + t('anotar')}</button>
       <p class="muted ${intervalos ? 'fase' : ''}" id="rest-t" style="letter-spacing:1px;text-transform:uppercase">${meio ? (trocou ? t('Lado 2 de 2') : t('Lado 1 de 2')) : esc(t(titulo))}</p>
       <div class="ring" id="ring"><b id="rest-n"></b></div>
-      <p class="muted center" id="rest-p">${esc(proximo || '')}</p>
+      ${cartao}
       <div class="row">${trabalho ? `<button class="btn sm" id="rest-skip" style="flex:2">✓ ${t('Já fiz')}</button><button class="btn ghost sm" id="rest-pausa" style="flex:1">⏸ ${t('Parar')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>` : `<button class="btn sm" id="rest-skip" style="flex:2">${t('Pular descanso')}</button><button class="btn ghost sm" id="rest-menos" style="flex:1" aria-label="${t('Tirar 15 segundos')}">−15s</button><button class="btn ghost sm" id="rest-add" style="flex:1" aria-label="${t('Mais 15 segundos')}">+15s</button>`}</div>${pausarTreino ? `<button class="link-fim" id="rest-pt">⏸ ${t('Pausar treino')}</button>` : ''}</div>`; // "Parar" = só a contagem; "Pausar treino" = o treino todo (antes eram 3 "Pausar") // criança chamou no meio do descanso: pausa daqui mesmo
     const q = s => L.querySelector(s);
     let idRemoto = null; // alarme no servidor: garante tocar/vibrar no iPhone com a tela apagada
-    const avisar = () => { try { if (remoto) { if (idRemoto) remoto.cancelar(idRemoto); idRemoto = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); remoto.agendar({ id: idRemoto, em: fim + 1500, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }).catch(() => {}); } } catch {} try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (proximo || t('Bora a próxima série.')) }); } catch {} };
+    const avisar = () => { try { if (remoto) { if (idRemoto) remoto.cancelar(idRemoto); idRemoto = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); remoto.agendar({ id: idRemoto, em: fim + 1500, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (pxTxt || t('Bora a próxima série.')) }).catch(() => {}); } } catch {} try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (pxTxt || t('Bora a próxima série.')) }); } catch {} };
     const cancelarAviso = (acabou = false) => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} if (idRemoto && !acabou) { try { remoto?.cancelar(idRemoto); } catch {} } idRemoto = null; };
     pedirAviso(); avisar(); fecharToast();
     if (pausarTreino) q('#rest-pt').onclick = () => pausarTreino();
@@ -213,8 +218,8 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       if (intervalos && l > 0) { const ciclo = intervalos[0] + intervalos[1], pos = (total - l) % ciclo, f = pos < intervalos[0] ? 0 : 1; resta = f ? ciclo - pos : intervalos[0] - pos; if (f !== fase) { if (fase !== -1) beep(f ? 'leve' : 'forte'); fase = f; q('#rest').classList.toggle('leve', !!f); } q('#rest-t').textContent = `${f ? t('Leve') : t('Forte!')} · ${resta}s`; }
       const rot = intervalos && fase >= 0 ? (fase ? t('Leve') : t('Forte!')) : trouxe(titulo);
       if (!trabalho && !intervalos && l <= 3 && l > 0 && l !== me.ultTic) { me.ultTic = l; beep('tic'); } // contagem 3-2-1 antes de acabar o descanso
-      const lv = doLado(l); n.textContent = me.mini ? `${meio ? rotulo() : rot} ${fmtMin(lv)} · ${t('toca pra abrir')}` : (lv >= 60 ? fmtMin(lv) : lv);
-      q('#ring').style.setProperty('--p', (lv / base() * 100) + '%'); if (l > 0) chipDescanso.atualiza(lv, base(), meio ? rotulo() : rot, String(proximo || '').slice(0, 60)); if (l <= 0) end(true, Date.now() - fim > 30000);
+      const lv = doLado(l); n.textContent = me.mini ? `${meio ? rotulo() : rot} ${fmtMin(lv)} · ${!trabalho && pxTxt ? pxTxt : t('toca pra abrir')}` : (lv >= 60 ? fmtMin(lv) : lv);
+      q('#ring').style.setProperty('--p', (lv / base() * 100) + '%'); if (l > 0) chipDescanso.atualiza(lv, base(), meio ? rotulo() : rot, pxTxt.slice(0, 60)); if (l <= 0) end(true, Date.now() - fim > 30000);
     };
     // atrasado: acabou com a tela apagada (o código parado) e só agora ela voltou: aviso fixo com "há N min", sem apito
     const end = (r, atrasado = false) => { if (restAtivo !== me) return; restAtivo = null; const tocando = r === true && document.hidden && !atrasado && chipDescanso.alarme(); if (!tocando) chipDescanso.para(); cancelarAviso(r === true && (document.hidden || atrasado)); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden || atrasado) avisoNaVolta(fim, trabalho); else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
