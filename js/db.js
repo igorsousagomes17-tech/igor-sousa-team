@@ -84,9 +84,17 @@ export async function salvarSeries(sessaoId, rows) {
   const del = await sb.from('series').delete().eq('sessao_id', sessaoId);
   if (del.error) throw del.error;
   if (!rows.length) return;
-  const { error } = await sb.from('series').insert(rows.map(r => ({ ...r, sessao_id: sessaoId })));
+  const sem = () => rows.map(({ drops, ...r }) => ({ ...r, sessao_id: sessaoId }));
+  let { error } = await sb.from('series').insert(temDrops === false ? sem() : rows.map(r => ({ ...r, sessao_id: sessaoId })));
+  // banco ainda sem a migração 020 (coluna drops): grava sem as quedas, o resto do treino não se perde
+  if (error && semColuna(error, 'drops')) { temDrops = false; ({ error } = await sb.from('series').insert(sem())); }
   if (error) throw error;
 }
+// Migração 020 ainda não aplicada: PostgREST reclama da coluna/função nova. Aí o app segue sem ela (null = ainda não sabe).
+let temDrops = null, temResposta = null;
+export const semColuna = (e, nome) => { const m = `${e?.code || ''} ${e?.message || ''} ${e?.details || ''} ${e?.hint || ''}`; return m.includes(nome) && /42703|42883|PGRST20[024]|column|function|schema cache|does not exist|Could not find/i.test(m); };
+// Reps da 1ª carga: no banco a série guarda a soma (12+8+6 = 26) e as quedas em "drops"
+const repsPrincipal = r => Array.isArray(r.drops) && r.drops.length && r.reps != null ? Math.max(0, r.reps - r.drops.reduce((a, d) => a + (+d.reps || 0), 0)) || r.reps : r.reps;
 // Apaga um registro de carga errado (ex.: digitou 1122 no lugar de 12)
 export async function apagarCarga(sessaoId, exercicioNome) {
   const { error } = await sb.from('series').delete().eq('sessao_id', sessaoId).eq('exercicio_nome', exercicioNome);
@@ -101,14 +109,16 @@ export async function finalizarSessao(sessaoId, patch) {
 }
 // Histórico de carga por NOME do exercício: vale entre treinos e meses diferentes.
 export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
-  const { data, error } = await sb.from('series').select('kg,reps,n,sessao_id,sessoes!inner(aluna_id,finalizada_em,comentario)')
+  const busca = cols => sb.from('series').select(cols + 'kg,reps,n,sessao_id,sessoes!inner(aluna_id,finalizada_em,comentario)')
     .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
     .order('sessoes(finalizada_em)', { ascending: false }).limit(limit * 6);
+  let { data, error } = await busca(temDrops === false ? '' : 'drops,');
+  if (error && semColuna(error, 'drops')) { temDrops = false; ({ data, error } = await busca('')); }
   if (error) throw error; // sem sinal: quem chamou mostra o que tem no celular
   if (!data?.length) return [];
   // agrupa por sessão: maior carga da sessão + todas as séries (pirâmide 22/25/28)
   const por = {};
-  data.forEach(r => { const k = r.sessoes.finalizada_em; const a = por[k] || (por[k] = { kg: r.kg, reps: r.reps, data: k, sessao_id: r.sessao_id, sets: [], express: /^⚡ Express/.test(r.sessoes.comentario || '') }); a.sets.push({ n: r.n, kg: +r.kg, reps: r.reps }); if (+r.kg > +a.kg) { a.kg = r.kg; a.reps = r.reps; } });
+  data.forEach(r => { const k = r.sessoes.finalizada_em; const a = por[k] || (por[k] = { kg: r.kg, reps: r.reps, data: k, sessao_id: r.sessao_id, sets: [], express: /^⚡ Express/.test(r.sessoes.comentario || '') }); const reps = repsPrincipal(r), drops = r.drops?.length ? r.drops : undefined; if (a.sets.length === 0) { a.reps = reps; a.drops = drops; } a.sets.push({ n: r.n, kg: +r.kg, reps, drops }); if (+r.kg > +a.kg) { a.kg = r.kg; a.reps = reps; a.drops = drops; } });
   Object.values(por).forEach(a => a.sets.sort((x, y) => x.n - y.n));
   return Object.values(por).sort((a, b) => b.data.localeCompare(a.data)).slice(0, limit);
 }
@@ -143,18 +153,27 @@ export async function ultimasSeries(alunaId, exercicioNome) {
   return por;
 }
 // Guarda a última carga no celular; "ant" = a carga do treino anterior (pra mostrar ↑/↓ em Minhas cargas)
-export function guardarCarga(exercicioNome, kg, reps, sessao) { if (!kg) return; const c = LS.get('cargas', {}), v = c[exercicioNome]; const mesma = v && v.sessao && v.sessao === sessao, ant = mesma ? v.ant : v?.kg, prev = mesma ? v.prev ?? null : v ? { ...v, prev: undefined } : null; c[exercicioNome] = { kg, reps, prev, data: new Date().toISOString(), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
+export function guardarCarga(exercicioNome, kg, reps, sessao, drops) { if (!kg) return; const c = LS.get('cargas', {}), v = c[exercicioNome]; const mesma = v && v.sessao && v.sessao === sessao, ant = mesma ? v.ant : v?.kg, prev = mesma ? v.prev ?? null : v ? { ...v, prev: undefined } : null; c[exercicioNome] = { kg, reps, ...(drops?.length ? { drops } : {}), prev, data: new Date().toISOString(), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
 // Treino descartado: a carga que ele gravou no celular volta pra de antes (não fica "Última: 80 kg" de um treino que não existiu)
 export function desfazerCargas(sessao) { if (!sessao) return; const c = LS.get('cargas', {}); let mudou = false; for (const [n, v] of Object.entries(c)) if (v?.sessao === sessao) { mudou = true; if (v.prev) { const { prev, ...r } = v.prev; c[n] = r; } else delete c[n]; } if (mudou) LS.set('cargas', c); }
 // Séries de um treino (Evolução › Meus treinos)
 export async function editarSerie(id, patch) { const { error } = await sb.from('series').update(patch).eq('id', id); if (error) throw error; }
 export async function seriesDe(sessaoId) { const { data, error } = await sb.from('series').select('id,exercicio_nome,n,kg,reps').eq('sessao_id', sessaoId).order('n'); if (error) throw error; return data || []; }
 export async function minhasSessoes(alunaId, limit = 60) {
-  const { data, error } = await sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor,respondida_em')
+  const busca = extra => sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor,respondida_em' + extra)
     .eq('aluna_id', alunaId).not('finalizada_em', 'is', null).order('finalizada_em', { ascending: false }).limit(limit);
+  let { data, error } = await busca(temResposta === false ? '' : ',resposta_aluna,resposta_aluna_em');
+  if (error && semColuna(error, 'resposta_aluna')) { temResposta = false; ({ data, error } = await busca('')); } else if (!error) temResposta = true;
   if (error || !data) return LS.get('sessoes', []); // sem sinal: mostra o que tinha (sequência e metas não zeram)
   if (limit >= 60) LS.set('sessoes', data);
   return data;
+}
+// Resposta dela pro Igor (embaixo da resposta dele no Perfil). Sem a migração 020: { semColuna: true } e o campo some.
+export const podeResponderIgor = () => temResposta !== false;
+export async function responderIgor(sessaoId, texto) {
+  const { data, error } = await sb.rpc('responder_igor', { p_sessao: sessaoId, p_texto: texto });
+  if (error && semColuna(error, 'responder_igor')) { temResposta = false; const e = new Error('sem_coluna'); e.codigo = 'sem_coluna'; throw e; }
+  if (error) throw error; return data;
 }
 export async function registrarPontos(alunaId, motivo, pontos, ref) {
   const { error } = await sb.from('pontos_log').insert({ aluna_id: alunaId, motivo, pontos, ref });
@@ -228,14 +247,21 @@ export const admin = {
   // Treinos com comentário dela OU nota baixa (≤ 4) / esforço no limite (≥ 9) sem texto: sem tempo de escrever,
   // a nota é o sinal. Os sem resposta vêm primeiro (nenhum some da lista por ser antigo).
   async feedbacks() {
-    const sel = 'id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,exercicios_feitos,exercicios_total,duracao_s,profiles!sessoes_aluna_id_fkey(nome,plano)';
+    const base = 'id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,exercicios_feitos,exercicios_total,duracao_s,profiles!sessoes_aluna_id_fkey(nome,plano)', comResp = base + ',resposta_aluna,resposta_aluna_em,resposta_aluna_lida_em';
     const sinal = 'comentario.not.is.null,nota.lte.4,esforco.gte.9';
-    const [abertos, respondidos] = await Promise.all([
+    const busca = sel => Promise.all([
       sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).or(sinal).is('resposta_igor', null).order('finalizada_em', { ascending: true }).limit(200),
-      sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).or(sinal).not('resposta_igor', 'is', null).order('finalizada_em', { ascending: false }).limit(10)]);
+      sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).or(sinal).not('resposta_igor', 'is', null).order('finalizada_em', { ascending: false }).limit(10),
+      // resposta dela que o Igor ainda não viu, mesmo num treino antigo (fora dos 10 últimos)
+      sel === base ? Promise.resolve({ data: [] }) : sb.from('sessoes').select(sel).not('resposta_aluna', 'is', null).is('resposta_aluna_lida_em', null).order('resposta_aluna_em', { ascending: false }).limit(50)]);
+    let [abertos, respondidos, delas] = await busca(temResposta === false ? base : comResp);
+    if (abertos.error && semColuna(abertos.error, 'resposta_aluna')) { temResposta = false; [abertos, respondidos, delas] = await busca(base); }
     if (abertos.error) throw abertos.error;
-    return [...(abertos.data || []), ...(respondidos.data || [])].filter(precisaVer);
+    const vistos = new Set(), todos = [...(delas.data || []), ...(abertos.data || []), ...(respondidos.data || [])].filter(f => !vistos.has(f.id) && vistos.add(f.id));
+    return todos.filter(f => f.resposta_aluna || precisaVer(f));
   },
+  // Igor marca a resposta da aluna como vista (sai do "pra ler")
+  async marcarRespostaLida(sessaoId) { const { error } = await sb.rpc('marcar_resposta_aluna_lida', { p_sessao: sessaoId }); if (error) throw error; },
   async responder(sessaoId, texto) { const { error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId); if (error) throw error; },
   async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,sexo,horario,academia_tipo,equipamento,cardio,evita,ciclo,dias_semana,tempo_treino_min,local_treino,experiencia,foco,incomoda,limitacoes,saude,gestacao,sono_estresse,atividade,nascimento,nutri,desistiu,peso_kg,altura_m,anamnese_em,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(500); return data || []; },
   async planoDe(alunaId) {
