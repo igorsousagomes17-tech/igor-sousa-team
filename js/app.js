@@ -207,7 +207,7 @@ routes.home = async () => {
   <button class="card row home-ia" data-go="assistente" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex-shrink:0;color:var(--accent-ink);font-size:1.25rem">💬</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('Tira-dúvidas 24h')}</b><p class="muted">${t('Pergunta sobre seu treino, execução, carga, cardio... a IA do time responde na hora.')}</p></div></button>
   <button class="card row home-time" data-go="comunidade" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:#2a2a2e;display:grid;place-items:center;flex-shrink:0;font-size:1.25rem">🔥</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('O time')}</b><p class="muted" id="timeHoje">${t('Veja quem já treinou hoje e o ranking do mês.')}</p></div></button>
   <div class="row between"><h3>${t('Programas extras')}</h3><button class="back" style="color:var(--accent)" data-go="lib">${t('ver todos')}</button></div>
-  <div class="hscroll">${cardSpin(true)}${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(pr.titulo, 126, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(tc(subProg(pr)))}</span></button>`).join('')}</div></div>`, 'home');
+  <div class="hscroll">${cardSpin(true)}${cardHyrox(true)}${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(pr.titulo, 126, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(tc(subProg(pr)))}</span></button>`).join('')}</div></div>`, 'home');
   // Desafio batido: só fala dos pontos quando eles já entraram de verdade
   if (mesCount >= dmeta) rapido(db.meusPontos(p.id), []).then(log => { const el = $('#desaf'); const d = log.find(l => l.motivo === 'desafio' && (l.ref === mesLocal() || mesLocal(l.created_at) === mesLocal())); if (el && d) el.textContent = t('Batido! +{n} pts', { n: d.pontos }); });
   if ($('#desc')) $('#desc').onclick = async () => { if (await perguntar(t('Descartar treino?'), t('O que você marcou nesse treino vai ser apagado.'), t('Descartar'), t('Manter'))) { pararDescanso(); db.desfazerCargas(S.sessao?.chave); S.sessao = null; db.LS.del('sessao'); routes.home(); } };
@@ -468,7 +468,7 @@ routes.videos = async () => {
 routes.lib = async () => {
   const programas = S.programas || await rapido(db.programas(), db.LS.get('programas', []));
   render(`<div class="view fx"><div class="topbar"><h2>${t('Programas extras')}</h2></div><p class="muted">${t('Liberado pra todas as alunas, além do seu treino.')}</p>
-  <div class="grid2">${cardSpin()}${programas.map(pr => `<button class="lib" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(pr.titulo, (Math.min(innerWidth, 480) - 42) / 2 - 24, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(tc(subProg(pr)))}</span></button>`).join('')}</div></div>`, 'home');
+  <div class="grid2">${cardSpin()}${cardHyrox()}${programas.map(pr => `<button class="lib" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(pr.titulo, (Math.min(innerWidth, 480) - 42) / 2 - 24, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(tc(subProg(pr)))}</span></button>`).join('')}</div></div>`, 'home');
 };
 routes.programa = async (slug) => {
   const programas = S.programas || await rapido(db.programas(), db.LS.get('programas', [])); const pr = programas.find(p => p.slug === slug); if (!pr) return go('lib');
@@ -688,19 +688,19 @@ routes.sessao = () => {
       ${!t && !sc && e.ultima?.kg != null ? `<div class="row between mt" style="gap:8px"><p class="muted small" style="flex:1">${pir ? T('Última vez (série mais pesada):') : T('Última vez:')} <b style="color:var(--fg)">${dec(e.ultima.kg)} kg × ${e.ultima.reps ?? '–'}</b>.${pir ? '' : ' ' + (topoMeta(e.reps) && repsNum(e.ultima.reps) != null ? (repsNum(e.ultima.reps) >= topoMeta(e.reps) ? T('Fez as {n}: tenta subir um pouco.', { n: topoMeta(e.reps) }) : T('Mantém o peso e busca as {n}.', { n: topoMeta(e.reps) })) : T('Fácil? Sobe a carga.'))}</p><button class="btn ghost sm hist" data-i="${i}">${T('histórico')}</button></div>` : ''}
     </div>`;
   };
-  const hint = t(passo.length > 2 ? 'Tri-set: faz uma série do <b>A1</b>, emenda no <b>A2</b> e no <b>A3</b>. Descansa só depois do A3.' : bi ? 'Bi-set: faz uma série do <b>A1</b> e emenda direto no <b>A2</b>. Descansa só depois do A2.'
+  const hint = passo.length > 3 ? t('Circuito: faz um exercício atrás do outro, do <b>A1</b> ao <b>A{n}</b>. Descansa só no fim da volta.', { n: passo.length }) : t(passo.length > 2 ? 'Tri-set: faz uma série do <b>A1</b>, emenda no <b>A2</b> e no <b>A3</b>. Descansa só depois do A3.' : bi ? 'Bi-set: faz uma série do <b>A1</b> e emenda direto no <b>A2</b>. Descansa só depois do A2.'
     : tempo(s.exs[passo[0]].reps) ? 'Exercício de tempo: toca no <b>▶</b> que eu conto pra você.'
     : s.exs[passo[0]].descanso_s ? 'Terminou a série? <b>Toca no botão laranja</b>: marca a série como feita e já começa o descanso.' : 'Terminou a série? <b>Toca no ✓</b> pra marcar.');
   const ok = passo.every(i => s.feito[i]), ultimo = s.p === s.passos.length - 1;
   const abertos = rotaAtual === 'sessao' && s.pMais === s.p ? new Set($$('.bloco details.mais[open]').map(d => d.closest('.bloco').dataset.i)) : new Set(); s.pMais = s.p; // redesenhou (trocou o exercício, sem peso): o "Dica e opções" aberto continua aberto
   render(`<div class="view fx sessao"><div class="topbar"><button class="back" id="sair">‹ ${t('Pausar')}</button><span class="pill" id="clock">${fmtMin(Math.floor((Date.now() - s.inicio) / 1000))}</span></div>
-  <div class="row between"><span class="muted">${esc(nomeCurto(s.titulo))}${s.express ? ' · ⚡ ' + t('Express') : ''}${bi ? ' · <span style="white-space:nowrap">' + (passo.length > 2 ? t('Tri-set') : t('Bi-set')) + '</span>' : ''}</span><span class="muted">${totalTxt(s)}</span></div>
+  <div class="row between"><span class="muted">${esc(nomeCurto(s.titulo))}${s.express ? ' · ⚡ ' + t('Express') : ''}${bi ? ' · <span style="white-space:nowrap">' + (passo.length > 3 ? t('Circuito') : passo.length > 2 ? t('Tri-set') : t('Bi-set')) + '</span>' : ''}</span><span class="muted">${totalTxt(s)}</span></div>
   <div class="bar"><i style="width:${Math.min(100, obrigatorios(s).filter(i => completo(s, i)).length / Math.max(1, obrigatorios(s).length) * 100)}%"></i></div>
   <div class="passos" role="tablist" aria-label="${t('Ir direto pra um exercício')}">${s.passos.map((g, j) => `<button class="${j === s.p ? 'on' : ''} ${g.every(i => completo(s, i)) ? 'ok' : ''}" data-passo="${j}" aria-label="${esc(s.exs[g[0]].nome)}">${g.every(i => completo(s, i)) ? '✓' : g.every(i => opcional(s.exs[i])) ? '+' : g.every(i => s.exs[i].aq === true) ? 'R' : g.map(i => s.exs[i].ordem ?? j + 1).filter((v, x, a) => a.indexOf(v) === x).join('-')}</button>`).join('')}</div>
   ${s.corrigir && s.corrigir.p !== s.p && s.passos[s.corrigir.p] && Date.now() - s.corrigir.em < 180000 ? `<button class="back small" id="corr" style="color:var(--accent);align-self:flex-start;min-height:40px">‹ ${t('Corrigir {x}', { x: esc(s.exs[s.passos[s.corrigir.p][0]].nome) })}</button>` : ''}
   ${bi || (seriesFeitas(s) < 3 && !s.dicaOk) ? `<p class="restHint">${hint}</p>` : ''}
   ${passo.map(bloco).join('<div class="sep"></div>')}
-  <div class="card row between" style="margin-top:6px"><div><b style="font-size:0.9375rem">${passo.length > 2 ? t('Tri-set concluído?') : bi ? t('Bi-set concluído?') : t('Exercício concluído?')}</b><p class="muted">${ultimo ? t('É o último: marca que eu fecho o treino.') : t('Marca que eu já puxo o próximo.')}</p></div><button class="sw ${ok ? 'on' : ''}" id="sw" aria-label="${t('Concluir')}"></button></div>
+  <div class="card row between" style="margin-top:6px"><div><b style="font-size:0.9375rem">${passo.length > 3 ? t('Volta concluída?') : passo.length > 2 ? t('Tri-set concluído?') : bi ? t('Bi-set concluído?') : t('Exercício concluído?')}</b><p class="muted">${ultimo ? t('É o último: marca que eu fecho o treino.') : t('Marca que eu já puxo o próximo.')}</p></div><button class="sw ${ok ? 'on' : ''}" id="sw" aria-label="${t('Concluir')}"></button></div>
   ${ultimo ? `<button class="btn" id="fin">✓ ${t('Finalizar treino')}</button>` : ''}
   <div class="row" style="gap:8px">${s.p > 0 ? `<button class="btn ghost sm" id="prev" style="flex:1">‹ ${t('Anterior')}</button>` : ''}${!ultimo ? `<button class="btn ghost sm" id="pular" style="flex:1">${ok ? t('Seguir pro próximo') : t('Pular exercício')} ›</button>` : ''}</div>
   <button class="link-fim" id="fim">${t('Encerrar treino')}</button></div>`);
@@ -1188,6 +1188,34 @@ if (!DEMO) ligarAvisoRemoto({
   cancelar: id => db.push.cancelarDescanso(id).catch(() => {}),
   inscrever: () => { db.LS.del('pushEm'); ativarPush(); }
 });
+// HYROX NA ACADEMIA (opcional, 3 níveis, troca todo mês) ---------------------------------
+const cardHyrox = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="hyrox" style="background-image:url(icons/hyrox_s.jpg)"><b>${t('Hyrox')}</b><span>${t('Na academia · 3 níveis')}</span></button>`;
+const importaHyrox = () => import('./hyrox.js').catch(() => import('./hyrox.js?r=' + Date.now())).catch(() => { toast(t('Sem internet pra abrir agora. Depois da 1ª vez abre sem sinal.'), true); return null; });
+const nivelHyrox = () => { const n = db.LS.get('hyroxNivel', null); return n && n.dono === S.perfil?.id ? n.id : null; };
+routes.hyrox = async (trocar) => {
+  const H = await importaHyrox(); if (!H) { if (rotaAtual === 'hyrox') go('lib', null, { hist: false }); return; } if (rotaAtual !== 'hyrox') return;
+  const nv = trocar === 'nivel' ? null : nivelHyrox(), topo = `<div class="topbar"><button class="back" data-go="lib">‹ ${t('Programas')}</button><h2>${t('Hyrox')}</h2></div>`;
+  if (!nv) {
+    render(`<div class="view fx">${topo}<div class="lib" style="aspect-ratio:16/9;background-image:url(icons/hyrox_s.jpg)"><b style="font-size:26px">${t('Hyrox na academia')}</b><span>${t('8 km de corrida + 8 estações, adaptado pra academia comum')}</span></div>
+    <p class="muted">${t('Qual é o seu nível agora? Dá pra trocar quando quiser.')}</p>
+    ${H.NIVEIS.map(x => `<button class="card hy-nivel" data-nv="${x.id}" style="width:100%;text-align:left;color:var(--fg);border:1px solid ${x.id === nivelHyrox() ? 'var(--accent)' : 'var(--line)'}"><b>${t(x.nome)}</b><p class="muted">${t(x.sub)}</p></button>`).join('')}</div>`, 'home');
+    $$('[data-nv]').forEach(b => b.onclick = () => { db.LS.set('hyroxNivel', { id: b.dataset.nv, dono: S.perfil?.id }); go('hyrox', null, { hist: false }); });
+    return;
+  }
+  const f = H.faseDoMes(), fase = H.FASES[f], nome = H.NIVEIS.find(x => x.id === nv)?.nome, treinos = H.treinosDoMes(nv);
+  const linha = e => `${e.series > 1 ? (e.circuito ? t('{n} voltas ×', { n: e.series }) : t('{n} séries ×', { n: e.series })) + ' ' : ''}${esc(tc(e.reps))}`;
+  render(`<div class="view fx">${topo}
+  <div class="card hero" style="color:#1a0d00"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Fase do mês')} · ${t('{a} de {b}', { a: f + 1, b: 3 })}</span>
+    <div class="logo" style="font-size:1.9rem;margin:8px 0 2px;color:#1a0d00">${t(fase.nome)}</div><p style="font-weight:600">${t(fase.txt)}</p>
+    <button class="btn dark sm" style="margin-top:8px" data-go="hyrox" data-arg="nivel">${t('Nível')}: ${t(nome)} · ${t('trocar')}</button></div>
+  ${treinos.map((tr, ti) => { const exs = tr.exercicios; return `<div class="card"><div class="row between"><div><b>${esc(tc(tr.nome))}</b><p class="muted">${T('{n} min', { n: tr.duracao_min })}${kcalTxt(K.kcalTreino(S.perfil, exs, tr.duracao_min))}</p></div><button class="btn sm" data-ht="${ti}">${T('Iniciar')}</button></div>
+    <div class="mt">${exs.map((e, j) => `<div class="ex${e.circuito ? ' hy-circ' : ''}"><div class="n">${e.ordem}</div><button class="t" data-hf="${ti}-${j}"><b>${esc(tc(e.nome))}</b><span>${linha(e)}${e.circuito && e.descanso_s ? ' · ' + t('descanso {n}s no fim da volta', { n: e.descanso_s }) : ''}</span></button></div>`).join('')}</div></div>`; }).join('')}
+  <div class="card"><b>${t('Como encaixar na semana')}</b><p class="muted">${t('Faz 1 ou 2 desses por semana, além do seu treino do mês. Os itens ligados são um circuito: faz um atrás do outro e só descansa no fim da volta.')}</p></div>
+  <div class="card" style="border:1px solid var(--accent)"><b>⚠ ${t('Cuidado com o joelho')}</b><p class="muted">${t('No Hyrox, a maioria das lesões vem de excesso de volume, principalmente no joelho. Dor que piora durante o treino: para e chama o Igor. Já teve lesão antes? Começa no Iniciante.')}</p></div>
+  <p class="muted center small">${t('Treino novo todo mês. Sem o aparelho? Toca no exercício e troca pela opção.')}</p></div>`, 'home');
+  $$('[data-ht]').forEach(b => b.onclick = () => { const tr = treinos[+b.dataset.ht]; b.disabled = true; iniciarSessao({ titulo: `Hyrox · ${tr.nome}`, exercicios: tr.exercicios, duracao_min: tr.duracao_min }).finally(() => { b.disabled = false; }); });
+  $$('[data-hf]').forEach(b => b.onclick = () => { const [ti, j] = b.dataset.hf.split('-').map(Number); const e = treinos[ti].exercicios[j]; abrirHistorico(e.nome, e); });
+};
 // SPINNING GUIADO ---------------------------------------------------------------------
 const cardSpin = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="spin" style="background-image:url(icons/spin_s.jpg)"><b>${t('Spinning')}</b><span>${t('Aulas guiadas · 10 a 30 min')}</span></button>`;
 // Spinning sem sinal e sem o app instalado ainda: o import falha; avisa e tenta de novo com outro endereço
