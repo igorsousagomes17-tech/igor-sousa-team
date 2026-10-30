@@ -779,6 +779,14 @@ routes.sessao = () => {
       } else if (fim?.parcial) parcial = fim.parcial; else if (fim !== true) { salvaSessao(); return; }
     }
     marcarFeita(s, i, k); if (parcial) st.seg = parcial; salvaSessao();
+    // Marcou série sem kg num exercício com carga: pergunta uma vez por exercício (senão a evolução fica vazia sem ela saber)
+    if (!t && !semCarga(e) && e.aq !== true && st.kg === '' && !s.kgPerg?.[e.nome]) {
+      s.kgPerg = { ...s.kgPerg, [e.nome]: 1 }; salvaSessao(); routes.sessao();
+      const r = await perguntar(T('Anotar o peso?'), T('Você marcou a série sem o kg. Anotando, eu te mostro a evolução e aviso quando dá pra subir.'), T('Anotar agora'), T('Não uso peso'));
+      if (S.sessao !== s || rotaAtual !== 'sessao') return;
+      if (r === true) { const x = $(`.set[data-i="${i}"][data-k="${k}"] input[data-f="kg"]`); if (x) { x.focus(); x.scrollIntoView({ block: 'center' }); } return; } // anota e segue (o próximo ✓ abre o descanso)
+      if (r === false) { marcarSemPeso(e.nome, true); s.sets[i].forEach(x => { if (!x.done) x.kg = ''; }); salvaSessao(); toast(T('Beleza: tirei a coluna de kg desse exercício.'), false, { curto: true }); }
+    }
     if (parcial) toast(T('Registrei {t} de {x} ✓', { t: fmtMin(parcial), x: fmtMin(porLado(e.reps) ? t * 2 : t) }));
     if (rotaAtual !== 'sessao') return; // saiu do treino com o cardio rodando: os minutos ficam registrados, sem puxar ela de volta
     if (parcial && s.p === s.passos.length - 1) { routes.sessao(); return rolarProximo(); } // parou o cardio no meio do último exercício: fica na tela (ela decide se finaliza)
