@@ -155,18 +155,30 @@ function camada() { let l = document.getElementById('rest-layer'); if (!l) { l =
 // Cronômetro do descanso fora do app (tipo o Spotify): o Android mostra uma "mídia" com a barra andando quando o app vai pro segundo plano.
 // Um áudio mudo em loop segura a sessão de mídia; título e barra são atualizados a cada tick.
 export const chipDescanso = (() => {
-  let au = null, ativo = false, ult = '';
+  let au = null, ativo = false, ult = '', sil = null;
   const wav = () => { const n = 8000, b = new ArrayBuffer(44 + n * 2), v = new DataView(b), w = (o, x) => [...x].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0))); w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true); return URL.createObjectURL(new Blob([b], { type: 'audio/wav' })); };
   return {
     suportado: () => 'mediaSession' in navigator && typeof Audio !== 'undefined',
     atualiza(resta, total, rotulo, sub) {
       if (!this.suportado()) return;
       try {
-        if (!ativo) { au = au || Object.assign(new Audio(wav()), { loop: true, volume: 0.01 }); au.play().then(() => { ativo = true; }).catch(() => {}); ativo = true; navigator.mediaSession.playbackState = 'playing'; ['play', 'pause', 'stop'].forEach(a => { try { navigator.mediaSession.setActionHandler(a, () => { try { au.play(); } catch {} }); } catch {} }); }
+        if (!ativo) { sil = sil || wav(); au = au || Object.assign(new Audio(sil), { loop: true, volume: 0.01 }); au.play().then(() => { ativo = true; }).catch(() => {}); ativo = true; navigator.mediaSession.playbackState = 'playing'; ['play', 'pause', 'stop'].forEach(a => { try { navigator.mediaSession.setActionHandler(a, () => { try { au.play(); } catch {} }); } catch {} }); }
         const m = Math.floor(resta / 60), sg = String(resta % 60).padStart(2, '0'), titulo = `${rotulo} · ${m}:${sg}`;
         if (titulo !== ult) { ult = titulo; navigator.mediaSession.metadata = new MediaMetadata({ title: titulo, artist: sub || 'Igor Sousa Team', album: 'Treino', artwork: [{ src: new URL('./icons/icon-192.png', location.href).href, sizes: '192x192', type: 'image/png' }] }); }
         navigator.mediaSession.setPositionState({ duration: Math.max(1, total), position: Math.min(total, Math.max(0, total - resta)), playbackRate: 1 });
       } catch {}
+    },
+    // Acabou com o app em segundo plano: apita pelo próprio áudio da mídia (o AudioContext da página dorme com a tela apagada)
+    alarme() {
+      if (!ativo || !au) return false;
+      try {
+        const sr = 16000, n = Math.floor(sr * 1.9), b = new ArrayBuffer(44 + n * 2), v = new DataView(b), w = (o, x) => [...x].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+        w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+        for (let i = 0; i < n; i++) { const t = i / sr, k = t % 0.6, on = k < 0.3 && t < 1.8; v.setInt16(44 + i * 2, on ? Math.sin(2 * Math.PI * (k < 0.15 ? 880 : 1175) * t) * 0.8 * 32767 * Math.min(1, k * 60, (0.3 - k) * 60) : 0, true); }
+        au.loop = false; au.volume = 1; au.src = URL.createObjectURL(new Blob([b], { type: 'audio/wav' })); au.onended = () => { au.onended = null; au.loop = true; au.volume = 0.01; au.src = sil; this.para(); }; au.play().catch(() => this.para());
+        try { navigator.vibrate?.([350, 120, 350, 120, 600]); } catch {}
+        return true;
+      } catch { return false; }
     },
     para() { if (!ativo) return; ativo = false; ult = ''; try { au?.pause(); navigator.mediaSession.playbackState = 'none'; navigator.mediaSession.metadata = null; } catch {} }
   };
@@ -205,7 +217,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       q('#ring').style.setProperty('--p', (lv / base() * 100) + '%'); if (l > 0) chipDescanso.atualiza(lv, base(), meio ? rotulo() : rot, String(proximo || '').slice(0, 60)); if (l <= 0) end(true, Date.now() - fim > 30000);
     };
     // atrasado: acabou com a tela apagada (o código parado) e só agora ela voltou: aviso fixo com "há N min", sem apito
-    const end = (r, atrasado = false) => { if (restAtivo !== me) return; restAtivo = null; chipDescanso.para(); cancelarAviso(r === true && (document.hidden || atrasado)); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden || atrasado) avisoNaVolta(fim, trabalho); else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
+    const end = (r, atrasado = false) => { if (restAtivo !== me) return; restAtivo = null; const tocando = r === true && document.hidden && !atrasado && chipDescanso.alarme(); if (!tocando) chipDescanso.para(); cancelarAviso(r === true && (document.hidden || atrasado)); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden || atrasado) avisoNaVolta(fim, trabalho); else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };
     me.end = end;
     me.minimizar = () => { me.mini = true; q('#rest').classList.add('mini'); aoMinimizar?.(true); tick(); };
     me.abrir = () => { me.mini = false; q('#rest').classList.remove('mini'); aoMinimizar?.(false); tick(); };
