@@ -68,6 +68,7 @@ for (const L of LINGUAS) {
   await p.click('#ini'); await espera(900); await tela('sessao-tempo');
   await p.click('#pular'); await espera(400); await tela('sessao-biset');
   await p.click('#pular'); await espera(400);
+  await p.fill('.set[data-k="0"] input[data-f="kg"]', '40'); // com kg: sem o "Anotar o peso?" (crítica 30/10) o descanso abre direto
   await p.click('.set[data-k="0"] .rest'); await espera(700);
   ok(await p.$('#rest') !== null, `${L}: descanso abriu`); await tela('descanso');
   await p.click('#rest-x'); await espera(300); await tela('descanso-mini');
@@ -75,7 +76,7 @@ for (const L of LINGUAS) {
   await p.click('#enc'); await espera(600);
   await p.click('#esf button >> nth=7'); await p.click('#nota button >> nth=9'); await tela('feedback');
   await p.click('#env'); await espera(1000); await tela('card');
-  const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#share'); await dl; await espera(600);
+  const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); if (await p.$('#share')) { await p.click('#share'); await dl; } /* treino incompleto não tem story (crítica 30/10) */ await espera(600);
   await p.click('.tabs [data-go="pontos"]'); await espera(700); await tela('pontos');
   await p.click('.tabs [data-go="evolucao"]'); await espera(800); await tela('evolucao');
   await p.click('#add'); await espera(400); await tela('registro-mes'); await p.click('#c'); await espera(200);
