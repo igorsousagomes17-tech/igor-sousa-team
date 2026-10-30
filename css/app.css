@@ -436,6 +436,9 @@ details.mais .rapidos{margin-top:8px}
 .ov.mini .prox{display:none}
 #rest-layer .ov{gap:14px}#rest-layer .ov:not(.mini) .ring{width:min(60vw,220px,34vh)}#rest-layer .ov:not(.mini) .ring b{font-size:min(20vw,80px,12vh)}
 .ov.mini .ring{min-width:0;flex:1}.ov.mini .ring b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+/* Perfil: resposta dela pro Igor */
+.resp-in{gap:8px;margin-top:8px}.resp-in .input{flex:1;min-width:0;min-height:44px;padding:10px 12px}.resp-in .btn.sm{flex:0 0 auto}
+.resp-aluna{margin-top:4px;padding-left:10px;border-left:2px solid var(--accent);color:var(--fg)}
 /* Drop set: queda embaixo da série, mesmas colunas (↳ | kg | reps | ✕) */
 .dl{display:grid;grid-template-columns:44px 1fr 1fr 82px;gap:8px;align-items:center;padding:0 0 4px;font-size:.875rem}
 .dl>span{color:var(--accent);text-align:center;font-weight:700}

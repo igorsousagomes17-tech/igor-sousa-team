@@ -45,7 +45,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   const dia = d => { d = new Date(d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }; // dia no fuso do celular
   const treinaramHoje = ativas.filter(a => a.ultimo_treino && dia(a.ultimo_treino) === dia(Date.now())).length;
   const atencao = ativas.filter(a => a.dias_sem_treinar >= 4).sort((a, b) => b.dias_sem_treinar - a.dias_sem_treinar);
-  const semResposta = fb.filter(precisa);
+  const semResposta = fb.filter(precisa), delasNovas = fb.filter(f => f.resposta_aluna && !f.resposta_aluna_lida_em); // ela respondeu a resposta dele (migração 020)
   // Atualizações (igual ao Mfit): treino vencido ou vencendo em até 3 dias. Pendentes = ainda não marcou como lida.
   const hojeD = new Date(); hojeD.setHours(12, 0, 0, 0);
   let pendentes = [], resolvidas = [];
@@ -70,7 +70,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     return `<div class="topbar"><div class="logo sm">PAINEL DO <b>IGOR</b></div></div>
     <div class="atalhos">
       <button class="atalho" id="a-upd"><span class="ico">${svg('treino')}${badge(pendentes.length)}</span>Atualizações</button>
-      <button class="atalho" id="a-fb"><span class="ico">${svg('fb')}${badge(semResposta.length)}</span>Feedbacks</button>
+      <button class="atalho" id="a-fb"><span class="ico">${svg('fb')}${badge(semResposta.length + delasNovas.length)}</span>Feedbacks</button>
       <button class="atalho" id="a-duv"><span class="ico">${svg('duv')}</span>Dúvidas</button>
       <button class="atalho" id="recado"><span class="ico">${svg('rec')}</span>Recado</button>
       <button class="atalho" data-go="home"><span class="ico">${svg('ver')}</span>Ver como aluna</button>
@@ -88,7 +88,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
         <button class="tile" id="t-treino"><span class="ico">${svg('treino')}</span><b>Montar treino da aluna</b></button>
         <button class="tile" id="t-ficha"><span class="ico">${svg('anam')}</span><b>Anamneses</b>${comSaude.length ? `<span class="pill warn" style="align-self:flex-start">${comSaude.length} ⚠ saúde</span>` : ''}</button>
         <button class="tile" id="t-postural"><span class="ico">${svg('post')}</span><b>Avaliação postural</b></button>
-        <button class="tile" id="t-fb"><span class="ico">${svg('fb')}</span><b>Feedbacks dos treinos</b>${semResposta.length ? `<span class="pill warn quebra" style="align-self:flex-start;max-width:100%">${semResposta.length} pra responder</span>` : ''}</button>
+        <button class="tile" id="t-fb"><span class="ico">${svg('fb')}</span><b>Feedbacks dos treinos</b>${semResposta.length ? `<span class="pill warn quebra" style="align-self:flex-start;max-width:100%">${semResposta.length} pra responder</span>` : ''}${delasNovas.length ? `<span class="pill on quebra" style="align-self:flex-start;max-width:100%">${pl(delasNovas.length, 'resposta nova', 'respostas novas')}</span>` : ''}</button>
       </div>
       ${semTreino.length ? `<button class="linhacard mt" id="ir-semplano"><span>${svg('alerta')}<b>${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino</b></span><span class="muted">montar ${svg('seta')}</span></button>` : ''}
     </section>
@@ -116,9 +116,9 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     <div class="card">${atencao.length ? atencao.map(a => `<div class="r"><div><b>${esc(a.nome)}</b><span>${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : pl(a.dias_sem_treinar, 'dia', 'dias') + ' sem treinar'} · ${a.treinos_mes} no mês</span></div><span class="pill ${a.dias_sem_treinar >= 7 ? 'warn' : ''}">${a.dias_sem_treinar >= 7 ? '7+ dias' : '4-6 dias'}</span><a class="btn wa sm" style="padding:7px 10px;font-size:13px" href="${wa(a.whatsapp, msgInativa(a.nome, a.dias_sem_treinar === 999 ? 'uns' : a.dias_sem_treinar))}" target="_blank" rel="noopener">WhatsApp</a></div>`).join('') : '<p class="muted">Todo mundo em dia 🔥</p>'}</div>`;
   }
   function telaFeedbacks() {
-    const ord = [...semResposta, ...fb.filter(f => !precisa(f))];
-    return `${topo('Feedbacks')}<p class="muted">${semResposta.length ? pl(semResposta.length, 'feedback esperando sua resposta', 'feedbacks esperando sua resposta') + ' (em cima).' : 'Tudo respondido ✓'}</p>
-    <div class="card">${ord.length ? ord.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${f.duracao_s < 60 ? "&lt;1" : Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent);padding:6px 4px">editar</button>` : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted">Nenhum feedback ainda.</p>'}</div>`;
+    const ord = [...semResposta, ...delasNovas.filter(f => !precisa(f)), ...fb.filter(f => !precisa(f) && !delasNovas.includes(f))];
+    return `${topo('Feedbacks')}<p class="muted">${semResposta.length ? pl(semResposta.length, 'feedback esperando sua resposta', 'feedbacks esperando sua resposta') + ' (em cima).' : 'Tudo respondido ✓'}${delasNovas.length ? ' ' + pl(delasNovas.length, 'aluna te respondeu', 'alunas te responderam') + '.' : ''}</p>
+    <div class="card">${ord.length ? ord.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${f.duracao_s < 60 ? "&lt;1" : Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent);padding:6px 4px">editar</button>` : ''}${f.resposta_aluna ? `<br>↳ ${esc(String(f.profiles?.nome || 'ela').split(' ')[0])}: "${esc(f.resposta_aluna)}"${f.resposta_aluna_lida_em ? '' : ` <span class="pill on">nova</span> <button class="back small" data-lida="${f.id}" style="color:var(--accent);padding:6px 4px;min-height:40px">já vi</button>`}` : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted">Nenhum feedback ainda.</p>'}</div>`;
   }
   function telaAtualizacoes() {
     const lista = vtab === 'pend' ? pendentes : resolvidas, dd = v => new Date(v.fim + 'T12:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
@@ -160,6 +160,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     $$('[data-postural]').forEach(b => b.onclick = () => avaliacaoPostural(alunas.find(x => x.id === b.dataset.postural)));
     $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go, { renovar: b.dataset.renova === '1' }));
     $$('[data-resp],[data-edita]').forEach(b => b.onclick = () => responder(b));
+    $$('[data-lida]').forEach(b => b.onclick = async () => { const f = fb.find(x => String(x.id) === b.dataset.lida); try { await db.admin.marcarRespostaLida(b.dataset.lida); if (f) f.resposta_aluna_lida_em = new Date().toISOString(); const i = delasNovas.indexOf(f); if (i >= 0) delasNovas.splice(i, 1); desenhar(); } catch (e) { toast(e.message, true); } });
     if (secao === 'duvidas') carregarDuvidas();
     on('#t-exercicios', () => abrir('exercicios')); on('#t-modelos', () => abrir('modelos'));
     if (secao === 'exercicios') montarExercicios($('#bib'), db);

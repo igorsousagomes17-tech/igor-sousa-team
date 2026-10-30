@@ -65,7 +65,9 @@ for (const L of ['en', 'fr']) {
   ok(sw.sw && sw.on && sw.h >= 40, `${L}/perfil: cronômetro na tela de bloqueio é interruptor (${JSON.stringify(sw)})`);
   await p.click('#chipOn'); ok(await p.evaluate(() => localStorage.getItem('chip_off')) === '1', `${L}/perfil: interruptor desliga`); await p.click('#chipOn');
   ok(await p.evaluate(() => localStorage.getItem('chip_off')) === null, `${L}/perfil: interruptor liga de novo`);
-  const wa = await p.$eval('a[href*="wa.me"]:not(.btn)', e => e.getBoundingClientRect().height); ok(wa >= 40, `${L}/perfil: link do WhatsApp com alvo de toque ≥ 40px (${Math.round(wa)})`);
+  // com o campo "Responder o Igor" (migração 020) o link do WhatsApp sai do card; sem ele, o link continua com alvo ≥ 40px
+  if (await p.$('a[href*="wa.me"]:not(.btn)')) { const wa = await p.$eval('a[href*="wa.me"]:not(.btn)', e => e.getBoundingClientRect().height); ok(wa >= 40, `${L}/perfil: link do WhatsApp com alvo de toque ≥ 40px (${Math.round(wa)})`); }
+  else { const ri = await p.$eval('[data-rsend]', e => e.getBoundingClientRect().height).catch(() => 0); ok(ri >= 40, `${L}/perfil: botão de responder o Igor com alvo ≥ 40px (${Math.round(ri)})`); }
   await p.click('.tabs [data-go="home"]'); await espera(800); await p.click('[data-go="lib"]'); await espera(700); await confere('programas');
   await p.click('[data-go="programa"][data-arg="corrida"]'); await espera(700); await confere('programa-corrida');
   ok(!errs.length, `${L}: sem erro de página/console ${errs.length ? JSON.stringify(errs.slice(0, 4)) : ''}`);
