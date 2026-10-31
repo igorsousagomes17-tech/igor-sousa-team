@@ -2,6 +2,10 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^supino inclinado.*smith/, 'supino-inclinado-smith'],
+  [/^supino inclinado.*(articulado|maquina)/, 'supino-inclinado-articulado'],
+  [/^supino inclinado.*halter|^supino com halter(es)? inclinado(?! baixo)/, 'supino-inclinado-halter'],
+  [/^supino inclinado( (com|na) barra( livre)?)?$/, 'supino-inclinado-barra'],
   [/coice.*polia.*(quatro|4) apoios?|(quatro|4) apoios?.*polia/, 'coice-polia-4-apoios'],
   [/^(gluteo )?coice.*polia|^gluteo.*polia.*coice|^kickback.*polia/, 'coice-polia'],
   [/^extensao (de|do) quadril.*polia/, 'extensao-quadril-polia'],
@@ -53,6 +57,7 @@ export const ANIM_LISTA = [
   ['Elevação de quadril com barra', 'Glúteo'], ['Elevação de quadril na máquina', 'Glúteo'], ['Elevação de quadril unilateral na máquina', 'Glúteo'],
   ['Step up com halter', 'Glúteo'], ['Step up com caneleira', 'Glúteo'], ['Step up na polia', 'Glúteo'],
   ['Extensão de quadril na polia', 'Glúteo'], ['Glúteo coice na polia', 'Glúteo'], ['Abdução de quadril na polia', 'Glúteo'], ['Coice na polia em quatro apoios no banco', 'Glúteo'],
+  ['Supino inclinado com halter', 'Peito'], ['Supino inclinado com barra', 'Peito'], ['Supino inclinado articulado', 'Peito'], ['Supino inclinado no smith', 'Peito'],
 ];
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m ? `./anim/${m[1]}.mp4` : null; }
 export const ehAnim = url => /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(String(url || ''));

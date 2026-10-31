@@ -22,7 +22,10 @@ const casos = { 'Cadeira Extensora': 'cadeira-extensora', 'Cadeira extensora uni
   'Elevação de quadril unilateral na máquina': 'elevacao-uni-maquina', 'Hip thrust': 'elevacao-barra',
   'Step up com halter': 'step-up-halter', 'Step-up com halteres': 'step-up-halter', 'Step up com caneleira': 'step-up-caneleira', 'Step up na polia': 'step-up-polia', 'Step up': null,
   'Extensão de quadril polia': 'extensao-quadril-polia', 'Glúteo coice na polia': 'coice-polia', 'Coice na polia': 'coice-polia', 'Abdução de quadril na polia': 'abducao-polia',
-  'Abdução de Quadril Máquina com Tronco à Frente': null, 'Coice na polia em quatro apoio no banco': 'coice-polia-4-apoios' };
+  'Abdução de Quadril Máquina com Tronco à Frente': null, 'Coice na polia em quatro apoio no banco': 'coice-polia-4-apoios',
+  'Supino inclinado com halter': 'supino-inclinado-halter', 'Supino inclinado com barra': 'supino-inclinado-barra', 'Supino inclinado': 'supino-inclinado-barra',
+  'Supino inclinado articulado': 'supino-inclinado-articulado', 'Supino inclinado maquina': 'supino-inclinado-articulado', 'Supino inclinado no Smith': 'supino-inclinado-smith',
+  'Supino com Halteres Inclinado Baixo': null, 'Supino reto com barra': null };
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 
