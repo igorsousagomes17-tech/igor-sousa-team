@@ -43,7 +43,9 @@ const casos2 = { 'Leg press 45 unilateral': 'lp45-uni', 'Leg Press Horizontal Un
   'Rosca direta na polia com barra': 'rosca-polia-barra', 'Rosca invertida na polia com barra': 'rosca-invertida-polia', 'Rosca direta na polia com corda': 'rosca-polia-corda', 'Rosca martelo': 'rosca-martelo-halter', 'Rosca martelo com halter': 'rosca-martelo-halter', 'Rosca direta com halter': 'rosca-direta-halter',
   'Supino reto com halter': 'supino-reto-halter', 'Supino reto máquina': 'supino-reto-maquina', 'Supino reto máquina articulada': 'supino-reto-articulado', 'Crucifixo máquina': 'crucifixo-maquina', 'Voador': 'crucifixo-maquina',
   'Crucifixo inverso com máquina': 'crucifixo-inverso-maquina', 'Crucifixo na polia': 'crucifixo-polia', 'Crucifixo com halter': 'crucifixo-halter', 'Crucifixo inclinado com halter': null };
-Object.assign(casos, casos2);
+Object.assign(casos, casos2, { 'Abdominal na paralela com perna estendida': 'abdominal-paralela-estendida', 'Abdominal na paralela': 'abdominal-paralela', 'Crucifixo na polia baixa': 'crucifixo-polia-baixa',
+  'Abdução de quadril na máquina': 'abducao-maquina', 'Cadeira abdutora': 'abducao-maquina', 'Abdução de quadril na máquina em pé': 'abducao-maquina-em-pe', 'Abdução de quadril na máquina 45 graus': 'abducao-maquina-45',
+  'Abdução de quadril na máquina corpo inclinado': 'abducao-maquina-inclinado', 'Adução de quadril na máquina': 'aducao-maquina', 'Cadeira adutora': 'aducao-maquina', 'Abdução de quadril na polia': 'abducao-polia' });
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 

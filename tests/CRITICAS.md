@@ -451,3 +451,5 @@ Pendente:
 - [x] +7 peito: supino reto com halter, máquina e máquina articulada, crucifixo com halter, máquina (voador), inverso na máquina, na polia (crossover). Total 99. CACHE v52.
 - [x] Abdominal na paralela refeito: cotovelos e antebraços apoiados nos encostos e costas apoiadas no encosto (cadeira do capitão). Barra fixa: corpo levemente inclinado pra trás, sobe até o peito chegar na altura da barra (a cabeça não atravessa mais a barra).
 - [x] Crucifixo com halter: cotovelo na mesma linha do punho e do ombro (não cai mais pra baixo/pros pés).
+- [x] Crucifixo inverso: de frente pra máquina, vista de costas, braços saem da frente e abrem até a lateral. Desenvolvimentos (halter, barra, smith, articulado) com pegada mais aberta. Crucifixo máquina, inverso e na polia: cotovelo na mesma linha de punho e ombro.
+- [x] +7: abdominal na paralela com perna estendida, crucifixo na polia baixa (sai de baixo e as mãos se encontram acima da cabeça), abdução de quadril na máquina (sentada, 45 graus = tronco inclinado à frente ~45°, corpo inclinado = peito quase nas coxas), abdução na máquina em pé (vista de costas), adução na máquina. Total 106.
