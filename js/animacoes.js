@@ -2,6 +2,12 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^agachamento sumo.*step/, 'agachamento-sumo-step'],
+  [/^(levantamento )?(terra )?sumo|^levantamento terra sumo/, 'levantamento-sumo'],
+  [/^(romanian|romenia|romeno|rdl|levantamento romeno|stiff romeno).*barra/, 'rdl-barra'],
+  [/^(romanian|romenia|romeno|rdl|levantamento romeno|stiff romeno).*halter/, 'rdl-halter'],
+  [/^stiff.*halter/, 'stiff-halter'],
+  [/^levantamento terra(?!.*(sumo|romeno|hexagonal|trap))/, 'levantamento-terra'],
   [/^afundo com (o )?(pe (de tras )?no )?stept? (atras|de tras).*smith/, 'afundo-step-smith'],
   [/^afundo com (o )?(pe (de tras )?no )?stept? (atras|de tras)/, 'afundo-step-halter'],
   [/bulgaro.*smith/, 'bulgaro-smith'],
@@ -28,6 +34,8 @@ export const ANIM_LISTA = [
   ['Agachamento pêndulo', 'Quadríceps'], ['Búlgaro no smith', 'Glúteo'], ['Búlgaro com halter', 'Glúteo'], ['Búlgaro com barra livre', 'Glúteo'],
   ['Búlgaro goblet (halter no peito)', 'Glúteo'], ['Agachamento goblet', 'Quadríceps'], ['Agachamento frontal', 'Quadríceps'],
   ['Afundo com step atrás no smith', 'Glúteo'], ['Afundo com step atrás com halter', 'Glúteo'],
+  ['Agachamento sumô no step com halter', 'Glúteo'], ['Levantamento sumô com barra', 'Posterior'], ['Levantamento terra com barra', 'Posterior'],
+  ['Stiff com halter', 'Posterior'], ['Romanian deadlift com halter', 'Posterior'], ['Romanian deadlift com barra', 'Posterior'],
 ];
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m ? `./anim/${m[1]}.mp4` : null; }
 export const ehAnim = url => /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(String(url || ''));
