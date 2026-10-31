@@ -31,7 +31,8 @@ const casos = { 'Cadeira Extensora': 'cadeira-extensora', 'Cadeira extensora uni
   'Desenvolvimento com barra': 'desenvolvimento-barra', 'Desenvolvimento no Smith': 'desenvolvimento-smith',
   'Elevação lateral com halter': 'elevacao-lateral-halter', 'Elevação Lateral em Y': null, 'Elevação lateral na máquina': 'elevacao-lateral-maquina', 'Elevação unilateral na polia baixa': 'elevacao-lateral-polia',
   'Elevação lateral unilateral na polia baixa': 'elevacao-lateral-polia', 'Flexão de braço no chão': 'flexao-braco', 'Flexão': 'flexao-braco', 'Abdominal reto': 'abdominal-reto',
-  'Abdominal canivete alternado': 'canivete-alternado', 'Abdominal Canivete': null, 'Prancha': 'prancha', 'Ponte isométrica': 'ponte-isometrica', 'Ponte isométrica unilateral': 'ponte-isometrica-uni' };
+  'Abdominal canivete alternado': 'canivete-alternado', 'Abdominal Canivete': null, 'Prancha': 'prancha', 'Ponte isométrica': 'ponte-isometrica', 'Ponte isométrica unilateral': 'ponte-isometrica-uni',
+  'Flexão de joelho na bola suíça': 'flexao-joelho-bola', 'Abdominal na rodinha': 'abdominal-rodinha', 'Abdominal com Rodinha Solo com Apoio': 'abdominal-rodinha', 'Abdominal na paralelo': 'abdominal-paralela', 'Abdominal na paralela': 'abdominal-paralela' };
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 

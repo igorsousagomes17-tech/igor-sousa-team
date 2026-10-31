@@ -2,6 +2,9 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^flexao (de|do)s? joelhos?.*bola/, 'flexao-joelho-bola'],
+  [/^abdominal (na |com |de )?(rodinha|roda)/, 'abdominal-rodinha'],
+  [/^abdominal (na |nas |no )?paral[ae]l[ao]s?|^elevacao (de )?(pernas|joelhos) na paralela/, 'abdominal-paralela'],
   [/^elevacao (lateral )?unilateral.*polia|^elevacao lateral.*polia/, 'elevacao-lateral-polia'],
   [/^elevacao lateral.*maquina/, 'elevacao-lateral-maquina'],
   [/^elevacao lateral( (com|c\/) halter(es)?)?( em pe)?$/, 'elevacao-lateral-halter'],
@@ -75,6 +78,7 @@ export const ANIM_LISTA = [
   ['Extensão de quadril na polia', 'Glúteo'], ['Glúteo coice na polia', 'Glúteo'], ['Abdução de quadril na polia', 'Glúteo'], ['Coice na polia em quatro apoios no banco', 'Glúteo'],
   ['Elevação lateral com halter', 'Ombro'], ['Elevação lateral na máquina', 'Ombro'], ['Elevação lateral unilateral na polia baixa', 'Ombro'],
   ['Flexão de braço no chão', 'Peito'], ['Abdominal reto', 'Core'], ['Abdominal canivete alternado', 'Core'], ['Prancha', 'Core'], ['Ponte isométrica', 'Glúteo'], ['Ponte isométrica unilateral', 'Glúteo'],
+  ['Flexão de joelho na bola suíça', 'Posterior'], ['Abdominal na rodinha', 'Core'], ['Abdominal na paralela', 'Core'],
   ['Cadeira flexora', 'Posterior'], ['Mesa flexora', 'Posterior'], ['Flexão de joelho em pé na máquina', 'Posterior'],
   ['Desenvolvimento sentado com halter', 'Ombro'], ['Desenvolvimento com barra', 'Ombro'], ['Desenvolvimento no smith', 'Ombro'], ['Desenvolvimento máquina articulada', 'Ombro'],
   ['Supino inclinado com halter', 'Peito'], ['Supino inclinado com barra', 'Peito'], ['Supino inclinado articulado', 'Peito'], ['Supino inclinado no smith', 'Peito'],
