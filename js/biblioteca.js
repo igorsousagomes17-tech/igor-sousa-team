@@ -37,8 +37,6 @@ export async function montarExercicios(el, db) {
   let lib = [], filtro = '', grupo = '';
   try { lib = await db.admin.libExercicios(); } catch (e) { el.innerHTML = `<p class="muted">Não deu pra abrir a biblioteca (${esc(e.message)}).</p>`; return; }
   // Exercícios que já têm animação entram na biblioteca sozinhos (uma vez), pra o Igor trocar o nome ou o vídeo
-  const faltam = ANIM_LISTA.filter(([n]) => !lib.some(x => animDe(x.nome) === animDe(n)));
-  for (const [nome, g] of faltam) { try { lib.push(await db.admin.salvarExercicioLib({ nome, grupo: g, video_url: null, dica: null, alternativa: null })); } catch {} }
   lib.forEach(x => { x.grupo = x.grupo || grupoDe(x.nome); });
   function desenha() {
     const q = sem(filtro), lista = lib.filter(x => (!grupo || x.grupo === grupo) && (!q || sem(x.nome).includes(q)));
@@ -54,6 +52,10 @@ export async function montarExercicios(el, db) {
     $$('[data-ex]', el).forEach(b => b.onclick = () => { const x = lib.find(y => y.id === b.dataset.ex); formExercicio(x, db, salvo => { if (salvo === null) lib = lib.filter(y => y.id !== x.id); else Object.assign(x, salvo); desenha(); }); });
   }
   desenha();
+  // (em segundo plano: a lista abre na hora e os que faltam aparecem logo depois)
+  const faltam = ANIM_LISTA.filter(([n]) => !lib.some(x => animDe(x.nome) === animDe(n)));
+  if (faltam.length) Promise.all(faltam.map(([nome, g]) => db.admin.salvarExercicioLib({ nome, grupo: g, video_url: null, dica: null, alternativa: null }).catch(() => null)))
+    .then(novos => { novos.filter(Boolean).forEach(x => { x.grupo = x.grupo || grupoDe(x.nome); lib.push(x); }); lib.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')); if (el.isConnected && !document.querySelector('#fx')) { const q = document.activeElement?.id === 'bq'; desenha(); if (q) { const i = $('#bq', el); i.focus(); i.setSelectionRange(i.value.length, i.value.length); } } });
 }
 
 // Cadastro/edição de um exercício da biblioteca. onFim(salvo) — salvo null = apagado
