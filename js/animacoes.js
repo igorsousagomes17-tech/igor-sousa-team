@@ -2,9 +2,9 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
-  [/^(step ?up|subida (no|em) (step|banco|caixa)).*polia/, 'step-up-polia'],
-  [/^(step ?up|subida (no|em) (step|banco|caixa)).*caneleira/, 'step-up-caneleira'],
-  [/^(step ?up|subida (no|em) (step|banco|caixa)).*halter/, 'step-up-halter'],
+  [/^(step[ -]?up|subida (no|em) (step|banco|caixa)).*polia/, 'step-up-polia'],
+  [/^(step[ -]?up|subida (no|em) (step|banco|caixa)).*caneleira/, 'step-up-caneleira'],
+  [/^(step[ -]?up|subida (no|em) (step|banco|caixa)).*halter/, 'step-up-halter'],
   [/^(elevacao (de|do) quadril|hip thrust) unilateral.*maquina/, 'elevacao-uni-maquina'],
   [/^(elevacao (de|do) quadril|hip thrust).*maquina/, 'elevacao-maquina'],
   [/^(elevacao (de|do) quadril|hip thrust) unilateral.*halter/, 'elevacao-uni-halter-banco'],
