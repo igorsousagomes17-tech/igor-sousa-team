@@ -2,6 +2,10 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/coice.*polia.*(quatro|4) apoios?|(quatro|4) apoios?.*polia/, 'coice-polia-4-apoios'],
+  [/^(gluteo )?coice.*polia|^gluteo.*polia.*coice|^kickback.*polia/, 'coice-polia'],
+  [/^extensao (de|do) quadril.*polia/, 'extensao-quadril-polia'],
+  [/^abducao (de|do) quadril.*polia/, 'abducao-polia'],
   [/^(step[ -]?up|subida (no|em) (step|banco|caixa)).*polia/, 'step-up-polia'],
   [/^(step[ -]?up|subida (no|em) (step|banco|caixa)).*caneleira/, 'step-up-caneleira'],
   [/^(step[ -]?up|subida (no|em) (step|banco|caixa)).*halter/, 'step-up-halter'],
@@ -48,6 +52,7 @@ export const ANIM_LISTA = [
   ['Elevação de quadril unilateral no solo', 'Glúteo'], ['Elevação de quadril unilateral no banco', 'Glúteo'], ['Elevação de quadril unilateral com halter no banco', 'Glúteo'],
   ['Elevação de quadril com barra', 'Glúteo'], ['Elevação de quadril na máquina', 'Glúteo'], ['Elevação de quadril unilateral na máquina', 'Glúteo'],
   ['Step up com halter', 'Glúteo'], ['Step up com caneleira', 'Glúteo'], ['Step up na polia', 'Glúteo'],
+  ['Extensão de quadril na polia', 'Glúteo'], ['Glúteo coice na polia', 'Glúteo'], ['Abdução de quadril na polia', 'Glúteo'], ['Coice na polia em quatro apoios no banco', 'Glúteo'],
 ];
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m ? `./anim/${m[1]}.mp4` : null; }
 export const ehAnim = url => /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(String(url || ''));
