@@ -450,3 +450,4 @@ Pendente:
 - [x] +10 braços: tríceps na polia com barra reta / corda / unilateral, tríceps francês na polia, tríceps testa na polia com barra e com halter, rosca direta na polia com barra e com corda, rosca invertida na polia, rosca martelo com halter. Total 92. Exercícios em pé na polia com 3/4 por trás (a torre tapava o boneco).
 - [x] +7 peito: supino reto com halter, máquina e máquina articulada, crucifixo com halter, máquina (voador), inverso na máquina, na polia (crossover). Total 99. CACHE v52.
 - [x] Abdominal na paralela refeito: cotovelos e antebraços apoiados nos encostos e costas apoiadas no encosto (cadeira do capitão). Barra fixa: corpo levemente inclinado pra trás, sobe até o peito chegar na altura da barra (a cabeça não atravessa mais a barra).
+- [x] Crucifixo com halter: cotovelo na mesma linha do punho e do ombro (não cai mais pra baixo/pros pés).
