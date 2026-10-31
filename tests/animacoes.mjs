@@ -19,7 +19,8 @@ const casos = { 'Cadeira Extensora': 'cadeira-extensora', 'Cadeira extensora uni
   'Romênia dead lift com halter': 'rdl-halter', 'Romanian deadlift com barra': 'rdl-barra', 'Levantamento romeno com barra': 'rdl-barra',
   'Elevação de quadril unilateral solo': 'elevacao-uni-solo', 'Elevação de quadril unilateral banco': 'elevacao-uni-banco', 'Elevação de quadril unilateral com halter no banco': 'elevacao-uni-halter-banco',
   'Elevação de quadril com barra': 'elevacao-barra', 'Elevação de Quadril': 'elevacao-barra', 'Elevaçao de quadril solo com barra': null, 'Elevação de quadril na máquina': 'elevacao-maquina',
-  'Elevação de quadril unilateral na máquina': 'elevacao-uni-maquina', 'Hip thrust': 'elevacao-barra' };
+  'Elevação de quadril unilateral na máquina': 'elevacao-uni-maquina', 'Hip thrust': 'elevacao-barra',
+  'Step up com halter': 'step-up-halter', 'Step-up com halteres': 'step-up-halter', 'Step up com caneleira': 'step-up-caneleira', 'Step up na polia': 'step-up-polia', 'Step up': null };
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 
