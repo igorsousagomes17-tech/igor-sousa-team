@@ -113,6 +113,8 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .modal .box{width:100%;max-width:400px;background:var(--panel);border-radius:18px;overflow:hidden}
 .modal .area{aspect-ratio:9/14;background:#000;display:grid;place-items:center;color:var(--muted);font-size:0.8125rem;text-align:center;padding:16px}
 .modal .area iframe,.modal .area video{width:100%;height:100%;border:0}
+.fx-previa .fx-midia{aspect-ratio:9/10;max-height:46vh;background:#0f0f11;border-radius:12px;overflow:hidden;display:grid;place-items:center}.fx-previa .fx-midia>*{width:100%;height:100%;border:0;object-fit:contain}
+.modal .area.anim{aspect-ratio:9/10;padding:0;background:#0f0f11}.modal .area.anim video{object-fit:contain}
 .toast{position:fixed;left:16px;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:#0b0b0c;border-radius:12px;padding:13px 16px;font-size:0.9375rem;line-height:1.35;font-weight:600;display:none;z-index:12;max-width:448px;margin:0 auto;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 .toast.on{display:block}.toast.atras{z-index:10}
 .toast.err{background:#c62828;color:#fff}.toast:not(.fixo){pointer-events:none} /* toque passa pro botão de baixo (Iniciar, próxima série) */

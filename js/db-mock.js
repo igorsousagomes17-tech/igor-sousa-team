@@ -1,4 +1,5 @@
 import { t as tr } from './i18n.js';
+import { comAnimacoes } from './animacoes.js';
 // Modo DEMO: mesma interface do db.js, dados fictícios em memória (nada é enviado).
 const LS = { get(k, d = null) { try { const v = localStorage.getItem('demo:' + k); return v ? JSON.parse(v) : d; } catch { return d; } }, set(k, v) { try { localStorage.setItem('demo:' + k, JSON.stringify(v)); } catch {} }, del(k) { try { localStorage.removeItem('demo:' + k); } catch {} } };
 export { LS };
@@ -28,7 +29,7 @@ export async function conferirSenha(senha) { await wait(200); return !!String(se
 export async function esqueciSenha() { await wait(); }
 export async function perfil() { return state.perfil; }
 export async function salvarPerfil(p) { Object.assign(state.perfil, p); save(); return state.perfil; }
-export async function planoAtual() { return PLANO; }
+export async function planoAtual() { return comAnimacoes(PLANO); }
 export async function programas() { return [
   { slug: 'corrida', titulo: 'Fortalecimento pra corrida', subtitulo: '8 treinos · 25 min', capa_url: 'icons/corrida_s.jpg', programa_treinos: [{ id: 'pc1', nome: 'Base 1 · pernas e core', duracao_min: 25, exercicios: [{ nome: 'Agachamento búlgaro', series: 3, reps: '10 cada', descanso_s: 45 }, { nome: 'Elevação de panturrilha unilateral', series: 3, reps: '15 cada', descanso_s: 30 }, { nome: 'Ponte unilateral', series: 3, reps: '12 cada', descanso_s: 30 }, { nome: 'Prancha com toque no ombro', series: 3, reps: '20', descanso_s: 30 }] }] },
   { slug: 'abdomen', titulo: 'Abdômen 10 min', subtitulo: '6 treinos', capa_url: 'icons/abdomen_s.jpg', programa_treinos: [{ id: 'pa1', nome: 'Abdômen 1', duracao_min: 10, exercicios: [{ nome: 'Dead bug', series: 3, reps: '10 cada', descanso_s: 20 }, { nome: 'Prancha', series: 3, reps: '30s', descanso_s: 20 }, { nome: 'Abdominal infra', series: 3, reps: '15', descanso_s: 20 }] }] },
@@ -91,6 +92,7 @@ export const admin = {
   async responder(id, texto) { await wait(); const s = state.sessoes.find(x => x.id === id); if (s) { s.resposta_igor = texto; s.respondida_em = iso(new Date()); save(); } else if (id === 'f1') { state.respF1 = texto; save(); } }, async anamneses() { return [{ ...state.perfil, id: 'a2', nome: 'Ana Paula' }]; }, async publicarRecado() { await wait(); }, async setAtiva() { await wait(); },
   async libExercicios() { await wait(); if (!state.lib) { const vistos = new Set(); state.lib = PLANO.treinos.flatMap(t => t.exercicios).filter(e => !vistos.has(e.nome.toLowerCase()) && vistos.add(e.nome.toLowerCase())).map((e, i) => ({ id: 'x' + i, nome: e.nome, grupo: null, video_url: e.video_url || null, dica: e.dica || null, alternativa: e.alternativa || null })); save(); } return [...state.lib].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')); },
   async salvarExercicioLib(row) { await wait(); state.lib = state.lib || []; if (row.id) Object.assign(state.lib.find(x => x.id === row.id) || {}, row); else { if (state.lib.some(x => x.nome.toLowerCase() === row.nome.toLowerCase())) throw new Error('Já existe um exercício com esse nome'); row = { ...row, id: 'x' + Date.now() }; state.lib.push(row); } save(); return row; },
+  async enviarMidiaExercicio(file) { await wait(); return URL.createObjectURL(file); },
   async apagarExercicioLib(id) { await wait(); state.lib = (state.lib || []).filter(x => x.id !== id); save(); },
   async videoNosTreinos() { await wait(); return 0; },
   async modelos() { await wait(); return state.modelos || (state.modelos = [{ id: 'm1', nome: 'Full Body 3x · iniciante', descricao: 'Modelo de exemplo', treinos: PLANO.treinos.slice(0, 3).map(t => ({ letra: t.letra, nome: t.nome, duracao_min: t.duracao_min, exercicios: t.exercicios.map(({ id, treino_id, ...e }) => e) })), updated_at: iso(new Date()) }]); },

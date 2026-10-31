@@ -1,6 +1,7 @@
 // Bibliotecas do Igor: exercícios (nome, grupo, vídeo, dica, alternativa) e treinos-modelo,
 // e o montador visual de treino (o mesmo pra modelo e pro plano da aluna). Tudo em português: é só pro Igor.
-import { $, $$, esc, toast, overlay, closeOverlay } from './ui.js';
+import { $, $$, esc, toast, overlay, closeOverlay, youtubeEmbed } from './ui.js';
+import { animDe, ANIM_LISTA } from './animacoes.js';
 import { aqDe, semAq, comAq } from './conteudo.js';
 
 export const GRUPOS = ['Glúteo', 'Quadríceps', 'Posterior', 'Panturrilha', 'Costas', 'Peito', 'Ombro', 'Braços', 'Core', 'Cardio', 'Mobilidade', 'Outros'];
@@ -35,15 +36,18 @@ export const ligarDatas = raiz => { const f = () => { const e = $('#venceEm', ra
 export async function montarExercicios(el, db) {
   let lib = [], filtro = '', grupo = '';
   try { lib = await db.admin.libExercicios(); } catch (e) { el.innerHTML = `<p class="muted">Não deu pra abrir a biblioteca (${esc(e.message)}).</p>`; return; }
+  // Exercícios que já têm animação entram na biblioteca sozinhos (uma vez), pra o Igor trocar o nome ou o vídeo
+  const faltam = ANIM_LISTA.filter(([n]) => !lib.some(x => animDe(x.nome) === animDe(n)));
+  for (const [nome, g] of faltam) { try { lib.push(await db.admin.salvarExercicioLib({ nome, grupo: g, video_url: null, dica: null, alternativa: null })); } catch {} }
   lib.forEach(x => { x.grupo = x.grupo || grupoDe(x.nome); });
   function desenha() {
     const q = sem(filtro), lista = lib.filter(x => (!grupo || x.grupo === grupo) && (!q || sem(x.nome).includes(q)));
-    const comVideo = lib.filter(x => x.video_url).length;
-    el.innerHTML = `<p class="muted">${lib.length} exercícios · ${comVideo} com vídeo seu (${Math.round(comVideo / Math.max(1, lib.length) * 100)}%)</p>
+    const comVideo = lib.filter(x => x.video_url).length, comAnim = lib.filter(x => !x.video_url && animDe(x.nome)).length;
+    el.innerHTML = `<p class="muted">${lib.length} exercícios · ${comVideo} com vídeo seu (${Math.round(comVideo / Math.max(1, lib.length) * 100)}%)${comAnim ? ` · ${comAnim} com animação provisória` : ''}</p>
       <button class="btn sm" id="novoEx">+ Novo exercício</button>
       <input class="input" id="bq" placeholder="Buscar exercício" value="${esc(filtro)}" autocomplete="off">
       <div class="chips">${['', ...GRUPOS].map(g => `<button class="pill ${g === grupo ? 'on' : ''}" data-g="${g}">${g || 'Todos'}</button>`).join('')}</div>
-      <div class="lista">${lista.map(x => `<button class="aluna" data-ex="${x.id}"><span class="av">${x.video_url ? '▶' : '·'}</span><span class="t"><b>${esc(x.nome)}</b><span>${esc(x.grupo)}${x.video_url ? ' · com vídeo' : ' · sem vídeo'}${x.alternativa ? ' · alt: ' + esc(x.alternativa) : ''}</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 5 7 7-7 7"/></svg></button>`).join('') || `<p class="muted">Nada com esse nome. Toca em "+ Novo exercício" pra criar.</p>`}</div>`;
+      <div class="lista">${lista.map(x => `<button class="aluna" data-ex="${x.id}"><span class="av">${x.video_url || animDe(x.nome) ? '▶' : '·'}</span><span class="t"><b>${esc(x.nome)}</b><span>${esc(x.grupo)}${x.video_url ? ' · com vídeo' : animDe(x.nome) ? ' · animação' : ' · sem vídeo'}${x.alternativa ? ' · alt: ' + esc(x.alternativa) : ''}</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 5 7 7-7 7"/></svg></button>`).join('') || `<p class="muted">Nada com esse nome. Toca em "+ Novo exercício" pra criar.</p>`}</div>`;
     $('#bq', el).oninput = e => { filtro = e.target.value; const pos = e.target.selectionStart; desenha(); const i = $('#bq', el); i.focus(); i.setSelectionRange(pos, pos); };
     $$('[data-g]', el).forEach(b => b.onclick = () => { grupo = b.dataset.g; desenha(); });
     $('#novoEx', el).onclick = () => formExercicio({ nome: filtro }, db, async salvo => { lib.push(salvo); desenha(); });
@@ -58,7 +62,10 @@ export function formExercicio(x, db, onFim, { empilhado = false } = {}) {
   const html = `<div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;margin:20px 0;max-width:460px"><h2>${novo ? 'Novo exercício' : 'Editar exercício'}</h2>
     <label class="campo">Nome<input class="input" id="fxN" value="${esc(x?.nome || '')}" placeholder="Ex.: Agachamento livre"></label>
     <label class="campo">Grupo<select class="input" id="fxG">${GRUPOS.map(g => `<option ${g === (x?.grupo || grupoDe(x?.nome)) ? 'selected' : ''}>${g}</option>`).join('')}</select></label>
-    <label class="campo">Link do vídeo (YouTube não listado)<input class="input" id="fxV" value="${esc(x?.video_url || '')}" placeholder="https://youtube.com/shorts/..." inputmode="url"></label>
+    <div id="fxP" class="fx-previa"></div>
+    <label class="campo">Vídeo do exercício: link do YouTube<input class="input" id="fxV" value="${esc(x?.video_url || '')}" placeholder="https://youtube.com/shorts/..." inputmode="url"></label>
+    <button class="btn ghost sm" id="fxU" type="button">📎 Adicionar foto/vídeo</button><input type="file" id="fxF" accept="image/*,video/*" hidden>
+    <p class="muted small" id="fxUi" style="margin-top:-4px">Ou manda o arquivo direto do celular (até 50 MB). Ele substitui o vídeo atual.</p>
     <label class="campo">Dica de execução<textarea class="input" id="fxD" rows="3" placeholder="Ex.: joelho acompanha a ponta do pé">${esc(x?.dica || '')}</textarea></label>
     <label class="campo">Alternativa (se não tiver o aparelho)<input class="input" id="fxA" value="${esc(x?.alternativa || '')}" placeholder="Ex.: Agachamento com halter"></label>
     <div class="row"><button class="btn ghost sm" id="fxC" style="flex:1">Cancelar</button><button class="btn sm" id="fxS" style="flex:1">Salvar</button></div>
@@ -66,6 +73,22 @@ export function formExercicio(x, db, onFim, { empilhado = false } = {}) {
   const camada = document.createElement('div'); camada.className = 'modal camada'; camada.id = 'fx'; camada.style.cssText = 'align-items:flex-start;overflow:auto;z-index:60'; camada.innerHTML = html;
   const fecha = () => camada.remove();
   (empilhado ? document.body : ($('#overlay') || document.body)).appendChild(camada);
+  const previa = () => {
+    const v = $('#fxV', camada).value.trim(), nome = $('#fxN', camada).value.trim(), u = v || animDe(nome), yt = v && youtubeEmbed(v);
+    const media = !u ? '' : yt ? `<iframe src="${esc(yt)}" allow="encrypted-media" allowfullscreen></iframe>` : /\.(jpe?g|png|webp|gif|heic)(\?|$)/i.test(u) ? `<img src="${esc(u)}" alt="">` : `<video src="${esc(u)}" autoplay loop muted playsinline${v ? ' controls' : ''}></video>`;
+    $('#fxP', camada).innerHTML = u ? `<div class="fx-midia">${media}</div><p class="muted small">${v ? 'Vídeo atual (é esse que as alunas veem)' : 'Animação provisória: as alunas veem essa até você colocar o seu vídeo'}</p>` : '<p class="muted small">Sem vídeo ainda: as alunas veem só a dica.</p>';
+  };
+  previa();
+  $('#fxV', camada).addEventListener('change', previa);
+  $('#fxU', camada).onclick = () => $('#fxF', camada).click();
+  $('#fxF', camada).onchange = async e => {
+    const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+    if (f.size > 50 * 1024 * 1024) return toast('Arquivo grande demais (máx. 50 MB). Corta o vídeo ou manda pelo YouTube.', true);
+    const bt = $('#fxU', camada), txt = bt.textContent; bt.disabled = true; bt.textContent = 'Enviando…';
+    try { $('#fxV', camada).value = await db.admin.enviarMidiaExercicio(f, $('#fxN', camada).value.trim()); previa(); toast('Arquivo enviado ✓ Toca em Salvar pra valer.'); }
+    catch (er) { toast(/bucket|not found/i.test(er.message || '') ? 'O armazenamento de vídeos ainda não foi ativado no servidor.' : 'Não deu pra enviar: ' + (er.message || 'erro'), true); }
+    finally { bt.disabled = false; bt.textContent = txt; }
+  };
   $('#fxN', camada).oninput = e => { if (novo) $('#fxG', camada).value = grupoDe(e.target.value); };
   $('#fxC', camada).onclick = fecha;
   $('#fxS', camada).onclick = async () => {

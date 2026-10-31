@@ -434,3 +434,12 @@ Pendente:
 - [ ] SUSPEITA: aba "Trei···" com letra 130% — só apareceu com a fonte do Google bloqueada no teste.
 - [ ] SUSPEITA: meta "0/4" antes da anamnese (dias por semana vazio) — o Início pede a anamnese antes; não reproduzido como problema real.
 - [ ] Seguem: publicar função assistente, WhatsApp, vídeos, fotos dos prêmios, capa do PDF clara, i18n por idioma, link definitivo da Kiwify, aviso no celular quando o Igor responde (fase 2 do push).
+
+## 31/10 · Animações dos exercícios + foto/vídeo na Biblioteca de exercícios
+- [x] Boneco 3D animado (vista lateral + 3/4 lado a lado) pra 9 exercícios sem vídeo do Igor: cadeira extensora, agachamento hack, agachamento livre com barra, leg press 45, leg press horizontal, agachamento no smith, afundo no smith, afundo alternado no smith, rosca direta com halter. Arquivos em anim/*.mp4 (30–100 KB cada). Mapa nome → animação em js/animacoes.js (unilateral, panturrilha hack e afundo com halter ficam de fora de propósito).
+- [x] O vídeo do Igor sempre ganha: a animação só preenche quando video_url está vazio (no app, não no banco). Ao renomear um exercício pra um nome que não bate no mapa, a animação some dele.
+- [x] Biblioteca de exercícios (painel): os 9 entram sozinhos na 1ª abertura; editar mostra a prévia do vídeo atual; botão "Adicionar foto/vídeo" envia arquivo (até 50 MB) pro bucket público exercicios-midia (migração 021) e preenche o link; link do YouTube continua.
+- [x] Pop-up de vídeo abre foto (jpg/png/webp/gif) e a animação em loop com aviso "o vídeo do Igor tá chegando".
+- [x] SW não guarda resposta parcial de vídeo (206) no cache. CACHE v51.
+- [ ] Rodar supabase/migracao-021-midia-exercicios.sql no SQL Editor antes do envio de arquivo funcionar (sem ela o botão avisa que o armazenamento não foi ativado).
+- Teste: tests/animacoes.mjs (W=360 e 375).

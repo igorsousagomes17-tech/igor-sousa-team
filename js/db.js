@@ -2,6 +2,7 @@
 import { createClient } from './vendor/supabase.js'; // empacotado no app: abre sem internet
 import { idioma } from './i18n.js';
 import { aqDe, semAq } from './conteudo.js';
+import { comAnimacoes } from './animacoes.js';
 
 const C = window.ISTEAM_CONFIG;
 export const sb = createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
@@ -51,11 +52,11 @@ export async function planoAtual(alunaId) {
   const { data, error } = await sb.from('planos')
     .select('id,mes,titulo,obs,inicio,fim,treinos(id,letra,nome,duracao_min,ordem,exercicios(id,ordem,nome,series,reps,descanso_s,video_url,dica,alternativa,biset_com))')
     .eq('aluna_id', alunaId).lte('mes', mesStr).order('mes', { ascending: false }).limit(1);
-  if (error || !data?.length) return LS.get('plano');
+  if (error || !data?.length) return comAnimacoes(LS.get('plano'));
   const p = data[0];
   p.treinos.sort((a, b) => a.ordem - b.ordem || a.letra.localeCompare(b.letra));
   p.treinos.forEach(t => { t.exercicios.sort((a, b) => a.ordem - b.ordem); t.exercicios.forEach(e => { const aq = aqDe(e.dica); if (aq) { e.aq = aq; e.dica = semAq(e.dica); } }); });
-  LS.set('plano', p); return p;
+  comAnimacoes(p); LS.set('plano', p); return p;
 }
 
 export async function programas() {
@@ -290,6 +291,15 @@ export const admin = {
   // Bibliotecas do Igor (exercícios e treinos-modelo)
   async libExercicios() { const { data, error } = await sb.from('biblioteca_exercicios').select('*').order('nome'); if (error) throw error; return data || []; },
   async salvarExercicioLib(row) { row = { ...row, updated_at: new Date().toISOString() }; const q = row.id ? sb.from('biblioteca_exercicios').update(row).eq('id', row.id) : sb.from('biblioteca_exercicios').insert(row); const { data, error } = await q.select().single(); if (error) throw error; return data; },
+  // Foto/vídeo do exercício enviado pelo Igor: bucket público "exercicios-midia" (migração 021)
+  async enviarMidiaExercicio(file, nome) {
+    const ext = (file.name.split('.').pop() || (file.type.split('/')[1] || 'bin')).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5) || 'bin';
+    const slug = String(nome || 'exercicio').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 50) || 'exercicio';
+    const path = `${slug}-${Date.now()}.${ext}`;
+    const { error } = await sb.storage.from('exercicios-midia').upload(path, file, { contentType: file.type || undefined, upsert: false, cacheControl: '31536000' });
+    if (error) throw error;
+    return sb.storage.from('exercicios-midia').getPublicUrl(path).data.publicUrl;
+  },
   async apagarExercicioLib(id) { const { error } = await sb.from('biblioteca_exercicios').delete().eq('id', id); if (error) throw error; },
   // vídeo novo na biblioteca: entra nos treinos das alunas que ainda estão sem vídeo nesse exercício
   async videoNosTreinos(nome, video_url) { const { data, error } = await sb.from('exercicios').update({ video_url }).ilike('nome', nome).is('video_url', null).select('id'); if (error) throw error; return (data || []).length; },
