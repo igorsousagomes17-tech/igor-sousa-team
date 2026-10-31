@@ -12,7 +12,8 @@ const casos = { 'Cadeira Extensora': 'cadeira-extensora', 'Cadeira extensora uni
   'Afundo com Halteres entre Steps': null, 'Rosca direta com halter': 'rosca-direta-halter', 'Rosca Direta com Halteres': 'rosca-direta-halter', 'Rosca Scott maquina': null,
   'Agachamento Pêndulo': 'agachamento-pendulo', 'Búlgaro no Smith': 'bulgaro-smith', 'Agachamento búlgaro com halter': 'bulgaro-halter', 'Búlgaro com halteres': 'bulgaro-halter',
   'Búlgaro com barra livre': 'bulgaro-barra', 'Búlgaro goblet': 'bulgaro-goblet', 'Búlgaro segurando o halter em cima': 'bulgaro-goblet', 'Agachamento Goblet': 'agachamento-goblet',
-  'Goblet com anilha no calcanhar': null, 'Agachamento Frontal com Barra Livre': 'agachamento-frontal', 'Agachamento Frontal Smith': null };
+  'Goblet com anilha no calcanhar': null, 'Agachamento Frontal com Barra Livre': 'agachamento-frontal', 'Agachamento Frontal Smith': null,
+  'Afundo com step atrás no Smith': 'afundo-step-smith', 'Afundo com step atrás com halter': 'afundo-step-halter', 'Afundo com stept atrás com halteres': 'afundo-step-halter' };
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 
