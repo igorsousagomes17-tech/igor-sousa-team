@@ -456,3 +456,4 @@ Pendente:
 - [x] Passadas com tronco mais inclinado à frente. Passada dupla refeita: anda pra frente, desce duas vezes na mesma passada e só então passa pra outra perna. Removida a abdução na máquina com corpo inclinado (a pedido do Igor; "tronco à frente" volta a ficar sem animação). Total 105.
 - [x] Abdução na máquina em pé refeita como o abdutor em pé da foto (Pórtico FW2026): pés fixos nas plataformas, semi-agachado com tronco à frente, mãos na alça da frente, joelhos empurram as almofadas pra fora.
 - [x] Abdutor em pé: a plataforma do pé e a almofada do joelho giram junto com a perna (mesmo movimento do joelho), eixo atrás na altura do quadril.
+- [x] Abdutor em pé: eixo é VERTICAL (sob o quadril). Plataforma e almofada giram na horizontal: o pé e o joelho abrem pra fora e um pouco pra trás, sem subir.
