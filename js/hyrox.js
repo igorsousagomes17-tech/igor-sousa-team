@@ -46,6 +46,9 @@ export const FASES = [
 // Fase do mês: roda Base → Específico → Simulado (todo mês muda o treino, igual aos outros programas)
 // Ciclo começa em novembro/2026 (lançamento) na Base: nov Base, dez Específico, jan Simulado, fev Base...
 export const faseDoMes = (d = new Date()) => (((d.getFullYear() * 12 + d.getMonth()) - (2026 * 12 + 10)) % 3 + 3) % 3;
+// Fase dela: conta a partir do mês em que ela escolheu o nível (o 1º mês é sempre Base; ninguém cai direto no Simulado)
+export const mesDe = (d = new Date()) => d.getFullYear() * 12 + d.getMonth();
+export const faseDela = (inicio, d = new Date()) => inicio == null ? faseDoMes(d) : Math.max(0, mesDe(d) - inicio) % 3;
 
 // TREINOS[nível][fase] = 3 treinos. Máx. 40 min. Nada de duas máquinas no mesmo circuito.
 const T = {
@@ -102,8 +105,8 @@ const T = {
   ]
 };
 
-export function treinosDoMes(nivel, d = new Date()) {
-  const f = faseDoMes(d), lista = (T[nivel] || T.ini)[f];
+export function treinosDoMes(nivel, d = new Date(), fase) {
+  const f = fase ?? faseDoMes(d), lista = (T[nivel] || T.ini)[f];
   return lista.map((x, i) => ({ id: `hyrox-${nivel}-${f}-${i}`, nome: x.nome, duracao_min: x.duracao_min, exercicios: montar(x.blocos) }));
 }
 export const TODOS = T; // pros testes

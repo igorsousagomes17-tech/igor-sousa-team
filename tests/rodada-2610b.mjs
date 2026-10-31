@@ -113,7 +113,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   for (const aba of ['evolucao', 'pontos', 'perfil', 'treino', 'home']) { await p.click(`.tabs [data-go="${aba}"]`); await espera(p, 700); const w = await p.evaluate(() => document.documentElement.scrollWidth); ok(w <= 300, `${aba} cabe em 300 px com letra 130% (${w})`); }
   ok(await p.evaluate(() => [...document.querySelectorAll('.tabs .tab')].every(b => [...b.querySelectorAll('span')].some(s => getComputedStyle(s).display !== 'none' && s.textContent.trim()))), 'abas com nome embaixo em 300 px');
   await shot(p, 'evolucao-300'); await ctx.close(); }
-{ const { ctx, p } = await nova(); await login(p); const pts0 = (await st(p)).perfil.pontos;
+{ const { ctx, p } = await nova(new Date('2026-11-02T10:00:00-03:00').getTime()); await login(p); const pts0 = (await st(p)).perfil.pontos;
   await p.evaluate(() => { navigator.canShare = () => false; }); await p.click('#resumoSem'); await espera(p, 900);
   if (await p.$('#shSem')) { await p.click('#shSem'); await espera(p, 2500); ok((await st(p)).perfil.pontos === pts0 + 30, `story do resumo da semana dá +30 (${pts0}→${(await st(p)).perfil.pontos})`); } else ok(false, 'resumo sem botão de story');
   await ctx.close(); }

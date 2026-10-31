@@ -390,3 +390,47 @@ Pendente:
 ### 30/10 noite — lançamento (SW v48)
 - [x] Juntadas no main as correções da crítica (proxima) e o programa Hyrox (hyrox); conflito no app.js resolvido mantendo os dois (card Hyrox nas abas + rótulo "Circuito" com o texto novo de "Pausar treino"). Testes hyrox, sessao-critica, fluxo-treino e regressao ok.
 - [x] Servidor conferido 30/10 20:35: migração 011 (só treino completo pontua) rodada pelo Igor; funções push, assistente e strava já iguais ao repositório.
+
+## 2026-10-31 (rodada automática, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~44 únicos)
+**Júlia (23, iniciante, iPhone):** depois da anamnese abriam juntos "Enviado", fotos do início e passeio (botão "Depois" não respondia); 1º dia caía em "Por qual treino começar a semana?" em vez do Treino A; bi-set escondia Execução/Dúvida/Senti dor (voltou a esconder em 30/10); "+ drop" sem explicar o que é nem as reps; card do 1º treino "🔥 0 semanas" e frase do story sem botão; IA do demo sem smith, goblet, A1/A2, 10-12, regular máquina, pular, parar, estalo, mobilidade; Perfil no iPhone dizia que apita e que não apita; busca "como usar leg press" vazia; Spinning ("em pé 7%", 🔥) e Hyrox sem explicação; aviso "seu treino vai até…" pra quem acabou de chegar.
+**Carla (34, Android lento):** drop contava as reps em dobro ("12+4+4" + quedas = 28) e mandava subir carga; Meus treinos escondia as quedas e "corrigir" estragava a Última; "10 + (4+4+4)" sem "+ drop"; queda de 300 kg sem conferir; rascunho da resposta pro Igor sumia; drop com ~10 toques por série; Enter no bi-set pulava o A2 e travava nos campos do drop; Senti dor escondido no bi-set; marcar logo depois de pular o descanso não dizia nada.
+**Márcia (52, zoom 130%):** "Pular descanso"/"+15s" saindo da tela; esforço e nota com botões de 23 px; Hyrox no Simulado pra iniciante com pressão alta, sem aviso; "Senti dor" sem perguntar onde nem orientar (peito); ✕ do drop na coluna do FEITO apagando sem aviso; resposta pro Igor em campo de 1 linha e "toca pra ver" abrindo o topo do Perfil; peso por extenso com erro genérico; atalhos estourando com letra grande; "4O" virava 4 kg; jargão ("anamnese", "drop", estações).
+**Renata (29, mãe, Personalizado):** conversa com o Igor parava em uma resposta de cada lado (painel só "editar"); resposta enviada no Enter, sem editar; rascunho sumia; encerrar pela metade sem "terminar depois"; aviso fixo da volta cobrindo os botões; pausa não congelava o descanso; cronômetro pausado com números diferentes e sem o lado; registro do mês gravava o peso antigo com data de hoje; foto escolhida igual à guia; avisos de tempo fora diferentes.
+**Bia (19, celular velho, sinal ruim):** Hyrox abria no Simulado pra quem nunca fez (fase pelo calendário); "500 m" virava 500 repetições; rodapé mandava tocar no exercício pra trocar (não troca); Spinning e Hyrox primeiro pra quem treina em casa; Hyrox sem PDF; busca não achava exercícios do Hyrox; circuito falando "série" em vez de "volta"; capas do Spinning/Hyrox baixando no Início sem aparecer; PDF "110 KB" (eram ~150) e 2º story do dia indo pra fila; "Continuar Hyrox • Força leve (semana de prova)" em 3 linhas.
+
+### Corrigido
+- [x] Drop: com quedas anotadas, as reps da série valem só a 1ª parte ("12+4+4" = 12 + quedas); "Última" e sugestão certas.
+- [x] Drop: "10 + (4+4+4)" / "12 + 4 + 4" viram quedas mesmo sem a palavra "drop" (rest-pause/cluster não); as quedas prescritas já aparecem com as reps do Igor de exemplo e a carga da última vez; o ✓ completa o que ficou em branco; explicação "tira um pouco de peso e já faz mais 4 + 4" na tela; botão "+ queda (drop)".
+- [x] Drop: queda mais pesada que a série (ou 30 → 300) pergunta "Confere a carga"; ✕ da queda foi pra esquerda e queda preenchida pergunta antes de tirar ("Manter" em destaque); Enter segue kg → reps → próxima queda.
+- [x] Meus treinos mostra "40×12 → 30×4 → 20×4" e corrigir mexe só na 1ª parte, sem estragar a soma.
+- [x] Bi-set: Execução, Dúvida e Senti dor à vista logo abaixo das séries de cada exercício (as séries continuam na 1ª tela). Enter segue A1 s1 → A2 s1 → A1 s2.
+- [x] "Senti dor" pergunta onde: músculo/articulação (anota) ou peito/falta de ar/tontura ("para agora… liga 192"); desmarcar pede confirmação.
+- [x] "4O" (letra O) vira 40; 40 → 4 também pergunta "Confere a carga" (texto: "bem diferente do normal").
+- [x] Encerrar pela metade tem "⏸ Pausar e terminar depois" (fica tudo salvo e pontua quando terminar).
+- [x] Pausar treino no meio do descanso congela o descanso: no Continuar volta com o que faltava. Cronômetro de tempo pausado diz quanto falta e de que lado; rótulo "Pausado · Lado 1 de 2".
+- [x] Aviso da volta ("Descanso acabou há 2 min") some sozinho e não rouba o toque dos botões; ao continuar depois de 1+ min fora, um aviso só ("ficou X min fora: não contei").
+- [x] Marcar logo depois de pular o descanso avisa "Série marcada sem descanso".
+- [x] Responder o Igor: caixa de 3 linhas em largura cheia, Enter pula linha, "Enviar pro Igor" embaixo, aviso se vazio, rascunho guardado no celular (volta depois de recarregar/sem sinal; apagado ao sair da conta), "✎ editar" por 15 min; "toca pra ver" abre já nas respostas.
+- [x] Conversa com o Igor sem coluna nova: painel tem "responder ela" mostrando o que ela escreveu; a resposta nova vai embaixo da anterior (com a fala dela no meio), volta a aparecer como nova no Início e ela pode responder de novo.
+- [x] 1º acesso: fotos do início primeiro, passeio só depois (sem os dois ao mesmo tempo); quem nunca treinou vai direto pro Treino A (escolha da semana a partir da 2ª semana); sem "seu treino vai até…" na 1ª semana.
+- [x] Card: sem "🔥 0 semanas"; frase do story só quando tem o botão de story.
+- [x] Hyrox: fase conta do mês em que ela começou (1º mês sempre Base; trocar nível não volta a fase); quem marcou cuidado de saúde confirma "Já tenho liberação" antes de iniciar; explicação do que é Hyrox/estação; distância ("500 m", "1 km") sem campo de reps e sem gravar reps; "voltas" no circuito e "Volta 2 de 3 · começa no…" no descanso; PDF; rodapé diz onde trocar o aparelho; "Continuar Hyrox (0/4)".
+- [x] Treino em casa: Spinning e Hyrox vão pro fim, com "Precisa de bike/academia". Capas do Spinning/Hyrox só baixam quando aparecem.
+- [x] Busca de vídeos: pergunta em frase ("como usar leg press") e exercícios do Hyrox ("wall ball", "remo", "hyrox").
+- [x] IA do demo: smith, goblet, A1/A2, "10-12", regular máquina, pular, parar no meio, estalo, mobilidade, Hyrox, Spinning.
+- [x] Spinning: legenda de "em pé %" e 🔥. Perfil: "Minha ficha (anamnese)"; no iPhone um aviso só sobre o apito.
+- [x] Anamnese: peso/altura por extenso dizem "escreve só o número" no campo certo; rótulos de peso e altura alinhados.
+- [x] Registro do mês: peso e cintura em branco ("última: 64,2" de exemplo); foto escolhida com borda laranja e "✓ trocar".
+- [x] Letra grande/tela estreita: botões do descanso quebram linha sem sair da tela; esforço/nota em 2 linhas abaixo de 360 px; atalhos quebram em 2 linhas; borda dos botões vazados com mais contraste.
+- [x] Story: 2º story do dia sem sinal não entra de novo na fila. PDF: "uns 150 KB".
+- [x] SW v50. Teste novo: `tests/rodada-3110.mjs`; `drop-resposta` (quedas já aparecem), `rodada-2510b` (pergunta onde dói) e `rodada-2610b` (resumo numa segunda) ajustados. Traduções das frases novas nos 6 idiomas.
+
+### Pendente
+- [ ] Confirmar que a migração 020 (drop set e resposta da aluna) rodou no Supabase. Sem ela o app funciona, mas as quedas não sobem e "Responder o Igor" volta pro WhatsApp.
+- [ ] Hyrox: anotar o TEMPO de cada estação/corrida (o que importa na prova) e trocas pra quem treina em casa (corrida parada, mochila no farmer): regra de treino do Igor.
+- [ ] Conversa longa de verdade (várias mensagens, cada uma com data) precisaria de tabela nova; por ora a conversa vai junta no texto da resposta do Igor.
+- [ ] Arte do story sem fundo (PNG ~330 KB): WebP diminui, mas o Instagram no iPhone pode recusar; fica até testar num celular de verdade.
+- [ ] Nomes abreviados no conteúdo ("Abs infra") e passo a passo por exercício: conteúdo do Igor.
+- [ ] SUSPEITA: aba "Trei···" com letra 130% — só apareceu com a fonte do Google bloqueada no teste.
+- [ ] SUSPEITA: meta "0/4" antes da anamnese (dias por semana vazio) — o Início pede a anamnese antes; não reproduzido como problema real.
+- [ ] Seguem: publicar função assistente, WhatsApp, vídeos, fotos dos prêmios, capa do PDF clara, i18n por idioma, link definitivo da Kiwify, aviso no celular quando o Igor responde (fase 2 do push).

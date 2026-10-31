@@ -158,7 +158,8 @@ export function guardarCarga(exercicioNome, kg, reps, sessao, drops) { if (!kg) 
 export function desfazerCargas(sessao) { if (!sessao) return; const c = LS.get('cargas', {}); let mudou = false; for (const [n, v] of Object.entries(c)) if (v?.sessao === sessao) { mudou = true; if (v.prev) { const { prev, ...r } = v.prev; c[n] = r; } else delete c[n]; } if (mudou) LS.set('cargas', c); }
 // Séries de um treino (Evolução › Meus treinos)
 export async function editarSerie(id, patch) { const { error } = await sb.from('series').update(patch).eq('id', id); if (error) throw error; }
-export async function seriesDe(sessaoId) { const { data, error } = await sb.from('series').select('id,exercicio_nome,n,kg,reps').eq('sessao_id', sessaoId).order('n'); if (error) throw error; return data || []; }
+export async function seriesDe(sessaoId) { const busca = c => sb.from('series').select('id,exercicio_nome,n,kg,reps' + c).eq('sessao_id', sessaoId).order('n');
+  let { data, error } = await busca(temDrops === false ? '' : ',drops'); if (error && semColuna(error, 'drops')) { temDrops = false; ({ data, error } = await busca('')); } if (error) throw error; return data || []; } // com as quedas do drop (sem a migração 020, sem elas)
 export async function minhasSessoes(alunaId, limit = 60) {
   const busca = extra => sb.from('sessoes').select('id,titulo,finalizada_em,duracao_s,exercicios_feitos,exercicios_total,esforco,nota,comentario,resposta_igor,respondida_em' + extra)
     .eq('aluna_id', alunaId).not('finalizada_em', 'is', null).order('finalizada_em', { ascending: false }).limit(limit);

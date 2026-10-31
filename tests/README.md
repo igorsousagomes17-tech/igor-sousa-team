@@ -47,3 +47,8 @@ spinning: toque duplo, voltar pergunta, recarregar retoma, aula curta não pontu
 `tests/rodada-2810.mjs` testa a rodada 28/10 (treino descartado não deixa carga fantasma, pirâmide na 1ª vez herda o peso, 30 → 300 pergunta com "Corrigir" em destaque,
 "Ficar" em destaque no Sair, senha atual pra trocar, voltar não pula a troca de senha do 1º acesso, aviso fixo antigo some, "Pausar o treino" no descanso, corrigir série de treino passado,
 IA do demo: execução/12-10-8/descanso/saldo, abas com nome inteiro quando cabe, card "<1 min", tira-dúvidas em 300 px): `W=360 OUT=/tmp/shots node tests/rodada-2810.mjs`.
+
+`tests/rodada-3110.mjs` testa a rodada 31/10 (drop: quedas prescritas já aparecem, "12+4+4" sem contar em dobro, "10 + (4+4+4)", queda absurda pergunta, Meus treinos com as quedas, "4O" = 40;
+bi-set com Senti dor à vista e Enter A1 → A2; "Onde é a dor?" com peito/192; "Pausar e terminar depois"; pausa congela o descanso; responder o Igor em caixa grande com rascunho e conversa de volta pelo painel;
+Hyrox começando na Base, distância sem reps, voltas e PDF; registro do mês sem peso antigo; busca em frase e Hyrox; letra grande em 300 px; iPhone sem contradição do apito):
+`W=360 OUT=/tmp/shots node tests/rodada-3110.mjs`. `rodada-2610b` agora fixa uma segunda-feira pro resumo da semana (antes falhava de quinta a domingo).

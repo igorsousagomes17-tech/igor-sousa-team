@@ -22,9 +22,8 @@ ok(/ABDU/i.test(await p.innerText('.bloco h1')), '35: abriu a Abdução (drop pr
 ok(await p.locator('[data-dadd]').count() === 3, '35: cada série tem "+ drop"');
 const alvo = await p.locator('[data-dadd]').first().boundingBox(); ok(alvo && alvo.height >= 40, `35: "+ drop" com alvo ≥ 40px (${Math.round(alvo?.height)})`);
 await p.fill('.set[data-k="0"] input[data-f="kg"]', '40'); await p.fill('.set[data-k="0"] input[data-f="reps"]', '12');
-await p.click('[data-dadd][data-k="0"]'); await w(300);
+ok(await p.locator('.dl[data-k="0"]').count() === 2, '35: as quedas prescritas já aparecem (31/10)');
 await p.fill('.dl[data-k="0"][data-d="0"] input[data-df="kg"]', '30'); await p.fill('.dl[data-k="0"][data-d="0"] input[data-df="reps"]', '8');
-await p.click('[data-dadd][data-k="0"]'); await w(300);
 await p.fill('.dl[data-k="0"][data-d="1"] input[data-df="kg"]', '20'); await p.fill('.dl[data-k="0"][data-d="1"] input[data-df="reps"]', '6');
 // um 3º drop e tira de novo no ✕
 await p.click('[data-dadd][data-k="0"]'); await w(300); ok(await p.locator('.dl[data-k="0"]').count() === 3, '35: dá pra pôr um 3º drop');
@@ -44,8 +43,7 @@ await treinoB(); await abducao();
 const ult = await p.innerText('.bloco');
 ok(/40×12 → 30×8 → 20×6/.test(ult), '35: "Última vez" mostra 40×12 → 30×8 → 20×6');
 ok(await p.inputValue('.set[data-k="0"] input[data-f="kg"]') === '' , '35: kg da série vazio (placeholder com a última)');
-await p.click('[data-dadd][data-k="0"]'); await w(300);
-ok(await p.inputValue('.dl[data-k="0"][data-d="0"] input[data-df="kg"]') === '30', '35: drop novo já vem com a carga da última vez (30)');
+ok(await p.getAttribute('.dl[data-k="0"][data-d="0"] input[data-df="kg"]', 'placeholder') === '30', '35: queda já vem com a carga da última vez de exemplo (30)');
 await p.click('.hist'); await w(800);
 ok(/40×12 → 30×8 → 20×6/.test(await p.innerText('#hm')), '35: histórico mostra as quedas');
 await p.click('#hc'); await w(300);

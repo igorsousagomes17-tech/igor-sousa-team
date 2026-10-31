@@ -25,6 +25,7 @@ export function htmlLista(filtro, perfil) {
     <div class="logo" style="font-size:1.9rem;margin:8px 0 2px;color:#1a0d00">${esc(nomeAula(dm))}</div><p style="font-weight:600">${t(ESTILO[dm.estilo])} · ${t('{n} min', { n: minDe(dm) })}${kc(perfil, dm)}</p>
     <button class="btn dark" style="margin-top:8px" data-spin="${esc(dm.id)}">▶ ${t('Começar')}</button></div>
   <div class="spin-filtro" role="group" aria-label="${t('Duração')}">${['', ...DURACOES].map(d => `<button class="${String(filtro || '') === String(d) ? 'on' : ''}" data-dur="${d}">${d ? t('{n} min', { n: d }) : t('Todas')}</button>`).join('')}</div>
+  <p class="muted small">${t('"Em pé 7%" = quanto da aula é pedalando em pé. 🔥 leve · 🔥🔥 moderada · 🔥🔥🔥 forte.')}</p>
   <div class="spin-lista">${lista.map(card).join('')}</div>
   <div class="card" style="border:1px solid var(--accent)"><b>⚠ ${t('Primeira vez no spinning?')}</b><p class="muted">${t('Começa pelas aulas "Pedal no ritmo" (🔥) e não passa do esforço 7 nas primeiras semanas. Se a urina ficar escura ou a dor muscular for muito forte 1 a 3 dias depois, procura um médico. Tem pressão alta? Evita os tiros e nunca prende a respiração.')}</p></div>
   <div class="card"><b>${t('Antes de subir na bike')}</b><p class="muted">${t('Selim na altura do quadril (em pé ao lado da bike). Joelho levemente dobrado com o pedal embaixo. Garrafinha de água por perto. A carga quem controla é você: o app diz o esforço, você gira o botão até chegar nele.')}</p></div>`;

@@ -58,7 +58,7 @@ const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env
 // 4. "Senti dor" sem nenhuma série: dá pra avisar o Igor; chega no painel com selo
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'C');
   await p.locator('details.mais summary').first().click(); // bi-set: Ver execução/Dúvida/Senti dor ficam no "Dica e opções" (crítica 30/10)
-  await p.click('[data-dor]'); await espera(p, 300); ok(/Anotei: dor em/.test(await p.innerText('#toast')), 'aviso "Anotei: dor em …"');
+  await p.click('[data-dor]'); await espera(p, 300); await p.click('#d-m'); await espera(p, 300); ok(/Anotei: dor em/.test(await p.innerText('#toast')), 'aviso "Anotei: dor em …"');
   await p.click('#fim'); await espera(p); ok(/Avisar o Igor da dor/i.test(await txt(p, '#m')), 'encerrar sem série oferece "Avisar o Igor da dor e encerrar"');
   await p.click('#enc'); await espera(p, 500); ok(/Você anotou dor em/.test(await txt(p, '.view')), 'feedback mostra a dor anotada em cima');
   await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=6'); await p.click('#env'); await espera(p, 900);
