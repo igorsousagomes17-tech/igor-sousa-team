@@ -22,7 +22,7 @@ const casos = { 'Cadeira Extensora': 'cadeira-extensora', 'Cadeira extensora uni
   'Elevação de quadril unilateral na máquina': 'elevacao-uni-maquina', 'Hip thrust': 'elevacao-barra',
   'Step up com halter': 'step-up-halter', 'Step-up com halteres': 'step-up-halter', 'Step up com caneleira': 'step-up-caneleira', 'Step up na polia': 'step-up-polia', 'Step up': null,
   'Extensão de quadril polia': 'extensao-quadril-polia', 'Glúteo coice na polia': 'coice-polia', 'Coice na polia': 'coice-polia', 'Abdução de quadril na polia': 'abducao-polia',
-  'Abdução de Quadril Máquina com Tronco à Frente': 'abducao-maquina-inclinado', 'Coice na polia em quatro apoio no banco': 'coice-polia-4-apoios',
+  'Abdução de Quadril Máquina com Tronco à Frente': null, 'Coice na polia em quatro apoio no banco': 'coice-polia-4-apoios',
   'Supino inclinado com halter': 'supino-inclinado-halter', 'Supino inclinado com barra': 'supino-inclinado-barra', 'Supino inclinado': 'supino-inclinado-barra',
   'Supino inclinado articulado': 'supino-inclinado-articulado', 'Supino inclinado maquina': 'supino-inclinado-articulado', 'Supino inclinado no Smith': 'supino-inclinado-smith',
   'Supino com Halteres Inclinado Baixo': null, 'Supino reto com barra': null,
@@ -45,7 +45,7 @@ const casos2 = { 'Leg press 45 unilateral': 'lp45-uni', 'Leg Press Horizontal Un
   'Crucifixo inverso com máquina': 'crucifixo-inverso-maquina', 'Crucifixo na polia': 'crucifixo-polia', 'Crucifixo com halter': 'crucifixo-halter', 'Crucifixo inclinado com halter': null };
 Object.assign(casos, casos2, { 'Abdominal na paralela com perna estendida': 'abdominal-paralela-estendida', 'Abdominal na paralela': 'abdominal-paralela', 'Crucifixo na polia baixa': 'crucifixo-polia-baixa',
   'Abdução de quadril na máquina': 'abducao-maquina', 'Cadeira abdutora': 'abducao-maquina', 'Abdução de quadril na máquina em pé': 'abducao-maquina-em-pe', 'Abdução de quadril na máquina 45 graus': 'abducao-maquina-45',
-  'Abdução de quadril na máquina corpo inclinado': 'abducao-maquina-inclinado', 'Adução de quadril na máquina': 'aducao-maquina', 'Cadeira adutora': 'aducao-maquina', 'Abdução de quadril na polia': 'abducao-polia' });
+  'Adução de quadril na máquina': 'aducao-maquina', 'Cadeira adutora': 'aducao-maquina', 'Abdução de quadril na polia': 'abducao-polia' });
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 

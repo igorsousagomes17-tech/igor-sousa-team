@@ -7,8 +7,7 @@ const MAPA = [
   [/^aducao (de |do )?quadril.*maquina|^(cadeira )?adutora/, 'aducao-maquina'],
   [/^abducao (de |do )?quadril.*maquina.*em pe/, 'abducao-maquina-em-pe'],
   [/^abducao (de |do )?quadril.*maquina.*45|^(cadeira )?abdutora.*45/, 'abducao-maquina-45'],
-  [/^abducao (de |do )?quadril.*maquina.*(inclinad|a frente)|^(cadeira )?abdutora.*inclinad/, 'abducao-maquina-inclinado'],
-  [/^abducao (de |do )?quadril.*maquina|^(cadeira )?abdutora( sentad[ao])?$/, 'abducao-maquina'],
+  [/^abducao (de |do )?quadril.*maquina(?!.*(inclinad|tronco|a frente))|^(cadeira )?abdutora( sentad[ao])?$/, 'abducao-maquina'],
   [/^leg ?press (45|inclinado).*unilateral|^leg ?press unilateral( 45| inclinado)?$/, 'lp45-uni'],
   [/^leg ?press horizontal.*unilateral|^leg ?press unilateral horizontal/, 'lph-uni'],
   [/^passada dupla/, 'passada-dupla'],
@@ -139,7 +138,7 @@ export const ANIM_LISTA = [
   ['Supino reto com halter', 'Peito'], ['Supino reto máquina', 'Peito'], ['Supino reto máquina articulada', 'Peito'], ['Crucifixo com halter', 'Peito'],
   ['Crucifixo máquina', 'Peito'], ['Crucifixo inverso na máquina', 'Ombro'], ['Crucifixo na polia', 'Peito'],
   ['Abdominal na paralela com perna estendida', 'Core'], ['Crucifixo na polia baixa', 'Peito'], ['Abdução de quadril na máquina', 'Glúteo'], ['Abdução de quadril na máquina em pé', 'Glúteo'],
-  ['Abdução de quadril na máquina 45 graus', 'Glúteo'], ['Abdução de quadril na máquina corpo inclinado', 'Glúteo'], ['Adução de quadril na máquina', 'Adutores'],
+  ['Abdução de quadril na máquina 45 graus', 'Glúteo'], ['Adução de quadril na máquina', 'Adutores'],
 ];
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m ? `./anim/${m[1]}.mp4` : null; }
 export const ehAnim = url => /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(String(url || ''));
