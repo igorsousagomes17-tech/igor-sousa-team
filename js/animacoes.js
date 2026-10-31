@@ -2,6 +2,13 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^cadeira flexora(?!.*unilateral)/, 'cadeira-flexora'],
+  [/^mesa flexora(?!.*unilateral)/, 'mesa-flexora'],
+  [/^flexao (de|do) joelho em pe|^flexora em pe/, 'flexao-joelho-em-pe'],
+  [/^desenvolvimento.*smith/, 'desenvolvimento-smith'],
+  [/^desenvolvimento.*(articulad|maquina)/, 'desenvolvimento-articulado'],
+  [/^desenvolvimento.*halter/, 'desenvolvimento-halter'],
+  [/^desenvolvimento( sentado)?( (com|na) barra)?( sentado)?$|^desenvolvimento.*barra/, 'desenvolvimento-barra'],
   [/^supino inclinado.*smith/, 'supino-inclinado-smith'],
   [/^supino inclinado.*(articulado|maquina)/, 'supino-inclinado-articulado'],
   [/^supino inclinado.*halter|^supino com halter(es)? inclinado(?! baixo)/, 'supino-inclinado-halter'],
@@ -57,6 +64,8 @@ export const ANIM_LISTA = [
   ['Elevação de quadril com barra', 'Glúteo'], ['Elevação de quadril na máquina', 'Glúteo'], ['Elevação de quadril unilateral na máquina', 'Glúteo'],
   ['Step up com halter', 'Glúteo'], ['Step up com caneleira', 'Glúteo'], ['Step up na polia', 'Glúteo'],
   ['Extensão de quadril na polia', 'Glúteo'], ['Glúteo coice na polia', 'Glúteo'], ['Abdução de quadril na polia', 'Glúteo'], ['Coice na polia em quatro apoios no banco', 'Glúteo'],
+  ['Cadeira flexora', 'Posterior'], ['Mesa flexora', 'Posterior'], ['Flexão de joelho em pé na máquina', 'Posterior'],
+  ['Desenvolvimento sentado com halter', 'Ombro'], ['Desenvolvimento com barra', 'Ombro'], ['Desenvolvimento no smith', 'Ombro'], ['Desenvolvimento máquina articulada', 'Ombro'],
   ['Supino inclinado com halter', 'Peito'], ['Supino inclinado com barra', 'Peito'], ['Supino inclinado articulado', 'Peito'], ['Supino inclinado no smith', 'Peito'],
 ];
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m ? `./anim/${m[1]}.mp4` : null; }

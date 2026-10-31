@@ -25,7 +25,10 @@ const casos = { 'Cadeira Extensora': 'cadeira-extensora', 'Cadeira extensora uni
   'Abdução de Quadril Máquina com Tronco à Frente': null, 'Coice na polia em quatro apoio no banco': 'coice-polia-4-apoios',
   'Supino inclinado com halter': 'supino-inclinado-halter', 'Supino inclinado com barra': 'supino-inclinado-barra', 'Supino inclinado': 'supino-inclinado-barra',
   'Supino inclinado articulado': 'supino-inclinado-articulado', 'Supino inclinado maquina': 'supino-inclinado-articulado', 'Supino inclinado no Smith': 'supino-inclinado-smith',
-  'Supino com Halteres Inclinado Baixo': null, 'Supino reto com barra': null };
+  'Supino com Halteres Inclinado Baixo': null, 'Supino reto com barra': null,
+  'Cadeira Flexora': 'cadeira-flexora', 'Cadeira Flexora com Tronco Inclinado': 'cadeira-flexora', 'Mesa flexora': 'mesa-flexora', 'Flexão de joelho em pé na máquina': 'flexao-joelho-em-pe',
+  'Desenvolvimento sentado com halter': 'desenvolvimento-halter', 'Desenvolvimento com halteres': 'desenvolvimento-halter', 'Desenvolvimento máquina articulada': 'desenvolvimento-articulado',
+  'Desenvolvimento com barra': 'desenvolvimento-barra', 'Desenvolvimento no Smith': 'desenvolvimento-smith' };
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 
