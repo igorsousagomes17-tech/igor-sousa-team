@@ -9,7 +9,10 @@ const falhas = [], errs = [], ok = (c, m) => { console.log((c ? '  ok  ' : '  FA
 const casos = { 'Cadeira Extensora': 'cadeira-extensora', 'Cadeira extensora unilateral': null, 'Agachamento Hack': 'agachamento-hack', 'Panturrilha Hack': null,
   'Agachamento livre com barra': 'agachamento-livre', 'Agachamento Smith': 'agachamento-smith', 'Agachamento no Smith': 'agachamento-smith', 'Leg Press 45°': 'leg-press-45',
   'Leg Press 45 pés mais fechados': 'leg-press-45', 'Leg press horizontal': 'leg-press-horizontal', 'Afundo no Smith': 'afundo-smith', 'Afundo alternado no smith': 'afundo-alternado-smith',
-  'Afundo com Halteres entre Steps': null, 'Rosca direta com halter': 'rosca-direta-halter', 'Rosca Direta com Halteres': 'rosca-direta-halter', 'Rosca Scott maquina': null };
+  'Afundo com Halteres entre Steps': null, 'Rosca direta com halter': 'rosca-direta-halter', 'Rosca Direta com Halteres': 'rosca-direta-halter', 'Rosca Scott maquina': null,
+  'Agachamento Pêndulo': 'agachamento-pendulo', 'Búlgaro no Smith': 'bulgaro-smith', 'Agachamento búlgaro com halter': 'bulgaro-halter', 'Búlgaro com halteres': 'bulgaro-halter',
+  'Búlgaro com barra livre': 'bulgaro-barra', 'Búlgaro goblet': 'bulgaro-goblet', 'Búlgaro segurando o halter em cima': 'bulgaro-goblet', 'Agachamento Goblet': 'agachamento-goblet',
+  'Goblet com anilha no calcanhar': null, 'Agachamento Frontal com Barra Livre': 'agachamento-frontal', 'Agachamento Frontal Smith': null };
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 

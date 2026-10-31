@@ -442,4 +442,5 @@ Pendente:
 - [x] Pop-up de vídeo abre foto (jpg/png/webp/gif) e a animação em loop com aviso "o vídeo do Igor tá chegando".
 - [x] SW não guarda resposta parcial de vídeo (206) no cache. CACHE v51.
 - [ ] Rodar supabase/migracao-021-midia-exercicios.sql no SQL Editor antes do envio de arquivo funcionar (sem ela o botão avisa que o armazenamento não foi ativado).
+- [x] +7 animações: agachamento pêndulo, búlgaro no smith / com halter / com barra livre / goblet (halter no peito), agachamento goblet, agachamento frontal (barra livre; o frontal no smith fica de fora). Total 16.
 - Teste: tests/animacoes.mjs (W=360 e 375).
