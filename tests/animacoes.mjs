@@ -33,6 +33,17 @@ const casos = { 'Cadeira Extensora': 'cadeira-extensora', 'Cadeira extensora uni
   'Elevação lateral unilateral na polia baixa': 'elevacao-lateral-polia', 'Flexão de braço no chão': 'flexao-braco', 'Flexão': 'flexao-braco', 'Abdominal reto': 'abdominal-reto',
   'Abdominal canivete alternado': 'canivete-alternado', 'Abdominal Canivete': null, 'Prancha': 'prancha', 'Ponte isométrica': 'ponte-isometrica', 'Ponte isométrica unilateral': 'ponte-isometrica-uni',
   'Flexão de joelho na bola suíça': 'flexao-joelho-bola', 'Abdominal na rodinha': 'abdominal-rodinha', 'Abdominal com Rodinha Solo com Apoio': 'abdominal-rodinha', 'Abdominal na paralelo': 'abdominal-paralela', 'Abdominal na paralela': 'abdominal-paralela' };
+const casos2 = { 'Leg press 45 unilateral': 'lp45-uni', 'Leg Press Horizontal Unilateral': 'lph-uni', 'Leg press 45': 'leg-press-45', 'Passadas com halter': 'passada-halter', 'Passada sem peso': 'passada-livre', 'Passada dupla': 'passada-dupla',
+  'Puxada pronada': 'puxada-pronada', 'Puxada Frontal': 'puxada-pronada', 'Puxada fechada supinada': 'puxada-supinada', 'Puxada triângulo': 'puxada-triangulo', 'Puxada articulada': 'puxada-articulada', 'Barra fixa': 'barra-fixa', 'Barra fixa assistida': null,
+  'Remada curvada com barra pronada': 'remada-curvada-pronada', 'Remada curvada com barra supinada': 'remada-curvada-supinada', 'Remada curvada com halter': 'remada-curvada-halter', 'Remada unilateral com halter': 'remada-unilateral-halter', 'Serrote': 'remada-unilateral-halter',
+  'Remada com halter normal': 'remada-halter-banco', 'Remada cavalinho': 'remada-cavalinho', 'Pull down com corda': 'pulldown-corda', 'Pulldown com barra aberta': 'pulldown-barra',
+  'Remada baixa triângulo': 'remada-baixa-triangulo', 'Remada baixa pronada': 'remada-baixa-pronada', 'Remada Sentada Supinada': 'remada-baixa-supinada', 'Face pull com corda': 'face-pull-corda',
+  'Tríceps na polia com barra reta': 'triceps-polia-barra', 'Tríceps Pulley': 'triceps-polia-barra', 'Tríceps na polia com corda': 'triceps-polia-corda', 'Tríceps corda': 'triceps-polia-corda', 'Tríceps na polia unilateral': 'triceps-polia-unilateral',
+  'Tríceps francês na polia': 'triceps-frances-polia', 'Tríceps francês com halter': null, 'Tríceps testa na polia com barra': 'triceps-testa-polia', 'Tríceps testa com halter': 'triceps-testa-halter',
+  'Rosca direta na polia com barra': 'rosca-polia-barra', 'Rosca invertida na polia com barra': 'rosca-invertida-polia', 'Rosca direta na polia com corda': 'rosca-polia-corda', 'Rosca martelo': 'rosca-martelo-halter', 'Rosca martelo com halter': 'rosca-martelo-halter', 'Rosca direta com halter': 'rosca-direta-halter',
+  'Supino reto com halter': 'supino-reto-halter', 'Supino reto máquina': 'supino-reto-maquina', 'Supino reto máquina articulada': 'supino-reto-articulado', 'Crucifixo máquina': 'crucifixo-maquina', 'Voador': 'crucifixo-maquina',
+  'Crucifixo inverso com máquina': 'crucifixo-inverso-maquina', 'Crucifixo na polia': 'crucifixo-polia', 'Crucifixo com halter': 'crucifixo-halter', 'Crucifixo inclinado com halter': null };
+Object.assign(casos, casos2);
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 
