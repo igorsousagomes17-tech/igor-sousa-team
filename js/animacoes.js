@@ -2,6 +2,12 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^(elevacao (de|do) quadril|hip thrust) unilateral.*maquina/, 'elevacao-uni-maquina'],
+  [/^(elevacao (de|do) quadril|hip thrust).*maquina/, 'elevacao-maquina'],
+  [/^(elevacao (de|do) quadril|hip thrust) unilateral.*halter/, 'elevacao-uni-halter-banco'],
+  [/^(elevacao (de|do) quadril|hip thrust) unilateral.*banco/, 'elevacao-uni-banco'],
+  [/^(elevacao (de|do) quadril|hip thrust) unilateral(?!.*(banco|barra|smith|caneleira))/, 'elevacao-uni-solo'],
+  [/^(elevacao (de|do) quadril|hip thrust)( (com|na) barra( no banco)?)?$/, 'elevacao-barra'],
   [/^agachamento sumo.*step/, 'agachamento-sumo-step'],
   [/^(levantamento )?(terra )?sumo|^levantamento terra sumo/, 'levantamento-sumo'],
   [/^(romanian|romenia|romeno|rdl|levantamento romeno|stiff romeno).*barra/, 'rdl-barra'],
@@ -36,6 +42,8 @@ export const ANIM_LISTA = [
   ['Afundo com step atrás no smith', 'Glúteo'], ['Afundo com step atrás com halter', 'Glúteo'],
   ['Agachamento sumô no step com halter', 'Glúteo'], ['Levantamento sumô com barra', 'Posterior'], ['Levantamento terra com barra', 'Posterior'],
   ['Stiff com halter', 'Posterior'], ['Romanian deadlift com halter', 'Posterior'], ['Romanian deadlift com barra', 'Posterior'],
+  ['Elevação de quadril unilateral no solo', 'Glúteo'], ['Elevação de quadril unilateral no banco', 'Glúteo'], ['Elevação de quadril unilateral com halter no banco', 'Glúteo'],
+  ['Elevação de quadril com barra', 'Glúteo'], ['Elevação de quadril na máquina', 'Glúteo'], ['Elevação de quadril unilateral na máquina', 'Glúteo'],
 ];
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m ? `./anim/${m[1]}.mp4` : null; }
 export const ehAnim = url => /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(String(url || ''));
