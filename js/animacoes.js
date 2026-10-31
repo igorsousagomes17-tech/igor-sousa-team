@@ -2,6 +2,15 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^elevacao (lateral )?unilateral.*polia|^elevacao lateral.*polia/, 'elevacao-lateral-polia'],
+  [/^elevacao lateral.*maquina/, 'elevacao-lateral-maquina'],
+  [/^elevacao lateral( (com|c\/) halter(es)?)?( em pe)?$/, 'elevacao-lateral-halter'],
+  [/^flexao( de braco)?( no (chao|solo))?$|^flexao de braco/, 'flexao-braco'],
+  [/^abdominal reto|^abdominal supra( no solo)?$|^abdominal crunch/, 'abdominal-reto'],
+  [/^abdominal canivete alternado|^canivete alternado/, 'canivete-alternado'],
+  [/^prancha( isometrica)?( frontal)?( no solo)?$/, 'prancha'],
+  [/^ponte isometrica unilateral|^ponte unilateral isometrica/, 'ponte-isometrica-uni'],
+  [/^ponte isometrica|^ponte (de gluteo )?isometrica/, 'ponte-isometrica'],
   [/^cadeira flexora(?!.*unilateral)/, 'cadeira-flexora'],
   [/^mesa flexora(?!.*unilateral)/, 'mesa-flexora'],
   [/^flexao (de|do) joelho em pe|^flexora em pe/, 'flexao-joelho-em-pe'],
@@ -64,6 +73,8 @@ export const ANIM_LISTA = [
   ['Elevação de quadril com barra', 'Glúteo'], ['Elevação de quadril na máquina', 'Glúteo'], ['Elevação de quadril unilateral na máquina', 'Glúteo'],
   ['Step up com halter', 'Glúteo'], ['Step up com caneleira', 'Glúteo'], ['Step up na polia', 'Glúteo'],
   ['Extensão de quadril na polia', 'Glúteo'], ['Glúteo coice na polia', 'Glúteo'], ['Abdução de quadril na polia', 'Glúteo'], ['Coice na polia em quatro apoios no banco', 'Glúteo'],
+  ['Elevação lateral com halter', 'Ombro'], ['Elevação lateral na máquina', 'Ombro'], ['Elevação lateral unilateral na polia baixa', 'Ombro'],
+  ['Flexão de braço no chão', 'Peito'], ['Abdominal reto', 'Core'], ['Abdominal canivete alternado', 'Core'], ['Prancha', 'Core'], ['Ponte isométrica', 'Glúteo'], ['Ponte isométrica unilateral', 'Glúteo'],
   ['Cadeira flexora', 'Posterior'], ['Mesa flexora', 'Posterior'], ['Flexão de joelho em pé na máquina', 'Posterior'],
   ['Desenvolvimento sentado com halter', 'Ombro'], ['Desenvolvimento com barra', 'Ombro'], ['Desenvolvimento no smith', 'Ombro'], ['Desenvolvimento máquina articulada', 'Ombro'],
   ['Supino inclinado com halter', 'Peito'], ['Supino inclinado com barra', 'Peito'], ['Supino inclinado articulado', 'Peito'], ['Supino inclinado no smith', 'Peito'],
