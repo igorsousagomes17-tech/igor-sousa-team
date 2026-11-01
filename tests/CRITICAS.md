@@ -466,3 +466,4 @@ Pendente:
 - [x] Puxada supinada: palma (clara) virada pra trás, pro rosto; vista 3/4 por trás pra ver a palma. Exercícios com corda: pegada neutra (palmas uma de frente pra outra), corda passa por dentro da mão com a ponteira embaixo. (no ramo; vai pro ar à noite)
 - [x] Remadas na máquina: pegada neutra clara (pegadores verticais ao lado da alavanca, palma pra dentro). Tríceps francês na polia refeito: de costas pra polia, cotovelos ao lado da cabeça, mãos atrás da cabeça e estende pra frente-cima. (no ramo; vai pro ar à noite)
 - [x] Puxada articulada: cotovelo desce pra baixo/lado (não vai mais pra trás).
+- [x] Rosca martelo com halter: halter na pegada neutra (apontando pra frente, não atravessado). Mesmo ajuste no tríceps testa com halter.
