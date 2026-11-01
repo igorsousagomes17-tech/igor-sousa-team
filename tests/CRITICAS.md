@@ -458,3 +458,4 @@ Pendente:
 - [x] Abdutor em pé: a plataforma do pé e a almofada do joelho giram junto com a perna (mesmo movimento do joelho), eixo atrás na altura do quadril.
 - [x] Abdutor em pé: eixo é VERTICAL (sob o quadril). Plataforma e almofada giram na horizontal: o pé e o joelho abrem pra fora e um pouco pra trás, sem subir.
 - [x] Tríceps na polia (barra, corda, unilateral): amplitude maior (começa com as mãos na altura do peito e estende tudo). Corda de verdade: duas pontas grossas com nó, que se abrem pra fora no fim do movimento (também no francês e na rosca com corda). Tríceps corda com 3/4 pela frente pra corda aparecer.
+- [x] 01/11 (23h de 31/10): merge do ramo animacoes-exercicios na main, testes animacoes/bibliotecas/regressao/fluxo-treino/idiomas OK em 360 e 375, no ar (SW v52, 105 animações). Migração 021 deixada pronta no SQL Editor; falta o Igor clicar em Run.
