@@ -2,6 +2,9 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^remada (na |em )?maquina.*articulad|^remada articulada/, 'remada-maquina-articulada'],
+  [/^remada (na |em )?maquina.*unilateral|^remada unilateral (na |em )?maquina/, 'remada-maquina-unilateral'],
+  [/^remada (sentada )?(na |em )?maquina|^remada sentada maquina/, 'remada-maquina'],
   [/^abdominal (na |nas |no )?paral[ae]l[ao]s?.*(perna|pernas) (estendida|reta)s?|^elevacao (de )?pernas (estendidas|retas) na paralela/, 'abdominal-paralela-estendida'],
   [/^crucifixo.*polia baixa|^crossover (de baixo|polia baixa)/, 'crucifixo-polia-baixa'],
   [/^aducao (de |do )?quadril.*maquina|^(cadeira )?adutora/, 'aducao-maquina'],
@@ -137,6 +140,7 @@ export const ANIM_LISTA = [
   ['Rosca direta na polia com corda', 'Braços'], ['Rosca martelo com halter', 'Braços'],
   ['Supino reto com halter', 'Peito'], ['Supino reto máquina', 'Peito'], ['Supino reto máquina articulada', 'Peito'], ['Crucifixo com halter', 'Peito'],
   ['Crucifixo máquina', 'Peito'], ['Crucifixo inverso na máquina', 'Ombro'], ['Crucifixo na polia', 'Peito'],
+  ['Remada na máquina', 'Costas'], ['Remada na máquina unilateral', 'Costas'], ['Remada na máquina articulada', 'Costas'],
   ['Abdominal na paralela com perna estendida', 'Core'], ['Crucifixo na polia baixa', 'Peito'], ['Abdução de quadril na máquina', 'Glúteo'], ['Abdução de quadril na máquina em pé', 'Glúteo'],
   ['Abdução de quadril na máquina 45 graus', 'Glúteo'], ['Adução de quadril na máquina', 'Adutores'],
 ];
