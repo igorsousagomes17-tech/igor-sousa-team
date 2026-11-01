@@ -469,3 +469,4 @@ Pendente:
 - [x] Rosca martelo com halter: halter na pegada neutra (apontando pra frente, não atravessado). Mesmo ajuste no tríceps testa com halter.
 - [x] Puxada articulada: braço estica todo lá em cima (amplitude completa).
 - [x] Remada com halter no banco inclinado: banco mais deitado e apoio só na altura do peito (semi-agachado, pés no chão). +1: remada cavalinho com apoio no peito (mesmo apoio). Total 109.
+- [x] Nomes da lista de filmagem: crucifixo na polia de baixo pra cima → polia baixa; remada curvada com barra reta → pronada; remada com peito apoiado → banco inclinado; tríceps acima da cabeça na polia → francês na polia; B-stance fica sem animação (não confundir com a versão comum).

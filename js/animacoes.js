@@ -2,6 +2,11 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^crucifixo.*polia.*(baixa|de baixo|baixo pra cima|baixo para cima)/, 'crucifixo-polia-baixa'],
+  [/^remada curvada.*barra reta/, 'remada-curvada-pronada'],
+  [/^remada (com )?(o )?peito apoiado(?!.*(cavalinho|t-?bar|maquina))/, 'remada-halter-banco'],
+  [/^triceps (acima da cabeca|overhead).*polia|^triceps frances.*polia/, 'triceps-frances-polia'],
+  [/b-?stance/, null],
   [/^remada cavalinho.*(apoio|apoiad|peito|banco)|^remada (no )?t-?bar.*(apoio|apoiad|peito)/, 'remada-cavalinho-apoio'],
   [/^remada (na |em )?maquina.*articulad|^remada articulada/, 'remada-maquina-articulada'],
   [/^remada (na |em )?maquina.*unilateral|^remada unilateral (na |em )?maquina/, 'remada-maquina-unilateral'],
@@ -145,7 +150,7 @@ export const ANIM_LISTA = [
   ['Abdominal na paralela com perna estendida', 'Core'], ['Crucifixo na polia baixa', 'Peito'], ['Abdução de quadril na máquina', 'Glúteo'], ['Abdução de quadril na máquina em pé', 'Glúteo'],
   ['Abdução de quadril na máquina 45 graus', 'Glúteo'], ['Adução de quadril na máquina', 'Adutores'],
 ];
-export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m ? `./anim/${m[1]}.mp4` : null; }
+export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m && m[1] ? `./anim/${m[1]}.mp4` : null; }
 export const ehAnim = url => /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(String(url || ''));
 // Preenche o vídeo que falta com a animação (sem mexer no que o Igor já colocou)
 export function comAnimacoes(plano) { plano?.treinos?.forEach(t => (t.exercicios || []).forEach(e => { if (!e.video_url) { const a = animDe(e.nome); if (a) e.video_url = a; } })); return plano; }
