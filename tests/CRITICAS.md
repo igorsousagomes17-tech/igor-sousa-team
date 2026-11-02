@@ -484,3 +484,4 @@ Pendente:
 - [x] Abdominal na polia ajoelhado de costas: quadril vai um pouco pra trás (em direção aos calcanhares) e o tronco enrola pra baixo, em vez de só ir pra frente.
 - [x] Agachamento com calcanhar elevado: quadril desce um pouco mais pra trás (tronco levemente inclinado), sem ser só joelho pra frente.
 - [x] Good morning: com a barra vazia nas costas (sem anilha), mãos segurando a barra.
+- [x] Agachamento com calcanhar elevado: só o calcanhar em cima de 2 anilhas empilhadas (mais alto), ponta do pé no chão.
