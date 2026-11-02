@@ -22,7 +22,7 @@ const MAPA = [
   [/^flexao (de braco )?com deficit/, 'flexao-deficit'],
   [/^triceps frances.*halter/, 'triceps-frances-halter'],
   [/^rosca inclinada/, 'rosca-inclinada'],
-  [/^rosca bayesiana/, 'rosca-bayesiana'],
+  [/^rosca bayesiana|^rosca unilateral (na )?polia/, 'rosca-bayesiana'],
   [/^rosca spider/, 'rosca-spider'],
   [/^dead ?bug/, 'dead-bug'],
   [/^pallof/, 'pallof-press'],
@@ -183,7 +183,7 @@ export const ANIM_LISTA = [
   ['Hiperextensão 45°', 'Glúteo'], ['Good morning sem carga', 'Posterior'],
   ['Caminhada lateral com mini band', 'Glúteo'], ['Panturrilha em pé', 'Panturrilha'], ['Puxada unilateral', 'Costas'],
   ['Remada invertida no smith', 'Costas'], ['Pullover com halter', 'Costas'], ['Desenvolvimento Arnold', 'Ombro'], ['Elevação lateral em Y no banco inclinado', 'Ombro'],
-  ['Flexão com déficit', 'Peito'], ['Tríceps francês com halteres', 'Braços'], ['Rosca inclinada com halteres', 'Braços'], ['Rosca bayesiana na polia', 'Braços'], ['Rosca spider', 'Braços'],
+  ['Flexão com déficit', 'Peito'], ['Tríceps francês com halteres', 'Braços'], ['Rosca inclinada com halteres', 'Braços'], ['Rosca unilateral na polia', 'Braços'], ['Rosca spider', 'Braços'],
   ['Dead bug', 'Core'], ['Pallof press', 'Core'], ['Prancha Copenhagen', 'Core'], ['Prancha lateral com apoio no banco', 'Core'], ['Prancha com toque no ombro', 'Core'],
   ['Abdominal na polia ajoelhado', 'Core'], ['Abdominal na polia ajoelhado de costas', 'Core'], ['Abdominal infra no banco declinado', 'Core'],
 ];
