@@ -492,3 +492,4 @@ Pendente:
 - [x] Rosca unilateral na polia: boneco mais perto da polia.
 - [x] Tríceps francês na polia refeito com polia baixa: de costas pra polia, cabo sobe por trás das costas até a corda atrás da cabeça, cotovelos apontando pra cima perto da cabeça, estende pra cima (força puxando pra baixo e pra trás).
 - [x] 02/11 ~10h30: lançamento DURANTE O DIA a pedido explícito do Igor ("pode lançar agora"): revisão biomecânica + ajustes da manhã, 138 animações, todas com OK do Igor. Testes OK em 360/375. SW v54.
+- [x] 02/11 13h: primeiro vídeo gravado no app — Step up com halter (videos/step-up-com-halter.mp4, 540p sem áudio, 1,5 MB). Vídeos gravados ficam em ./videos e entram na frente da animação; link do YouTube colocado pelo Igor na biblioteca continua com prioridade. Lançado na hora a pedido do Igor. SW v55.

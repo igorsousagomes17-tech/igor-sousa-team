@@ -187,7 +187,12 @@ export const ANIM_LISTA = [
   ['Dead bug', 'Core'], ['Pallof press', 'Core'], ['Prancha Copenhagen', 'Core'], ['Prancha lateral com apoio no banco', 'Core'], ['Prancha com toque no ombro', 'Core'],
   ['Abdominal na polia ajoelhado', 'Core'], ['Abdominal na polia ajoelhado de costas', 'Core'], ['Abdominal infra no banco declinado', 'Core'],
 ];
+// Vídeos gravados (arquivos em ./videos), na frente da animação quando o exercício ainda não tem link no banco
+const VIDEOS = [
+  [/^(step[ -]?up|subida (no|em) (step|banco|caixa)).*halter/, 'step-up-com-halter'],
+];
+export function videoDe(nome) { const n = sem(nome); const m = VIDEOS.find(([rx]) => rx.test(n)); return m ? `./videos/${m[1]}.mp4` : null; }
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m && m[1] ? `./anim/${m[1]}.mp4` : null; }
 export const ehAnim = url => /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(String(url || ''));
 // Preenche o vídeo que falta com a animação (sem mexer no que o Igor já colocou)
-export function comAnimacoes(plano) { plano?.treinos?.forEach(t => (t.exercicios || []).forEach(e => { if (!e.video_url) { const a = animDe(e.nome); if (a) e.video_url = a; } })); return plano; }
+export function comAnimacoes(plano) { plano?.treinos?.forEach(t => (t.exercicios || []).forEach(e => { if (!e.video_url) { const a = videoDe(e.nome) || animDe(e.nome); if (a) e.video_url = a; } })); return plano; }

@@ -1,7 +1,7 @@
 // Bibliotecas do Igor: exercícios (nome, grupo, vídeo, dica, alternativa) e treinos-modelo,
 // e o montador visual de treino (o mesmo pra modelo e pro plano da aluna). Tudo em português: é só pro Igor.
 import { $, $$, esc, toast, overlay, closeOverlay, youtubeEmbed } from './ui.js';
-import { animDe, ANIM_LISTA } from './animacoes.js';
+import { animDe, videoDe, ANIM_LISTA } from './animacoes.js';
 import { aqDe, semAq, comAq } from './conteudo.js';
 
 export const GRUPOS = ['Glúteo', 'Quadríceps', 'Posterior', 'Panturrilha', 'Costas', 'Peito', 'Ombro', 'Braços', 'Core', 'Cardio', 'Mobilidade', 'Outros'];
@@ -45,7 +45,7 @@ export async function montarExercicios(el, db) {
       <button class="btn sm" id="novoEx">+ Novo exercício</button>
       <input class="input" id="bq" placeholder="Buscar exercício" value="${esc(filtro)}" autocomplete="off">
       <div class="chips">${['', ...GRUPOS].map(g => `<button class="pill ${g === grupo ? 'on' : ''}" data-g="${g}">${g || 'Todos'}</button>`).join('')}</div>
-      <div class="lista">${lista.map(x => `<button class="aluna" data-ex="${x.id}"><span class="av">${x.video_url || animDe(x.nome) ? '▶' : '·'}</span><span class="t"><b>${esc(x.nome)}</b><span>${esc(x.grupo)}${x.video_url ? ' · com vídeo' : animDe(x.nome) ? ' · animação' : ' · sem vídeo'}${x.alternativa ? ' · alt: ' + esc(x.alternativa) : ''}</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 5 7 7-7 7"/></svg></button>`).join('') || `<p class="muted">Nada com esse nome. Toca em "+ Novo exercício" pra criar.</p>`}</div>`;
+      <div class="lista">${lista.map(x => `<button class="aluna" data-ex="${x.id}"><span class="av">${x.video_url || videoDe(x.nome) || animDe(x.nome) ? '▶' : '·'}</span><span class="t"><b>${esc(x.nome)}</b><span>${esc(x.grupo)}${x.video_url || videoDe(x.nome) ? ' · com vídeo' : animDe(x.nome) ? ' · animação' : ' · sem vídeo'}${x.alternativa ? ' · alt: ' + esc(x.alternativa) : ''}</span></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m9 5 7 7-7 7"/></svg></button>`).join('') || `<p class="muted">Nada com esse nome. Toca em "+ Novo exercício" pra criar.</p>`}</div>`;
     $('#bq', el).oninput = e => { filtro = e.target.value; const pos = e.target.selectionStart; desenha(); const i = $('#bq', el); i.focus(); i.setSelectionRange(pos, pos); };
     $$('[data-g]', el).forEach(b => b.onclick = () => { grupo = b.dataset.g; desenha(); });
     $('#novoEx', el).onclick = () => formExercicio({ nome: filtro }, db, async salvo => { lib.push(salvo); desenha(); });
@@ -76,7 +76,7 @@ export function formExercicio(x, db, onFim, { empilhado = false } = {}) {
   const fecha = () => camada.remove();
   (empilhado ? document.body : ($('#overlay') || document.body)).appendChild(camada);
   const previa = () => {
-    const v = $('#fxV', camada).value.trim(), nome = $('#fxN', camada).value.trim(), u = v || animDe(nome), yt = v && youtubeEmbed(v);
+    const v = $('#fxV', camada).value.trim(), nome = $('#fxN', camada).value.trim(), u = v || videoDe(nome) || animDe(nome), yt = v && youtubeEmbed(v);
     const media = !u ? '' : yt ? `<iframe src="${esc(yt)}" allow="encrypted-media" allowfullscreen></iframe>` : /\.(jpe?g|png|webp|gif|heic)(\?|$)/i.test(u) ? `<img src="${esc(u)}" alt="">` : `<video src="${esc(u)}" autoplay loop muted playsinline${v ? ' controls' : ''}></video>`;
     $('#fxP', camada).innerHTML = u ? `<div class="fx-midia">${media}</div><p class="muted small">${v ? 'Vídeo atual (é esse que as alunas veem)' : 'Animação provisória: as alunas veem essa até você colocar o seu vídeo'}</p>` : '<p class="muted small">Sem vídeo ainda: as alunas veem só a dica.</p>';
   };
