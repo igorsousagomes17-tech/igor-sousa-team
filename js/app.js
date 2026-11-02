@@ -4,7 +4,7 @@ const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
 import { ligarAvisoRemoto, beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho, avisoAtual, ajustaAbas } from './ui.js';
 import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma, loc, tc, tlivre, ligarTradutor } from './i18n.js';
 import * as A from './acolhe.js';
-import { equivalentes } from './conteudo.js';
+import { cargaPorNome, equivalentes } from './conteudo.js';
 import * as K from './kcal.js'; // T = t, pra quando "t" já é nome de variável
 
 const C = window.ISTEAM_CONFIG;
@@ -599,7 +599,7 @@ async function iniciarSessao({ titulo, treino_id = null, programa_treino_id = nu
     }
     pararDescanso();
     const cargas = db.LS.get('cargas', {});
-    const exs = comReconhecimento(structuredClone(exercicios).sort((a, b) => a.ordem - b.ordem)).map(e => ({ ...e, original: e.nome, ultima: cargas[e.nome] || null }));
+    const exs = comReconhecimento(structuredClone(exercicios).sort((a, b) => a.ordem - b.ordem)).map(e => ({ ...e, original: e.nome, ultima: cargaPorNome(cargas, e.nome) }));
     const chave = 'local-' + Date.now();
     S.sessao = { id: chave, chave, local: true, dono: S.perfil.id, titulo, treino_id, programa_treino_id, express, exs, passos: montarPassos(exs), p: 0, feito: {}, sets: {}, inicio: Date.now() };
     exs.forEach((e, i) => { S.sessao.sets[i] = Array.from({ length: e.series || 1 }, () => ({ kg: '', reps: '', done: false })); });
@@ -699,7 +699,7 @@ routes.sessao = () => {
     };
     // Ver execução, Dúvida e "Senti dor" numa linha só, sempre à vista; no bi-set ficam logo abaixo das séries de cada exercício (as séries continuam na 1ª tela)
     const rapidos = `<div class="rapidos"><button class="btn ghost sm" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url || '')}" data-dica="${esc(e.dica || '')}">▶ ${T('Execução')}</button><button class="btn ghost sm" data-duvida="${esc(e.nome)}">? ${T('Dúvida')}</button><button class="btn ghost sm" data-dor="${i}">${(s.dor || []).includes(e.nome) ? '✓ ' + T('Dor anotada') : '⚠ ' + T('Senti dor')}</button></div>`;
-    const aq = e.aq === true, nomeBase = aq ? e.nome.replace(/\s*·\s*reconhecimento$/i, '') : e.nome, ultBase = aq ? (s.exs.find(x => x.nome === nomeBase && x.aq !== true)?.ultima || db.LS.get('cargas', {})[nomeBase]) : e.ultima; // reconhecimento: o histórico é o do exercício de verdade
+    const aq = e.aq === true, nomeBase = aq ? e.nome.replace(/\s*·\s*reconhecimento$/i, '') : e.nome, ultBase = aq ? (s.exs.find(x => x.nome === nomeBase && x.aq !== true)?.ultima || cargaPorNome(db.LS.get('cargas', {}), nomeBase)) : e.ultima; // reconhecimento: o histórico é o do exercício de verdade
     const comMais = e.dica || e.alternativa || e.nome !== e.original || bi || (!t && (s.programa_treino_id || /casa|ambos/.test(S.perfil?.local_treino || '')) && (!sc || semPesoMarcado(e.nome)));
     // Aparelho ocupado só quando tem pra onde trocar (mobilidade, dead bug, HIIT e peso do corpo não têm aparelho)
     const ocupa = !t && !sc && !aq && !ehHiit(e) && !sets.every(x => x.done) && equivalentes(e.nome, e.alternativa, e.original, s.exs.map(x => x.nome)).length > 0;
@@ -858,7 +858,7 @@ routes.sessao = () => {
     if (e.alternativa && jaTem >= 0) { const ok = await perguntar(t('Esse já está no seu treino'), t('{x} é também o exercício nº {n} de hoje. Se trocar, as cargas dos dois ficam juntas no histórico.', { x: e.alternativa, n: s.exs[jaTem].ordem ?? jaTem + 1 }), t('Trocar mesmo assim'), t('Manter o {x}', { x: e.nome })); if (!ok || S.sessao !== s) return; }
     if (e.alternativa) { e.trocadoDe = e.nome; e.nome = e.alternativa; e.alternativa = null; }
     else { e.alternativa = e.nome; e.nome = e.original; }
-    e.ultima = db.LS.get('cargas', {})[e.nome] || null; e.porSerie = null;
+    e.ultima = cargaPorNome(db.LS.get('cargas', {}), e.nome); e.porSerie = null;
     s.sets[i].forEach(st => { if (!st.done) { st.kg = ''; st.kgMan = false; } });
     salvaSessao(); routes.sessao(); window.scrollTo(0, 0); toast(e.nome === e.original ? t('Voltou pro original') : t('Trocado por {x} (só hoje)', { x: e.nome }), false, { curto: true }); // fica no título do exercício novo
     const nome = e.nome;
@@ -926,7 +926,7 @@ async function abrirHistorico(nome, ex) {
     ${temCarga ? `<h3 style="margin-top:8px">${t('Suas cargas')}</h3><p class="muted small">${t('A maior carga de cada dia que você fez esse exercício.')}</p><div id="hl"><p class="muted">${t('Carregando…')}</p></div>` : ''}<button class="btn ghost sm" id="hc" style="margin-top:6px">${t('Fechar')}</button></div></div>`);
   $('#hc').onclick = closeOverlay; $('#hm').addEventListener('click', x => { if (x.target.id === 'hm') closeOverlay(); });
   if (!temCarga) return;
-  const c = db.LS.get('cargas', {})[nome];
+  const c = cargaPorNome(db.LS.get('cargas', {}), nome);
   let h = await rapido(db.historicoCarga(S.perfil.id, nome, 8), null);
   const doCelular = !h?.length && c; if (!h?.length) h = c ? [c] : []; // sem sinal: o que tem no celular
   const hl = $('#hl'); if (!hl) return;

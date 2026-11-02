@@ -1,7 +1,7 @@
 // Camada de dados: Supabase + cache local do treino (pra abrir sem sinal).
 import { createClient } from './vendor/supabase.js'; // empacotado no app: abre sem internet
 import { idioma } from './i18n.js';
-import { aqDe, semAq } from './conteudo.js';
+import { aqDe, semAq, padraoEx, filtraEx, cargaPorNome } from './conteudo.js';
 import { comAnimacoes } from './animacoes.js';
 
 const C = window.ISTEAM_CONFIG;
@@ -110,16 +110,19 @@ export async function finalizarSessao(sessaoId, patch) {
 }
 // Histórico de carga por NOME do exercício: vale entre treinos e meses diferentes.
 export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
-  const busca = cols => sb.from('series').select(cols + 'kg,reps,n,sessao_id,sessoes!inner(aluna_id,finalizada_em,comentario)')
-    .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
-    .order('sessoes(finalizada_em)', { ascending: false }).limit(limit * 6);
+  // Nome parecido também vale (Leg press 45 / Leg Press 45° / com e sem acento), e treino que ela não finalizou também (a carga foi feita)
+  const busca = cols => sb.from('series').select(cols + 'exercicio_nome,kg,reps,n,sessao_id,sessoes!inner(aluna_id,iniciada_em,finalizada_em,comentario)')
+    .ilike('exercicio_nome', padraoEx(exercicioNome)).eq('sessoes.aluna_id', alunaId).not('kg', 'is', null)
+    .order('sessoes(iniciada_em)', { ascending: false }).limit(limit * 15);
   let { data, error } = await busca(temDrops === false ? '' : 'drops,');
   if (error && semColuna(error, 'drops')) { temDrops = false; ({ data, error } = await busca('')); }
   if (error) throw error; // sem sinal: quem chamou mostra o que tem no celular
-  if (!data?.length) return [];
+  const recente = Date.now() - 4 * 3600e3; // treino aberto agora (sem finalizar) não vira a "última vez" dele mesmo
+  data = filtraEx(exercicioNome, (data || []).filter(r => r.sessoes.finalizada_em || new Date(r.sessoes.iniciada_em).getTime() < recente));
+  if (!data.length) return [];
   // agrupa por sessão: maior carga da sessão + todas as séries (pirâmide 22/25/28)
   const por = {};
-  data.forEach(r => { const k = r.sessoes.finalizada_em; const a = por[k] || (por[k] = { kg: r.kg, reps: r.reps, data: k, sessao_id: r.sessao_id, sets: [], express: /^⚡ Express/.test(r.sessoes.comentario || '') }); const reps = repsPrincipal(r), drops = r.drops?.length ? r.drops : undefined; if (a.sets.length === 0) { a.reps = reps; a.drops = drops; } a.sets.push({ n: r.n, kg: +r.kg, reps, drops }); if (+r.kg > +a.kg) { a.kg = r.kg; a.reps = reps; a.drops = drops; } });
+  data.forEach(r => { const k = r.sessao_id, dt = r.sessoes.finalizada_em || r.sessoes.iniciada_em; const a = por[k] || (por[k] = { kg: r.kg, reps: r.reps, data: dt, sessao_id: r.sessao_id, sets: [], express: /^⚡ Express/.test(r.sessoes.comentario || '') }); const reps = repsPrincipal(r), drops = r.drops?.length ? r.drops : undefined; if (a.sets.length === 0) { a.reps = reps; a.drops = drops; } a.sets.push({ n: r.n, kg: +r.kg, reps, drops }); if (+r.kg > +a.kg) { a.kg = r.kg; a.reps = reps; a.drops = drops; } });
   Object.values(por).forEach(a => a.sets.sort((x, y) => x.n - y.n));
   return Object.values(por).sort((a, b) => b.data.localeCompare(a.data)).slice(0, limit);
 }
@@ -128,8 +131,8 @@ export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
 export const escolheUltima = h => { const mx = Math.max(0, ...h.filter(x => !x.express).map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.express || x.sets.length >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; };
 export async function ultimaCarga(alunaId, exercicioNome) {
   const cache = LS.get('cargas', {});
-  try { const u = escolheUltima(await historicoCarga(alunaId, exercicioNome, 3)); if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || cache[exercicioNome] || null; }
-  catch { return cache[exercicioNome] || null; }
+  try { const u = escolheUltima(await historicoCarga(alunaId, exercicioNome, 3)); if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || cargaPorNome(cache, exercicioNome) || null; }
+  catch { return cargaPorNome(cache, exercicioNome) || null; }
 }
 // Minhas cargas: a carga mais pesada do último treino de cada exercício + a do anterior, direto do banco.
 export async function cargasRecentes(alunaId) {
@@ -144,9 +147,11 @@ export async function cargasRecentes(alunaId) {
 }
 // Séries do último treino desse exercício, uma por número de série (pra sugerir a carga certa na pirâmide).
 export async function ultimasSeries(alunaId, exercicioNome) {
-  const { data } = await sb.from('series').select('kg,reps,n,sessao_id,sessoes!inner(aluna_id,finalizada_em)')
-    .eq('exercicio_nome', exercicioNome).eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).not('kg', 'is', null)
-    .order('sessoes(finalizada_em)', { ascending: false }).limit(12);
+  const recente = Date.now() - 4 * 3600e3;
+  const { data: bruto } = await sb.from('series').select('exercicio_nome,kg,reps,n,sessao_id,sessoes!inner(aluna_id,iniciada_em,finalizada_em)')
+    .ilike('exercicio_nome', padraoEx(exercicioNome)).eq('sessoes.aluna_id', alunaId).not('kg', 'is', null)
+    .order('sessoes(iniciada_em)', { ascending: false }).limit(40);
+  const data = filtraEx(exercicioNome, (bruto || []).filter(r => r.sessoes.finalizada_em || new Date(r.sessoes.iniciada_em).getTime() < recente)).slice(0, 12);
   if (!data?.length) return null;
   // Último dia em que ela fez todas as séries (dia que parou no meio não apaga a sugestão das séries 2 e 3)
   const cont = {}; data.forEach(r => { cont[r.sessao_id] = (cont[r.sessao_id] || 0) + 1; }); const mx = Math.max(...Object.values(cont));
