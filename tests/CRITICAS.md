@@ -476,3 +476,4 @@ Pendente:
 - [x] Revisão biomecânica dos 48 sem OK (02/11): palma visível pra diferenciar pegada supinada x pronada (rosca direta e invertida na polia, remada baixa supinada, remada curvada supinada); hiperextensão 45° sem hiperestender a lombar no topo (para na linha do corpo; glúteo com costas levemente arredondadas) e descida até ~90° de quadril; abdominal infra com retroversão (quadril sobe do banco no fim). Os outros 41 conferidos sem ajuste.
 - [x] Abdominal infra no banco declinado: banco virado do lado certo (acompanha o corpo, cabeça na parte alta).
 - [x] Removido o leg press pés baixos e juntos (a pedido do Igor). Cyclist squat com calcanhares em anilhas. Mini band perto do tornozelo. +1: abdominal na polia ajoelhado de costas pra polia. Total 141.
+- [x] Hiperextensão 45°: juntou numa só (foco glúteo), sem a versão posterior. Total 140.
