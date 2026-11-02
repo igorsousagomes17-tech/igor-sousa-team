@@ -480,3 +480,4 @@ Pendente:
 - [x] Abdominal na polia ajoelhado (de frente e de costas): boneco bem perto da polia, cabo descendo quase vertical (regra: sempre perto da polia).
 - [x] Removido o pull-through na polia (a pedido do Igor). Total 139.
 - [x] Removido o pulldown unilateral ajoelhada na polia (a pedido do Igor). Total 138.
+- [x] Remada cavalinho com apoio no peito refeita como máquina: alavanca rígida com eixo na frente, anilhas perto do eixo, pegadas neutras, peito no apoio.
