@@ -481,3 +481,4 @@ Pendente:
 - [x] Removido o pull-through na polia (a pedido do Igor). Total 139.
 - [x] Removido o pulldown unilateral ajoelhada na polia (a pedido do Igor). Total 138.
 - [x] Remada cavalinho com apoio no peito refeita como máquina: alavanca rígida com eixo na frente, anilhas perto do eixo, pegadas neutras, peito no apoio.
+- [x] Abdominal na polia ajoelhado de costas: quadril vai um pouco pra trás (em direção aos calcanhares) e o tronco enrola pra baixo, em vez de só ir pra frente.
