@@ -104,7 +104,8 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   ok(/figurinha/i.test(await p.innerText('.passos-ig')), 'Android: passo a passo manda pôr a arte pela figurinha');
   const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#salvaArte'); const d = await dl;
   ok(d && /\.png$/.test(d.suggestedFilename()), 'Android: salva PNG (mantém a transparência) sem abrir o compartilhar');
-  ok(/galeria/i.test(await p.innerText('#toast')), 'Android: avisa que salvou na galeria'); await shot(p, 'story-sem-fundo-android');
+  ok(/galeria/i.test(await p.innerText('#toast')), 'Android: avisa que salvou na galeria');
+  ok(await p.isVisible('#abreIg'), 'Android: depois de salvar aparece "Abrir o story do Instagram"'); await shot(p, 'story-sem-fundo-android');
   await ctx.close(); }
 
 console.log('erros de página:', errs); await b.close();

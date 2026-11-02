@@ -265,7 +265,9 @@ export function tabs(active) {
 }
 
 // Card compartilhável → imagem PNG (canvas) → Web Share ou download
-export async function cardImagem({ nome, titulo, minutos, exercicios, series, streak, data, insta, completo = true, total = 0, destaque = '', rotulo = '', stat2 = null, transparente = false, modo = 'compartilhar' }) {
+export async function cardImagem({ nome, titulo, minutos, exercicios, series, streak, data, insta, completo = true, total = 0, destaque = '', rotulo = '', stat2 = null, transparente = false, modo = 'compartilhar', pronto = null }) {
+  // pronto: imagem já gerada quando a tela abriu. No toque o compartilhar sai NA HORA (Android/iPhone recusam se o toque "esfriou" desenhando)
+  if (pronto) return entregarImagem(pronto, transparente);
   // a letra da marca precisa estar carregada antes de desenhar (senão o story sai com outra fonte)
   try { await Promise.race([Promise.all(['800 54px "Barlow Condensed"', '500 30px Barlow', '700 48px Barlow'].map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 1500))]); } catch {}
   // transparente: a mesma arte sem o fundo, mais compacta, pra ela colar por cima da foto dela no story (igual Strava)
@@ -298,7 +300,16 @@ export async function cardImagem({ nome, titulo, minutos, exercicios, series, st
   const tipo = transparente ? 'image/png' : 'image/jpeg', nomeArq = transparente ? 'treino-feito-sem-fundo.png' : 'treino-feito.jpg'; // transparente precisa de PNG
   const blob = await new Promise(r => c.toBlob(r, tipo, 0.9));
   if (modo === 'blob') return blob;
+  return entregarImagem(blob, transparente);
+}
+async function entregarImagem(blob, transparente) {
+  const tipo = transparente ? 'image/png' : 'image/jpeg', nomeArq = transparente ? 'treino-feito-sem-fundo.png' : 'treino-feito.jpg';
   const file = new File([blob], nomeArq, { type: tipo });
   if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: t('Treino feito') }); return 'shared'; } catch (e) { if (e?.name === 'AbortError') return 'cancel'; } } // compartilhar falhou (não foi ela que desistiu): baixa a imagem
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nomeArq; a.click(); return 'download';
+  baixarImagem(blob, nomeArq); return 'download';
+}
+// Baixa pro celular (Android: vai pra Downloads e aparece na galeria). O link precisa estar na página: solto, alguns Android ignoram o clique.
+export function baixarImagem(blob, nomeArq) {
+  const a = document.createElement('a'), u = URL.createObjectURL(blob); a.href = u; a.download = nomeArq; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(u); }, 60000);
 }

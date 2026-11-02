@@ -1,7 +1,7 @@
 const C0 = window.ISTEAM_CONFIG;
 const DEMO = !!(C0.DEMO || new URLSearchParams(location.search).has('demo'));
 const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
-import { ligarAvisoRemoto, beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho, avisoAtual, ajustaAbas } from './ui.js';
+import { ligarAvisoRemoto, beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, baixarImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho, avisoAtual, ajustaAbas } from './ui.js';
 import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma, loc, tc, tlivre, ligarTradutor } from './i18n.js';
 import * as A from './acolhe.js';
 import { equivalentes } from './conteudo.js';
@@ -1192,15 +1192,17 @@ routes.card = async (arg) => { try { ['800 54px "Barlow Condensed"', '500 30px B
     const destaque = d.recordes?.length ? '🏆 ' + d.recordes[0] : d.completo !== false && tr && nSem ? t('{n}º treino da semana', { n: nSem }) : '';
     return { nome: primeiroNome(S.perfil.nome), titulo: tr?.nome ? `${nomeTreino(d.titulo)} · ${tr.nome}` : nomeCurto(d.titulo), minutos: d.seg != null && d.seg < 60 ? '<1' : d.min, exercicios: d.ex, series: d.series, streak: st.semanas, data, insta: C.INSTAGRAM, completo: d.completo !== false, total: d.total, destaque };
   };
+  // As duas imagens já saem prontas enquanto ela olha a tela: no toque, o compartilhar/salvar é imediato (senão o Android recusa)
+  const pre = { jpg: $('#share') ? cardImagem({ ...dadosCard(), modo: 'blob' }).catch(() => null) : null, png: $('#shareFoto') ? cardImagem({ ...dadosCard(), transparente: true, modo: 'blob' }).catch(() => null) : null };
   if ($('#shareFoto')) $('#shareFoto').onclick = async () => {
     const bt = $('#shareFoto'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
-    let blob = null; try { blob = await cardImagem({ ...dadosCard(), transparente: true, modo: 'blob' }); } catch {} finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
+    let blob = null; try { blob = (await pre.png) || await cardImagem({ ...dadosCard(), transparente: true, modo: 'blob' }); } catch {} finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
     if (!blob) return toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true);
     artePorCima(blob);
   };
   if ($('#share')) $('#share').onclick = async () => {
     const bt = $('#share'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
-    let r; try { r = await cardImagem(dadosCard()); } catch { r = 'erro'; } finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
+    let r; try { const pronto = await pre.jpg; r = await cardImagem({ ...dadosCard(), pronto }); } catch { r = 'erro'; } finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
     if (r === 'erro') return toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true);
     if (r === 'cancel') return;
     pontosStory(r);
@@ -1219,7 +1221,10 @@ function artePorCima(blob) {
     <ol class="passos-ig"><li>${podeCopiar ? t('Toca em <b>Copiar a arte</b>.') : android ? t('Toca em <b>Salvar na galeria</b>.') : t('Toca em <b>Salvar a arte</b>.')}</li><li>${t('No Instagram, abre o story e escolhe a sua foto.')}</li><li>${podeCopiar ? t('Toca em <b>Aa</b>, segura o dedo na tela e escolhe <b>Colar</b>. A arte entra por cima da foto: é só ajustar o tamanho.') : t('Toca no ícone de figurinha, escolhe a arte que você salvou e ajusta o tamanho.')}</li></ol>
     ${podeCopiar ? `<button class="btn" id="copiaArte">${t('Copiar a arte')}</button>` : ''}
     <button class="btn ${podeCopiar ? 'ghost' : ''} sm" id="salvaArte">${android ? t('Salvar na galeria') : t('Salvar a arte')}</button>
+    ${android ? `<button class="btn sm" id="abreIg" hidden>${t('Abrir o story do Instagram')}</button><p class="muted center small">${t('Não salvou? Segura o dedo na arte acima e escolhe Baixar imagem.')}</p>` : ''}
     <button class="btn ghost sm" id="c">${t('Fechar')}</button></div></div>`);
+  // Abre direto a câmera de story do Instagram (aí ela escolhe a foto dela e põe a arte pela figurinha)
+  if ($('#abreIg')) $('#abreIg').onclick = () => { location.href = 'intent://story-camera#Intent;scheme=instagram;package=com.instagram.android;S.browser_fallback_url=https%3A%2F%2Fwww.instagram.com%2F;end'; };
   const fecha = () => { closeOverlay(); URL.revokeObjectURL(url); };
   $('#c').onclick = fecha;
   const ok = r => { pontosStory(r); };
@@ -1229,7 +1234,7 @@ function artePorCima(blob) {
   };
   $('#salvaArte').onclick = async () => {
     const file = new File([blob], 'treino-feito-sem-fundo.png', { type: 'image/png' });
-    if (android) { const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); $('#salvaArte').textContent = t('Salva ✓'); toast(t('Arte salva na galeria ✓ Abre o story com a sua foto e põe a arte pela figurinha.')); ok('download'); return; }
+    if (android) { baixarImagem(blob, file.name); $('#salvaArte').textContent = t('Salva ✓'); $('#abreIg').hidden = false; toast(t('Arte salva na galeria ✓ Abre o story com a sua foto e põe a arte pela figurinha.')); ok('download'); return; }
     if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); ok('shared'); return; } catch (e) { if (e?.name === 'AbortError') return; } }
     const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); ok('download');
   };
