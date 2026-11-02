@@ -1209,13 +1209,16 @@ routes.card = async (arg) => { try { ['800 54px "Barlow Condensed"', '500 30px B
 
 // Arte sem fundo (igual Strava): ela copia, abre o story com a foto dela e cola por cima.
 function artePorCima(blob) {
-  const url = URL.createObjectURL(blob), podeCopiar = !!(navigator.clipboard?.write && window.ClipboardItem);
+  // Android: compartilhar a PNG direto pro Instagram vira o FUNDO do story (fica preto atrás) e o Instagram do Android não cola imagem pelo Aa.
+  // Então lá a arte vai pra galeria e entra no story pela figurinha de foto, mantendo a transparência.
+  const android = /Android/i.test(navigator.userAgent);
+  const url = URL.createObjectURL(blob), podeCopiar = !android && !!(navigator.clipboard?.write && window.ClipboardItem);
   overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px;margin-top:16px">
     <h2>${t('Story com a sua foto')}</h2>
     <div class="xadrez"><img src="${url}" alt="${t('Arte do treino sem fundo')}"></div>
-    <ol class="passos-ig"><li>${podeCopiar ? t('Toca em <b>Copiar a arte</b>.') : t('Toca em <b>Salvar a arte</b>.')}</li><li>${t('No Instagram, abre o story e escolhe a sua foto.')}</li><li>${podeCopiar ? t('Toca em <b>Aa</b>, segura o dedo na tela e escolhe <b>Colar</b>. A arte entra por cima da foto: é só ajustar o tamanho.') : t('Toca no ícone de figurinha, escolhe a arte que você salvou e ajusta o tamanho.')}</li></ol>
+    <ol class="passos-ig"><li>${podeCopiar ? t('Toca em <b>Copiar a arte</b>.') : android ? t('Toca em <b>Salvar na galeria</b>.') : t('Toca em <b>Salvar a arte</b>.')}</li><li>${t('No Instagram, abre o story e escolhe a sua foto.')}</li><li>${podeCopiar ? t('Toca em <b>Aa</b>, segura o dedo na tela e escolhe <b>Colar</b>. A arte entra por cima da foto: é só ajustar o tamanho.') : t('Toca no ícone de figurinha, escolhe a arte que você salvou e ajusta o tamanho.')}</li></ol>
     ${podeCopiar ? `<button class="btn" id="copiaArte">${t('Copiar a arte')}</button>` : ''}
-    <button class="btn ${podeCopiar ? 'ghost' : ''} sm" id="salvaArte">${t('Salvar a arte')}</button>
+    <button class="btn ${podeCopiar ? 'ghost' : ''} sm" id="salvaArte">${android ? t('Salvar na galeria') : t('Salvar a arte')}</button>
     <button class="btn ghost sm" id="c">${t('Fechar')}</button></div></div>`);
   const fecha = () => { closeOverlay(); URL.revokeObjectURL(url); };
   $('#c').onclick = fecha;
@@ -1226,6 +1229,7 @@ function artePorCima(blob) {
   };
   $('#salvaArte').onclick = async () => {
     const file = new File([blob], 'treino-feito-sem-fundo.png', { type: 'image/png' });
+    if (android) { const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); $('#salvaArte').textContent = t('Salva ✓'); toast(t('Arte salva na galeria ✓ Abre o story com a sua foto e põe a arte pela figurinha.')); ok('download'); return; }
     if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); ok('shared'); return; } catch (e) { if (e?.name === 'AbortError') return; } }
     const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); ok('download');
   };

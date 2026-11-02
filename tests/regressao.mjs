@@ -5,8 +5,8 @@ const APP = process.env.APP || path.resolve(path.dirname(new URL(import.meta.url
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
 const falhas = [], errs = []; let n = 0;
 const ok = (cond, msg) => { console.log((cond ? '  ok  ' : '  FALHOU ') + msg); if (!cond) falhas.push(msg); };
-async function nova(t0) {
-  const ctx = await b.newContext({ locale: 'pt-BR', viewport: { width: W, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+async function nova(t0, ua) {
+  const ctx = await b.newContext({ ...(ua ? { userAgent: ua } : {}), locale: 'pt-BR', viewport: { width: W, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
   const p = await ctx.newPage();
   if (t0) await p.clock.install({ time: t0 });
   await p.route('**/*', r => { const u = new URL(r.request().url()); if (u.hostname === 'app.local') { const f = u.pathname === '/' ? '/index.html' : u.pathname; return r.fulfill({ path: APP + f }); } return r.abort(); });
@@ -92,6 +92,19 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   ok(await p.isVisible('.xadrez img'), 'arte sem fundo abre com a prévia');
   const alfa = await p.evaluate(async () => { const im = document.querySelector('.xadrez img'); await im.decode(); const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const x = c.getContext('2d'); x.drawImage(im, 0, 0); return [x.getImageData(1000, 1200, 1, 1).data[3], im.naturalWidth, im.naturalHeight]; });
   ok(alfa[0] === 0 && alfa[1] === 1080, `arte é transparente (alfa ${alfa[0]}, ${alfa[1]}x${alfa[2]})`); await shot(p, 'story-sem-fundo');
+  await ctx.close(); }
+
+// 8. Android (Samsung): arte sem fundo vai pra GALERIA como PNG (compartilhar direto pro Instagram vira o fundo preto do story)
+{ const { ctx, p } = await nova(0, 'Mozilla/5.0 (Linux; Android 15; SM-S721B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36'); await login(p); await abrirTreinoA(p);
+  await p.click('#sw'); await espera(p, 300); await p.click('#q-s'); await espera(p, 800); for (let j = 0; j < 14 && await p.$('#sw'); j++) { await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 700); } }
+  await p.click('#esf button >> nth=5'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await p.click('#shareFoto'); await espera(p, 1500);
+  ok(!(await p.$('#copiaArte')), 'Android: sem botão de copiar (Instagram do Android não cola imagem)');
+  ok(/Salvar na galeria/i.test(await p.innerText('#salvaArte')), 'Android: botão diz "Salvar na galeria"');
+  ok(/figurinha/i.test(await p.innerText('.passos-ig')), 'Android: passo a passo manda pôr a arte pela figurinha');
+  const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#salvaArte'); const d = await dl;
+  ok(d && /\.png$/.test(d.suggestedFilename()), 'Android: salva PNG (mantém a transparência) sem abrir o compartilhar');
+  ok(/galeria/i.test(await p.innerText('#toast')), 'Android: avisa que salvou na galeria'); await shot(p, 'story-sem-fundo-android');
   await ctx.close(); }
 
 console.log('erros de página:', errs); await b.close();
