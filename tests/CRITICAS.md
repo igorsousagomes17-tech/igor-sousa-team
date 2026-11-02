@@ -477,3 +477,4 @@ Pendente:
 - [x] Abdominal infra no banco declinado: banco virado do lado certo (acompanha o corpo, cabeça na parte alta).
 - [x] Removido o leg press pés baixos e juntos (a pedido do Igor). Cyclist squat com calcanhares em anilhas. Mini band perto do tornozelo. +1: abdominal na polia ajoelhado de costas pra polia. Total 141.
 - [x] Hiperextensão 45°: juntou numa só (foco glúteo), sem a versão posterior. Total 140.
+- [x] Abdominal na polia ajoelhado (de frente e de costas): boneco bem perto da polia, cabo descendo quase vertical (regra: sempre perto da polia).
