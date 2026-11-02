@@ -485,3 +485,4 @@ Pendente:
 - [x] Agachamento com calcanhar elevado: quadril desce um pouco mais pra trás (tronco levemente inclinado), sem ser só joelho pra frente.
 - [x] Good morning: com a barra vazia nas costas (sem anilha), mãos segurando a barra.
 - [x] Agachamento com calcanhar elevado: só o calcanhar em cima de 2 anilhas empilhadas (mais alto), ponta do pé no chão.
+- [x] Panturrilha em pé na máquina (apoio nos ombros, plataforma, coluna de placas). Prancha Copenhagen: a perna de baixo faz flexão e extensão (joelho vem em direção ao peito), vista de cima.
