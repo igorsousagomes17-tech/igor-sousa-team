@@ -490,3 +490,4 @@ Pendente:
 - [x] Remada cavalinho com apoio no peito refeita como o aparelho real (tipo Titan/Exigo): um único eixo fixo no chão atrás dos pés, uma barra só passando entre as pernas, pegadas embaixo do peito e anilhas na ponta da frente; apoio de peito inclinado e plataforma pros pés.
 - [x] Rosca bayesiana na polia renomeada pra "Rosca unilateral na polia" (o nome antigo continua puxando a mesma animação).
 - [x] Rosca unilateral na polia: boneco mais perto da polia.
+- [x] Tríceps francês na polia refeito com polia baixa: de costas pra polia, cabo sobe por trás das costas até a corda atrás da cabeça, cotovelos apontando pra cima perto da cabeça, estende pra cima (força puxando pra baixo e pra trás).
