@@ -487,3 +487,4 @@ Pendente:
 - [x] Agachamento com calcanhar elevado: só o calcanhar em cima de 2 anilhas empilhadas (mais alto), ponta do pé no chão.
 - [x] Panturrilha em pé na máquina (apoio nos ombros, plataforma, coluna de placas). Prancha Copenhagen: a perna de baixo faz flexão e extensão (joelho vem em direção ao peito), vista de cima.
 - [x] Remada cavalinho com apoio no peito: alavanca sai de baixo, na altura dos pés (eixo baixo atrás), não de cima/da frente; duas alavancas por fora das pernas, anilhas no meio.
+- [x] Remada cavalinho com apoio no peito refeita como o aparelho real (tipo Titan/Exigo): um único eixo fixo no chão atrás dos pés, uma barra só passando entre as pernas, pegadas embaixo do peito e anilhas na ponta da frente; apoio de peito inclinado e plataforma pros pés.
