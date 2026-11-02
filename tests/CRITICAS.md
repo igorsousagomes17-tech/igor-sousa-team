@@ -486,3 +486,4 @@ Pendente:
 - [x] Good morning: com a barra vazia nas costas (sem anilha), mãos segurando a barra.
 - [x] Agachamento com calcanhar elevado: só o calcanhar em cima de 2 anilhas empilhadas (mais alto), ponta do pé no chão.
 - [x] Panturrilha em pé na máquina (apoio nos ombros, plataforma, coluna de placas). Prancha Copenhagen: a perna de baixo faz flexão e extensão (joelho vem em direção ao peito), vista de cima.
+- [x] Remada cavalinho com apoio no peito: alavanca sai de baixo, na altura dos pés (eixo baixo atrás), não de cima/da frente; duas alavancas por fora das pernas, anilhas no meio.
