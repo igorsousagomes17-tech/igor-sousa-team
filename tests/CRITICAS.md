@@ -479,3 +479,4 @@ Pendente:
 - [x] Hiperextensão 45°: juntou numa só (foco glúteo), sem a versão posterior. Total 140.
 - [x] Abdominal na polia ajoelhado (de frente e de costas): boneco bem perto da polia, cabo descendo quase vertical (regra: sempre perto da polia).
 - [x] Removido o pull-through na polia (a pedido do Igor). Total 139.
+- [x] Removido o pulldown unilateral ajoelhada na polia (a pedido do Igor). Total 138.
