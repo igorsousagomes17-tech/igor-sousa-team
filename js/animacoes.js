@@ -2,8 +2,8 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  [/^abdominal (na )?polia.*(de costas|costas pra polia|costas para a polia)/, 'abdominal-polia-costas'],
   [/^cadeira extensora.*unilateral/, 'extensora-unilateral'],
-  [/^leg ?press.*(pes baixos|pe baixo|pes juntos)/, 'leg-press-pes-baixos'],
   [/calcanhar elevado|cyclist/, 'cyclist-squat'],
   [/^afundo reverso.*deficit/, 'afundo-reverso-deficit'],
   [/^afundo.*entre (os )?steps|^afundo com deficit/, 'afundo-entre-steps'],
@@ -181,14 +181,14 @@ export const ANIM_LISTA = [
   ['Remada cavalinho com apoio no peito', 'Costas'], ['Remada na máquina', 'Costas'], ['Remada na máquina unilateral', 'Costas'], ['Remada na máquina articulada', 'Costas'],
   ['Abdominal na paralela com perna estendida', 'Core'], ['Crucifixo na polia baixa', 'Peito'], ['Abdução de quadril na máquina', 'Glúteo'], ['Abdução de quadril na máquina em pé', 'Glúteo'],
   ['Abdução de quadril na máquina 45 graus', 'Glúteo'], ['Adução de quadril na máquina', 'Adutores'],
-  ['Cadeira extensora unilateral', 'Quadríceps'], ['Leg press pés baixos e juntos', 'Quadríceps'], ['Agachamento com calcanhar elevado (cyclist)', 'Quadríceps'], ['Afundo reverso com déficit', 'Glúteo'],
+  ['Cadeira extensora unilateral', 'Quadríceps'], ['Agachamento com calcanhar elevado (cyclist)', 'Quadríceps'], ['Afundo reverso com déficit', 'Glúteo'],
   ['Afundo com halteres entre steps', 'Glúteo'], ['Búlgaro com déficit e tronco à frente', 'Glúteo'], ['Hip thrust B-stance', 'Glúteo'], ['Stiff B-stance com halteres', 'Posterior'],
   ['Hiperextensão 45° foco glúteo', 'Glúteo'], ['Hiperextensão 45° foco posterior', 'Posterior'], ['Pull-through na polia', 'Glúteo'], ['Good morning sem carga', 'Posterior'],
   ['Caminhada lateral com mini band', 'Glúteo'], ['Panturrilha em pé', 'Panturrilha'], ['Puxada unilateral', 'Costas'], ['Pulldown unilateral ajoelhada', 'Costas'],
   ['Remada invertida no smith', 'Costas'], ['Pullover com halter', 'Costas'], ['Desenvolvimento Arnold', 'Ombro'], ['Elevação lateral em Y no banco inclinado', 'Ombro'],
   ['Flexão com déficit', 'Peito'], ['Tríceps francês com halteres', 'Braços'], ['Rosca inclinada com halteres', 'Braços'], ['Rosca bayesiana na polia', 'Braços'], ['Rosca spider', 'Braços'],
   ['Dead bug', 'Core'], ['Pallof press', 'Core'], ['Prancha Copenhagen', 'Core'], ['Prancha lateral com apoio no banco', 'Core'], ['Prancha com toque no ombro', 'Core'],
-  ['Abdominal na polia ajoelhado', 'Core'], ['Abdominal infra no banco declinado', 'Core'],
+  ['Abdominal na polia ajoelhado', 'Core'], ['Abdominal na polia ajoelhado de costas', 'Core'], ['Abdominal infra no banco declinado', 'Core'],
 ];
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m && m[1] ? `./anim/${m[1]}.mp4` : null; }
 export const ehAnim = url => /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(String(url || ''));
