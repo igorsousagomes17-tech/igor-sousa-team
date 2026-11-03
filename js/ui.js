@@ -175,7 +175,7 @@ export const chipDescanso = (() => {
     suportado: () => 'mediaSession' in navigator && typeof Audio !== 'undefined',
     // resta/total: o que mostra no chip; fimEm: segundos até o fim de verdade (no "cada lado" é diferente do lado atual)
     atualiza(resta, total, rotulo, sub, fimEm = resta) {
-      if (!this.suportado() || localStorage.getItem('chip_off') === '1') return;
+      if (!this.suportado() || localStorage.getItem('chip_on') !== '1') return; // só se ela ligou no Perfil
       try {
         if (!au) { au = new Audio(); au.preload = 'auto'; }
         if (!ativo) {
@@ -212,7 +212,10 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
     // próximo: texto (como antes) ou { tipo: 'exercicio'|'serie', nome, titulo, detalhe, dica, texto }; o texto simples vai pro chip e pro aviso
     const px = proximo && typeof proximo === 'object' ? proximo : null, pxTxt = px ? (px.texto || px.titulo || px.nome || '') : String(proximo || '');
     const cartao = !px ? `<p class="muted center" id="rest-p">${esc(pxTxt)}</p>` : px.tipo === 'exercicio'
-      ? `<div class="prox ex" id="rest-p"><span class="prox-l">${t('Próximo exercício')}</span><b class="prox-n">${esc(px.nome || '')}</b>${px.detalhe ? `<span class="prox-d">${esc(px.detalhe)}</span>` : ''}${px.dica ? `<span class="prox-t">⚡ ${esc(px.dica)}</span>` : ''}</div>`
+      ? (() => { const vs = px.vids || [], dv = v => `data-vid="${esc(v.nome)}" data-url="${esc(v.url)}" data-dica="${esc(v.dica)}"`, um = vs.length === 1; // tocar no próximo abre o vídeo/animação da execução (o descanso segue correndo atrás)
+        const nomes = um || !vs.length ? `<b class="prox-n">${esc(px.nome || '')}</b>` : vs.map(v => `<button class="prox-n prox-b" ${dv(v)}>▶ ${esc(v.rotulo)}</button>`).join('');
+        const corpo = `<span class="prox-l">${t('Próximo exercício')}</span>${nomes}${px.detalhe ? `<span class="prox-d">${esc(px.detalhe)}</span>` : ''}${px.dica ? `<span class="prox-t">⚡ ${esc(px.dica)}</span>` : ''}${vs.length ? `<span class="prox-v">▶ ${um ? t('Toca pra ver a execução') : t('Toca no nome pra ver a execução')}</span>` : ''}`;
+        return um ? `<button class="prox ex prox-btn" id="rest-p" ${dv(vs[0])} aria-label="${esc(t('Ver execução') + ': ' + vs[0].rotulo)}">${corpo}</button>` : `<div class="prox ex" id="rest-p">${corpo}</div>`; })()
       : `<div class="prox" id="rest-p"><b>${esc(px.titulo || px.nome || '')}</b>${px.detalhe ? `<span class="prox-d">${esc(px.detalhe)}</span>` : ''}</div>`; // Igor (30/10): o "Próximo" era uma linha cinza que ninguém via
     const me = { mini: false, trabalho, fim: () => pausado ? null : fim }; let fase = -1, pausado = 0; // pausado: o cronômetro parado não conta como tempo de treino rodando
     L.innerHTML = `<div class="ov" id="rest">

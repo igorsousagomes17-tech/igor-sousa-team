@@ -191,6 +191,8 @@ const D = {
   "Não uso peso": ["I don't use weight", "No uso peso", "我不用负重", "मैं वज़न नहीं लेती", "Je n'utilise pas de charge"],
   "Beleza: tirei a coluna de kg desse exercício.": ["Got it: I removed the kg column for this exercise.", "Listo: quité la columna de kg de este ejercicio.", "好的：这个动作已去掉重量一栏。", "ठीक है: इस एक्सरसाइज़ से kg वाला कॉलम हटा दिया।", "OK : j'ai retiré la colonne kg de cet exercice."],
   "{x}: {v} kg na série {n}? Parece bem diferente do normal.": ["{x}: {v} kg on set {n}? That looks very different from usual.", "{x}: ¿{v} kg en la serie {n}? Parece muy distinto de lo normal.", "{x}：第 {n} 组 {v} kg？看起来和平常差很多。", "{x}: सेट {n} में {v} kg? ये सामान्य से बहुत अलग लगता है।", "{x} : {v} kg à la série {n} ? Ça semble très différent d'habitude."],
+  "Toca pra ver a execução": ["Tap to watch the form", "Toca para ver la técnica", "点一下看动作演示", "फ़ॉर्म देखने के लिए टैप करो", "Touche pour voir l'exécution"],
+  "Toca no nome pra ver a execução": ["Tap a name to watch the form", "Toca el nombre para ver la técnica", "点名字看动作演示", "फ़ॉर्म देखने के लिए नाम पर टैप करो", "Touche un nom pour voir l'exécution"],
   "Próximo exercício": ["Next exercise", "Próximo ejercicio", "下一个动作", "अगली एक्सरसाइज़", "Exercice suivant"],
   "Próxima: série {n} de {t} · {x}": ["Next: set {n} of {t} · {x}", "Siguiente: serie {n} de {t} · {x}", "下一组：第 {n}/{t} 组 · {x}", "अगला: सेट {n}/{t} · {x}", "Suivante : série {n} sur {t} · {x}"],
   "carga: {kg} kg": ["load: {kg} kg", "carga: {kg} kg", "重量：{kg} kg", "वज़न: {kg} kg", "charge : {kg} kg"],

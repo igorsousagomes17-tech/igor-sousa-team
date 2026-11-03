@@ -974,7 +974,8 @@ function proxDescanso(s, seguinte, pi) {
   const e = s.exs[g[0]], nomes = g.map(i => limpa(s.exs[i])).join(' + '), n = s.sets[g[0]].length, reps = String(e.reps || '');
   const detalhe = [tp(n, '{n} série', '{n} séries'), reps ? (/^[\d\s/+-]+$/.test(reps) ? T('{r} reps', { r: reps }) : tc(reps)) : '', !semCarga(e) && !tempo(e.reps) && e.ultima?.kg != null ? T('última vez {kg} kg', { kg: dec(e.ultima.kg) }) : ''].filter(Boolean).join(' · ');
   const tec = tecnicaDe(e).split(' · ')[0]; // só a 1ª técnica, curta: é pra ela se preparar, não pra ler
-  return { tipo: 'exercicio', nome: nomes, detalhe, dica: tec ? tc(tec).slice(0, 90) : '', texto: T('Próximo: {x}', { x: nomes }) };
+  const vids = g.map(i => ({ nome: s.exs[i].nome.replace(/\s*·\s*reconhecimento$/i, ''), rotulo: limpa(s.exs[i]), url: s.exs[i].video_url || '', dica: s.exs[i].dica || '' })); // Igor (03/11): tocar no próximo abre a execução
+  return { tipo: 'exercicio', nome: nomes, detalhe, dica: tec ? tc(tec).slice(0, 90) : '', vids, texto: T('Próximo: {x}', { x: nomes }) };
 }
 // Carga que parece erro de digitação (300 kg na puxada, 30 → 300 entre as séries): devolve o valor pra conferir, ou null
 function cargaEstranha(s, i, k) {
@@ -1594,7 +1595,7 @@ async function comprimir(file) {
 }
 
 // PERFIL ----------------------------------------------------------------------------
-const chipOff = () => { try { return localStorage.getItem('chip_off') === '1'; } catch { return false; } };
+const chipOff = () => { try { return localStorage.getItem('chip_on') !== '1'; } catch { return true; } }; // vem desligado: o áudio do chip pausava a música da aluna no Android
 routes.perfil = async () => {
   const [p0, ss] = await Promise.all([rapido(db.perfil(), null, 3000), rapido(db.minhasSessoes(S.perfil.id, 30), db.LS.get('sessoes', []), 3000)]);
   const p = p0 || S.perfil; S.perfil = p; const sessoes = ss || [];
@@ -1618,7 +1619,7 @@ routes.perfil = async () => {
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Senha')}</b><button class="btn ghost sm" id="pw">${t('trocar')}</button></div><p class="muted">${p.senha_trocada === false ? t('Se ainda é o seu número de WhatsApp, troca aqui.') : t('Quer mudar sua senha? Troca aqui quando quiser.')}</p></div>
   <a class="btn ghost sm" style="width:100%" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener">${t('Chamar o Igor')}</a>
   <button class="link-fim" id="out" style="margin-top:14px">${t('Sair da minha conta')}</button></div>`, 'perfil');
-  $('#idi').onclick = escolherIdioma; if ($('#stv')) cartaoStrava(); if ($('#chipOn')) $('#chipOn').onclick = () => { const b = $('#chipOn'), liga = !b.classList.contains('on'); b.classList.toggle('on', liga); b.setAttribute('aria-checked', liga); try { liga ? localStorage.removeItem('chip_off') : localStorage.setItem('chip_off', '1'); } catch {} };
+  $('#idi').onclick = escolherIdioma; if ($('#stv')) cartaoStrava(); if ($('#chipOn')) $('#chipOn').onclick = () => { const b = $('#chipOn'), liga = !b.classList.contains('on'); b.classList.toggle('on', liga); b.setAttribute('aria-checked', liga); try { liga ? localStorage.setItem('chip_on', '1') : localStorage.removeItem('chip_on'); } catch {} };
   // Responder o Igor: vai pela função do banco (só a sessão dela, até 1000 letras) e aparece embaixo da resposta dele
   const enviarResp = async id => {
     const inp = $(`[data-rin="${id}"]`), bt = $(`[data-rsend="${id}"]`), tx = inp?.value.trim(); if (!inp || bt.disabled) return; if (!tx) { toast(t('Escreve sua resposta antes de enviar.'), true); return inp.focus(); }
