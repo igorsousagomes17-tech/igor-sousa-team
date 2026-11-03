@@ -25,6 +25,7 @@ export async function sessionUser() { return state.logado ? { id: 'demo' } : nul
 export async function login(email, senha) { await wait(400); if (!email) throw new Error('x'); state.logado = true; state.perfil.role = /igor/i.test(email) ? 'admin' : 'aluna'; state.perfil.nome = /igor/i.test(email) ? 'Igor Sousa' : 'Ana Paula (demo)'; save(); return { id: 'demo' }; }
 export async function logout() { state.logado = false; save(); }
 export async function trocarSenha() { await wait(); }
+export async function excluirConta(senha) { await wait(400); if (!String(senha || '').trim()) throw Object.assign(new Error('senha'), { codigo: 'senha' }); state.logado = false; save(); return true; }
 export async function marcarPausa() {}
 export async function conferirSenha(senha) { await wait(200); return !!String(senha || '').trim(); }
 export async function esqueciSenha() { await wait(); }

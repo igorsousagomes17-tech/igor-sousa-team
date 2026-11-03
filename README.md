@@ -57,5 +57,6 @@ index.html  manifest.webmanifest  sw.js
 css/app.css
 js/config.js  js/app.js  js/ui.js  js/db.js  js/db-mock.js  js/admin.js
 icons/
-supabase/schema.sql  supabase/functions/criar-aluna  supabase/functions/kiwify-webhook
+supabase/schema.sql  supabase/functions/criar-aluna  supabase/functions/kiwify-webhook  supabase/functions/excluir-conta
+supabase/conta-revisor.sql (conta de teste pros revisores das lojas; a senha não fica no repositório)
 ```

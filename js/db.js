@@ -193,6 +193,13 @@ export async function meusPontos(alunaId) {
   LS.set('pontos', data); return data;
 }
 
+// Excluir a conta (exigência das lojas): confere a senha e apaga tudo dela no servidor
+export async function excluirConta(senha) {
+  const { data: { session } } = await sb.auth.getSession(); if (!session) throw Object.assign(new Error('sem sessão'), { codigo: 'nao_autenticado' });
+  const r = await fetch(`${C.SUPABASE_URL}/functions/v1/excluir-conta`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: C.SUPABASE_ANON_KEY }, body: JSON.stringify({ senha }) });
+  const j = await r.json().catch(() => ({})); if (!r.ok || !j.ok) throw Object.assign(new Error(j.erro || 'excluir ' + r.status), { codigo: j.erro || 'falhou' });
+  return true;
+}
 // Evolução -------------------------------------------------------------
 export async function evolucao(alunaId) {
   const { data, error } = await sb.from('evolucao').select('*').eq('aluna_id', alunaId).order('data');

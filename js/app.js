@@ -1617,7 +1617,7 @@ routes.perfil = async () => {
   <button class="btn ghost sm" id="tour" style="width:100%">🧭 ${t('Ver o passeio pelo app de novo')}</button>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Senha')}</b><button class="btn ghost sm" id="pw">${t('trocar')}</button></div><p class="muted">${p.senha_trocada === false ? t('Se ainda é o seu número de WhatsApp, troca aqui.') : t('Quer mudar sua senha? Troca aqui quando quiser.')}</p></div>
   <a class="btn ghost sm" style="width:100%" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener">${t('Chamar o Igor')}</a>
-  <button class="link-fim" id="out" style="margin-top:14px">${t('Sair da minha conta')}</button></div>`, 'perfil');
+  <button class="link-fim" id="out" style="margin-top:14px">${t('Sair da minha conta')}</button>${p.role === 'admin' ? '' : `<button class="link-fim" id="delConta" style="margin-top:4px;opacity:.7">${t('Excluir minha conta')}</button>`}</div>`, 'perfil');
   $('#idi').onclick = escolherIdioma; if ($('#stv')) cartaoStrava(); if ($('#chipOn')) $('#chipOn').onclick = () => { const b = $('#chipOn'), liga = !b.classList.contains('on'); b.classList.toggle('on', liga); b.setAttribute('aria-checked', liga); try { liga ? localStorage.removeItem('chip_off') : localStorage.setItem('chip_off', '1'); } catch {} };
   // Responder o Igor: vai pela função do banco (só a sessão dela, até 1000 letras) e aparece embaixo da resposta dele
   const enviarResp = async id => {
@@ -1653,6 +1653,21 @@ routes.perfil = async () => {
       $('#e').hidden = true; $('#s').disabled = true; try { if (!(await comLimite(db.conferirSenha($('#n0').value), 12000))) { $('#e').textContent = t('A senha de agora não confere. Esqueceu? Sai do app e toca em "Esqueci minha senha".'); $('#e').hidden = false; $('#s').disabled = false; return; } await db.trocarSenha($('#n1').value); await db.salvarPerfil({ senha_trocada: true }).catch(() => {}); closeOverlay(); toast(t('Senha trocada ✓ Na próxima vez, entra com ela.')); } catch (e) { $('#e').textContent = traduzErro(e); $('#e').hidden = false; $('#s').disabled = false; } };
   };
   $('#ed').onclick = () => anamneseForm(p, () => go('perfil'));
+  if ($('#delConta')) $('#delConta').onclick = () => {
+    overlay(`<div class="modal" id="m"><form class="box" id="fx" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${t('Excluir minha conta')}</h2>
+      <p class="muted">${t('Isso apaga de vez seu acesso, seus treinos, cargas, fotos, medidas, pontos e conversas. Não dá pra desfazer.')}</p>
+      <p class="muted">${t('Excluir a conta não cancela a cobrança na Kiwify. Se você paga por assinatura, cancela por lá também (ou chama o Igor).')}</p>
+      <div class="field"><label class="l" for="x0">${t('Digita sua senha pra confirmar')}</label>${campoSenha('x0', '', 'current-password')}</div>
+      <p class="err" id="e" hidden></p><div class="row" style="flex-wrap:wrap;gap:8px"><button type="button" class="btn sm" id="c" style="flex:1 1 120px;min-width:0">${t('Cancelar')}</button><button class="btn ghost sm" id="s" style="flex:1 1 120px;min-width:0">${t('Excluir de vez')}</button></div></form></div>`);
+    $('#c').onclick = closeOverlay;
+    $('#fx').onsubmit = async ev => { ev.preventDefault(); const sen = $('#x0').value; if (!sen.trim()) { $('#e').textContent = t('Digita a senha de agora (a que você usa pra entrar).'); $('#e').hidden = false; return; }
+      if ($('#s').disabled) return; $('#e').hidden = true; $('#s').disabled = true; $('#s').textContent = t('Excluindo…');
+      try { await comLimite(db.excluirConta(sen), 20000); }
+      catch (e) { $('#s').disabled = false; $('#s').textContent = t('Excluir de vez'); $('#e').textContent = e?.codigo === 'senha' ? t('A senha não confere. Confere e tenta de novo.') : navigator.onLine === false || erroDeRede(e) ? t('Sem internet agora. Tenta de novo com sinal.') : t('Não deu pra excluir agora. Tenta de novo ou chama o Igor.'); $('#e').hidden = false; return; }
+      closeOverlay(); S.sessao = null; db.LS.del('sessao'); db.LS.del('sessao@' + p.id); db.LS.del('fila');
+      A.limparLembrete(); await db.logout().catch(() => {}); ['chat', 'chatRasc', 'chatPend', 'chatRest', 'chatEm', 'cargas', 'evolucao', 'sessoes', 'rascResp', 'anamnese'].forEach(k => db.LS.del(k)); S.perfil = null; go('entrada'); toast(t('Sua conta foi excluída. Obrigado por ter treinado com a gente 🧡'));
+    };
+  };
 };
 // Mesmas regras de senha no 1º acesso, no Perfil e no "esqueci a senha"
 function erroSenha(a, b) {
