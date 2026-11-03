@@ -52,6 +52,10 @@ for (const n of ['Abdução de quadril 45° máquina', 'Abdução de quadril na 
 ok(fs.existsSync(`${APP}/videos/abducao-quadril-45-maquina.mp4`) && videoDe('Abdução de quadril na máquina') === null && videoDe('Abdução de quadril na máquina em pé') === null, 'vídeo da abdução 45° existe e não pega a abdução sentada/em pé');
 for (const n of ['Ativação de glúteo em pé com elástico', 'Ativação glúteo em pé com mini band', 'Coice de glúteo com elástico em pé']) ok(videoDe(n) === './videos/ativacao-gluteo-em-pe-elastico.mp4', `vídeo gravado: "${n}"`);
 ok(fs.existsSync(`${APP}/videos/ativacao-gluteo-em-pe-elastico.mp4`) && videoDe('Glúteo coice polia') === null && videoDe('Caminhada lateral com mini band') === null, 'vídeo da ativação em pé existe e não pega coice na polia nem caminhada lateral');
+for (const n of ['Rosca direta halter com rotação', 'Rosca direta com halter com rotação', 'Rosca direta com halteres e rotação']) ok(videoDe(n) === './videos/rosca-direta-halter-rotacao.mp4', `vídeo gravado: "${n}"`);
+ok(fs.existsSync(`${APP}/videos/rosca-direta-halter-rotacao.mp4`) && videoDe('Rosca direta com halter') === null && videoDe('Rosca martelo com halter') === null, 'vídeo da rosca com rotação existe e não pega rosca direta simples nem martelo');
+for (const n of ['Desenvolvimento sentado com halter', 'Desenvolvimento com halteres', 'Desenvolvimento sentado com halteres']) ok(videoDe(n) === './videos/desenvolvimento-sentado-halter.mp4', `vídeo gravado: "${n}"`);
+ok(fs.existsSync(`${APP}/videos/desenvolvimento-sentado-halter.mp4`) && videoDe('Desenvolvimento Arnold') === null && videoDe('Desenvolvimento Arnold com halteres') === null && videoDe('Desenvolvimento no smith') === null && videoDe('Desenvolvimento com barra') === null, 'vídeo do desenvolvimento com halter existe e não pega Arnold, smith nem barra');
 for (const [n, a] of Object.entries(casos)) ok(animDe(n) === (a && `./anim/${a}.mp4`), `"${n}" → ${a || 'sem animação'}`);
 for (const a of new Set(Object.values(casos).filter(Boolean))) ok(fs.existsSync(`${APP}/anim/${a}.mp4`), `arquivo anim/${a}.mp4 existe`);
 
