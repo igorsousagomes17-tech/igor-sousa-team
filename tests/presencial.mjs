@@ -1,0 +1,25 @@
+// Igor 03/11: aluna do plano misto registra o dia presencial com foto de prova; vale +50 e aparece no painel dele
+import { chromium } from 'playwright';
+import path from 'path'; const APP=process.env.APP||path.resolve(path.dirname(new URL(import.meta.url).pathname),'..');
+const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'}); const p=await (await b.newContext({locale:'pt-BR',viewport:{width:360,height:780},serviceWorkers:'block'})).newPage();
+await p.route('**/*', r=>{ const u=new URL(r.request().url()); if(u.hostname==='app.local'){ const f=u.pathname==='/'?'/index.html':u.pathname; return r.fulfill({path:APP+f}); } return r.abort(); });
+const errs=[]; p.on('pageerror',e=>errs.push(e.message)); const ok=(c,m)=>{ console.log((c?'OK   ':'FALHA ')+m); if(!c) errs.push(m); };
+await p.goto('http://app.local/?demo'); await p.waitForTimeout(500);
+await p.click('text=ENTRAR'); await p.fill('#em','ana@demo.com'); await p.press('#pw','Enter'); await p.waitForTimeout(900);
+await p.click('.tabs [data-go="treino"]'); await p.waitForTimeout(700);
+ok(await p.locator('#presencial').count()===1, 'aba Treino tem "Treinou presencial com o Igor?"');
+await p.click('#presencial'); await p.waitForTimeout(300);
+ok(await p.locator('#pOk').isDisabled(), 'sem foto não deixa registrar');
+const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64');
+await p.setInputFiles('#pFoto', { name: 'prova.png', mimeType: 'image/png', buffer: png }); await p.waitForTimeout(600);
+ok(!(await p.locator('#pOk').isDisabled()), 'com a foto libera "Registrar treino"');
+const pts0 = await p.evaluate(async()=>(await import('/js/db-mock.js')).LS.get('x')) ; 
+await p.click('#pOk'); await p.waitForTimeout(1200);
+const v = await p.innerText('.view'); ok(/TREINO\s*FEITO/i.test(v) && /\+50\s*pts/i.test(v) && /com o Igor/i.test(v), 'card: treino feito, +50 pts, com o Igor');
+await p.screenshot({ path: '/tmp/presencial-card.png' });
+const pr = await p.evaluate(async()=>(await (await import('/js/db-mock.js')).admin.presenciais()));
+ok(pr.length===1 && /^data:image/.test(pr[0].foto_path||''), 'painel do Igor recebe o presencial com a foto');
+await p.click('.tabs [data-go="treino"]'); await p.waitForTimeout(600); await p.click('#presencial'); await p.waitForTimeout(300);
+await p.setInputFiles('#pFoto', { name: 'prova.png', mimeType: 'image/png', buffer: png }); await p.waitForTimeout(600);
+ok(await p.locator('#pOk').isDisabled() && /já registrou/i.test(await p.innerText('#pAviso')), 'não deixa registrar 2 presenciais no mesmo dia');
+console.log(errs.length?'ERROS: '+errs.join(' | '):'tudo certo'); await b.close(); process.exit(errs.length?1:0);
