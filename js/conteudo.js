@@ -352,3 +352,19 @@ export function equivalentes(nome, alternativa, original, jaNoTreino = []) {
   for (const x of (EQUIV.find(([r]) => r.test(base)) || [])[1] || []) { if (out.length === 2) break; const f = familia(x); if (fams.has(f) || vistos.has(f)) continue; vistos.add(f); out.push(x); }
   return out;
 }
+
+// Mesmo exercício com nome escrito diferente ("Leg press 45" x "Leg Press 45°" x "leg press 45 pés mais fechados"):
+// a carga da segunda aparece na quinta. 2 = mesmo nome; 1 = variação de execução (pés, pegada, pausa); 0 = outro exercício.
+export const chaveEx = n => String(n || '').replace(/\s*·\s*reconhecimento$/i, '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, ' ').replace(/\bgraus?\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+const OUTRO_EX = /\b(unilateral|unilat|uni|horizontal|vertical|inclinad\w*|declinad\w*|smith|maquina|halter\w*|barra|polia|cabo|sumo|frontal|bulgar\w*|articulad\w*|sentad\w*|em pe|deitad\w*|alternad\w*|corda|caneleira|elastico|kettlebell|anilha|banco|step|bola|livre|hack|pendulo|unipodal)\b/;
+export function casaEx(atual, outro) {
+  const a = chaveEx(atual), b = chaveEx(outro); if (!a || !b) return 0; if (a === b) return 2;
+  const [c, l] = a.length < b.length ? [a, b] : [b, a]; if (!l.startsWith(c + ' ')) return 0;
+  return OUTRO_EX.test(l.slice(c.length + 1)) ? 0 : 1;
+}
+// Padrão do ilike no banco (pega as 2 primeiras palavras, vogais/ç soltas pra casar com ou sem acento); quem filtra de verdade é o casaEx
+export const padraoEx = n => '%' + chaveEx(n).split(' ').slice(0, 2).map(w => w.replace(/[aeiouc]/g, '_')).join('%') + '%';
+// Entre linhas com nomes parecidos: as do mesmo nome; se não tiver nenhuma, as variações
+export function filtraEx(nome, linhas, campo = 'exercicio_nome') { const m = linhas.map(r => [casaEx(nome, r[campo]), r]); const best = Math.max(0, ...m.map(x => x[0])); return best ? m.filter(x => x[0] === best).map(x => x[1]) : []; }
+// Carga guardada no celular pelo nome parecido
+export function cargaPorNome(cs, nome) { if (!cs || !nome) return null; if (cs[nome]) return cs[nome]; let best = 0, v = null; for (const [k, x] of Object.entries(cs)) { const c = casaEx(nome, k); if (c > best || (c === best && c && (x?.data || '') > (v?.data || ''))) { best = c; v = x; } } return best ? v : null; }
