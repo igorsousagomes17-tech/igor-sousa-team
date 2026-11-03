@@ -190,6 +190,8 @@ export const ANIM_LISTA = [
 // Vídeos gravados (arquivos em ./videos), na frente da animação quando o exercício ainda não tem link no banco
 const VIDEOS = [
   [/^(step[ -]?up|subida (no|em) (step|banco|caixa)).*halter/, 'step-up-com-halter'],
+  [/^abducao (de |do )?quadril.*(maquina.*45|45.*maquina)|^(cadeira )?abdutora.*45/, 'abducao-quadril-45-maquina'],
+  [/^(ativacao (de |do )?gluteo|coice (de |do )?gluteo|gluteo coice).*em pe.*(elastico|band|miniband)|^(ativacao (de |do )?gluteo|coice (de |do )?gluteo|gluteo coice).*(elastico|band|miniband).*em pe/, 'ativacao-gluteo-em-pe-elastico'],
 ];
 export function videoDe(nome) { const n = sem(nome); const m = VIDEOS.find(([rx]) => rx.test(n)); return m ? `./videos/${m[1]}.mp4` : null; }
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m && m[1] ? `./anim/${m[1]}.mp4` : null; }
