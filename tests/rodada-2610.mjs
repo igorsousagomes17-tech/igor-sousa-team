@@ -64,7 +64,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
 { const { ctx, p } = await nova(); await login(p); const pts0 = (await st(p)).perfil.pontos; await abrirTreino(p, 'B'); await p.click('.set[data-k="0"] .rest'); await espera(p, 500); await fecharDescanso(p);
   await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
   ok(/Treino registrado/i.test(await txt(p, '.view')), 'card com nada completo diz "Treino registrado" (não "1 exercício")');
-  ok(/incompleto: sem pontos/i.test(await txt(p, '.view')) && (await st(p)).perfil.pontos === pts0, 'só treino completo pontua: incompleto não ganha +50 (decisão do Igor)');
+  ok(!/\+\d+ pts/i.test(await txt(p, '.view')) && (await st(p)).perfil.pontos === pts0, 'nenhum exercício completo e poucos minutos: registra sem pontos (migração 022)');
   await p.click('.topbar [data-go="home"]'); await espera(p, 900); const v = await txt(p, '.view');
   ok(/ficou pela metade|ficou só no começo/i.test(v) && /TREINO B/i.test(v) && !/Treino de hoje feito/i.test(v), 'Início oferece repetir o B'); await shot(p, 'repetir-b');
   await p.click('#seguirMeia'); await espera(p, 600); ok(/TREINO C/i.test(await txt(p, '.view')), '"seguir pro próximo" vai pro C'); await ctx.close(); }
