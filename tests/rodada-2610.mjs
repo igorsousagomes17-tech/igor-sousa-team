@@ -54,7 +54,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   await p.click('#m [data-o="0"]'); await espera(p, 800);
   const s = await sessao(p); ok(s.sets[0].every(x => x.done) && s.p === 1, '"Fiz todas" marca as que faltavam e segue');
   await p.click('#fim'); await espera(p); ok(/Faltam 6 exercícios/i.test(await txt(p, '#overlay')), 'pop-up conta como o topo (Faltam 6 com 1 de 7 feito)');
-  await p.click('#enc'); await espera(p, 600); ok(/Treino incompleto \(1 de 7\)/i.test(await txt(p, '.view')) && /Só fica registrado quando você tocar em Enviar/i.test(await txt(p, '.view')), 'feedback pela metade: "Treino incompleto (1 de 7)" e avisa que falta tocar em Enviar');
+  await p.click('#enc'); await espera(p, 600); ok(/1 de 7 feitos/i.test(await txt(p, '.view')) && /Só fica registrado quando você tocar em Enviar/i.test(await txt(p, '.view')), 'feedback pela metade: "Boa! 1 de 7 feitos" e avisa que falta tocar em Enviar');
   await p.click('#esf button >> nth=5'); await p.click('.tabs [data-go="home"]').catch(() => {}); await p.goto('http://app.local/?demo#home'); await espera(p, 1200);
   ok(/Falta enviar/i.test(await txt(p, '.view')), 'saiu do feedback sem enviar: Início avisa "Falta enviar"'); await shot(p, 'falta-enviar');
   await p.click('[data-go="fim"]'); await espera(p, 600); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 1000);

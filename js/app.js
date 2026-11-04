@@ -1862,8 +1862,9 @@ async function boot() {
   if (!S.perfil) { render(`<div class="view noTabs"><h2>${t('Conta sem perfil')}</h2><p class="muted">${t('Chama o Igor no WhatsApp pra liberar seu acesso.')}</p><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
   if (!S.perfil.ativa && S.perfil.role !== 'admin') { A.limparLembrete(); render(`<div class="view noTabs"><h2>${t('Acesso pausado')}</h2><p class="muted">${t('Sua assinatura tá pausada. Renovou? É só me chamar que libero na hora.')}</p><a class="btn" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}">${t('Falar com o Igor')}</a><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
   sincronizarFila();
-  if (S.perfil.role === 'admin') return go('admin');
-  if (S.perfil.senha_trocada === false) return criarSenha();
+  // Igor também treina pelo app: com treino aberto no celular dele, volta pro treino (antes caía no painel e o treino parecia sumido)
+  if (S.perfil.role === 'admin') { const ab = db.LS.get('sessao') || db.LS.get('sessao@' + S.perfil.id); if (!ab || (ab.dono && ab.dono !== S.perfil.id)) return go('admin'); }
+  if (S.perfil.senha_trocada === false && S.perfil.role !== 'admin') return criarSenha();
   S.sessao = db.LS.get('sessao');
   // Treino pausado de outra conta neste celular: guarda pra dona dele; o desta conta (se saiu com ele pausado) volta
   if (S.sessao?.dono && S.sessao.dono !== S.perfil.id) { db.LS.set('sessao@' + S.sessao.dono, S.sessao); S.sessao = null; db.LS.del('sessao'); }

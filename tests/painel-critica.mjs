@@ -108,8 +108,8 @@ await p.click('#volta'); await w(300);
 // 30: goblet em Quadríceps; acentos ao salvar
 await p.click('#t-exercicios'); await w(500); await p.click('[data-g="Quadríceps"]'); await w(200);
 ok(/Goblet com anilha no calcanhar/.test(await txt('.lista')), 'goblet em Quadríceps');
-await p.click('#novoEx'); await w(200); await p.fill('#fxN', 'Elevaçao lateral na maquina'); await p.click('#fxS'); await w(400);
-await p.click('[data-g=""]'); await w(100); ok(/Elevação lateral na máquina/.test(await txt('.lista')), 'acentos corrigidos ao salvar');
+await p.click('#novoEx'); await w(200); await p.fill('#fxN', 'Elevaçao frontal com anilha na maquina'); await p.click('#fxS'); await p.waitForSelector('#fx', { state: 'detached', timeout: 5000 }).catch(() => {}); await w(200);
+await p.click('[data-g=""]'); await w(100); ok(/Elevação frontal com anilha na máquina/.test(await txt('.lista')), 'acentos corrigidos ao salvar');
 
 const sw = await p.evaluate(() => document.documentElement.scrollWidth); ok(sw <= 360, `não estoura a largura (${sw})`);
 console.log('erros:', errs); await b.close(); if (errs.length || falhas.length) process.exit(1);
