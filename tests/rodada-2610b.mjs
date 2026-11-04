@@ -94,7 +94,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   await p.click('#fim'); await espera(p); await p.click('#volta'); await espera(p, 200);
   await p.click('.set[data-i="0"] .rest').catch(() => {}); await espera(p, 300); if (await p.$('#rest-skip')) { await p.click('#rest-skip'); await espera(p, 300); if (await p.$('#q-s')) await p.click('#q-s'); await espera(p, 400); }
   await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); }
-  ok(/sem pontos|não soma pontos/i.test(await txt(p, '.view')), 'feedback incompleto avisa dos pontos em destaque');
+  ok(/\+\d+ pontos|vale 50 pontos/i.test(await txt(p, '.view')), 'feedback incompleto explica os pontos (proporcional, sem punir)');
   await p.click('#esf button >> nth=6'); await p.click('#env'); await espera(p, 400); ok(/Falta a nota/i.test(await txt(p, '#e')), 'feedback diz qual escala falta ("Falta a nota")');
   await ctx.close(); }
 

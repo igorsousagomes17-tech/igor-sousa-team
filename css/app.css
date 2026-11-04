@@ -436,6 +436,8 @@ details.mais .rapidos{margin-top:8px}
 .prox .prox-n{font-family:var(--display);font-size:1.375rem;font-weight:800;line-height:1.1;text-transform:uppercase}
 .prox-d{color:var(--muted);font-size:.875rem}.prox-t{color:#ffb27a;font-size:.8125rem;font-weight:600}
 .ov.mini .prox{display:none}
+.prox-btn,.prox-b{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}.prox-btn:active{transform:scale(.98);background:#1e1e22}
+.prox-b{background:none;border:0;padding:6px 0;min-height:40px;color:var(--fg)}.prox-v{color:var(--accent);font-size:.8125rem;font-weight:700;margin-top:2px}
 #rest-layer .ov{gap:14px}#rest-layer .ov:not(.mini) .ring{width:min(60vw,220px,34vh)}#rest-layer .ov:not(.mini) .ring b{font-size:min(20vw,80px,12vh)}
 .ov.mini .ring{min-width:0;flex:1}.ov.mini .ring b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 /* Perfil: resposta dela pro Igor */

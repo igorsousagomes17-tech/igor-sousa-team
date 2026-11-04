@@ -79,6 +79,18 @@ export async function iniciarSessao(alunaId, { treino_id = null, programa_treino
   const { data, error } = await sb.from('sessoes').insert({ aluna_id: alunaId, treino_id, programa_treino_id, titulo, exercicios_total: total }).select().single();
   if (error) throw error; return data;
 }
+// Treino presencial com o Igor (plano misto): foto de prova na pasta dela (bucket "evolucao") + treino completo (vale +50 e conta na semana).
+// Sem a migração 023 (coluna foto_path), o caminho da foto vai no comentário pra não perder a prova.
+export async function registrarPresencial(alunaId, foto, quando = new Date()) {
+  const dia = new Date(quando.getTime() - quando.getTimezoneOffset() * 60000).toISOString().slice(0, 10), path = `${alunaId}/presencial/${dia}-${Date.now().toString(36)}.jpg`;
+  const up = await sb.storage.from('evolucao').upload(path, foto, { contentType: 'image/jpeg', upsert: false }); if (up.error) throw up.error;
+  const sess = await iniciarSessao(alunaId, { titulo: 'Treino com o Igor', total: 0 });
+  const patch = { duracao_s: 3600, exercicios_feitos: 0, exercicios_total: 0 };
+  const fim = q => sb.from('sessoes').update({ finalizada_em: quando.toISOString(), ...patch, ...q }).eq('id', sess.id).select().single();
+  let { data, error } = await fim({ foto_path: path });
+  if (error && semColuna(error, 'foto_path')) ({ data, error } = await fim({ comentario: '📸 ' + path }));
+  if (error) throw error; return data;
+}
 // Substitui as séries da sessão: se a 1ª tentativa chegou no banco mas a resposta não voltou (4G travado),
 // o reenvio da fila não duplica.
 export async function salvarSeries(sessaoId, rows) {
@@ -250,6 +262,13 @@ export const admin = {
   async evolucaoDe(alunaId) { const { data, error } = await sb.from('evolucao').select('*').eq('aluna_id', alunaId).order('data'); if (error) throw error; return data || []; },
   async posturais(alunaId) { const { data, error } = await sb.from('postural').select('*').eq('aluna_id', alunaId).order('created_at', { ascending: false }).limit(20); if (error) throw error; return data || []; },
   async salvarPostural(row) { const { data, error } = await sb.from('postural').insert(row).select().single(); if (error) throw error; return data; },
+  // Treinos presenciais registrados com foto (últimos 30 dias), pro Igor conferir a prova
+  async presenciais() {
+    const desde = new Date(Date.now() - 30 * 86400e3).toISOString(), busca = sel => sb.from('sessoes').select(sel).eq('titulo', 'Treino com o Igor').not('finalizada_em', 'is', null).gte('finalizada_em', desde).order('finalizada_em', { ascending: false }).limit(100);
+    let { data, error } = await busca('id,finalizada_em,comentario,foto_path,profiles!sessoes_aluna_id_fkey(nome)');
+    if (error && semColuna(error, 'foto_path')) ({ data, error } = await busca('id,finalizada_em,comentario,profiles!sessoes_aluna_id_fkey(nome)'));
+    if (error) throw error; return (data || []).map(x => ({ ...x, foto_path: x.foto_path || (/^📸 (\S+)/.exec(x.comentario || '') || [])[1] || null }));
+  },
   async alunas() { const { data, error } = await sb.from('v_alunas_status').select('*').order('nome'); if (error) throw error; return data; },
   // Treinos com comentário dela OU nota baixa (≤ 4) / esforço no limite (≥ 9) sem texto: sem tempo de escrever,
   // a nota é o sinal. Os sem resposta vêm primeiro (nenhum some da lista por ser antigo).

@@ -62,9 +62,9 @@ for (const L of ['en', 'fr']) {
   ok(txt.includes(RESP) && txt.includes('Vi que sentiu a lombar no búlgaro'), `${L}/perfil: feedback e resposta em português`);
   ok(!/atenção/.test(txt), `${L}/perfil: anamnese sem "atenção" em português`);
   const sw = await p.$eval('#chipOn', e => ({ sw: e.classList.contains('sw'), on: e.classList.contains('on'), h: e.getBoundingClientRect().height }));
-  ok(sw.sw && sw.on && sw.h >= 40, `${L}/perfil: cronômetro na tela de bloqueio é interruptor (${JSON.stringify(sw)})`);
-  await p.click('#chipOn'); ok(await p.evaluate(() => localStorage.getItem('chip_off')) === '1', `${L}/perfil: interruptor desliga`); await p.click('#chipOn');
-  ok(await p.evaluate(() => localStorage.getItem('chip_off')) === null, `${L}/perfil: interruptor liga de novo`);
+  ok(sw.sw && !sw.on && sw.h >= 40, `${L}/perfil: cronômetro na tela de bloqueio é interruptor e vem desligado (${JSON.stringify(sw)})`);
+  await p.click('#chipOn'); ok(await p.evaluate(() => localStorage.getItem('chip_on')) === '1', `${L}/perfil: interruptor liga (chip_on=1)`); await p.click('#chipOn');
+  ok(await p.evaluate(() => localStorage.getItem('chip_on')) === null, `${L}/perfil: interruptor desliga de novo`);
   // com o campo "Responder o Igor" (migração 020) o link do WhatsApp sai do card; sem ele, o link continua com alvo ≥ 40px
   if (await p.$('a[href*="wa.me"]:not(.btn)')) { const wa = await p.$eval('a[href*="wa.me"]:not(.btn)', e => e.getBoundingClientRect().height); ok(wa >= 40, `${L}/perfil: link do WhatsApp com alvo de toque ≥ 40px (${Math.round(wa)})`); }
   else { const ri = await p.$eval('[data-rsend]', e => e.getBoundingClientRect().height).catch(() => 0); ok(ri >= 40, `${L}/perfil: botão de responder o Igor com alvo ≥ 40px (${Math.round(ri)})`); }

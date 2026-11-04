@@ -75,6 +75,13 @@ ok(/PRÓXIMO EXERCÍCIO/i.test(prox) && /Crucifixo/i.test(prox), '36: depois da 
 const cab = await p.evaluate(() => { const r = document.querySelector('#rest-pt')?.getBoundingClientRect(); return r && r.bottom <= innerHeight && document.documentElement.scrollWidth <= innerWidth; });
 ok(cab, '36: ring, cartão e botões cabem em 360x780');
 ok(await p.locator('#rest.mini').count() === 0, '36: depois da última série o descanso abre em tela cheia (não minimizado)');
+// Igor 03/11: tocar no próximo exercício abre a execução, e o descanso continua rodando atrás
+{ const n0 = await p.innerText('#rest-n'); await p.click('#rest-p'); await p.waitForTimeout(500);
+  const vm = await p.locator('.modal').count(); ok(vm >= 1 && /Crucifixo/i.test(await p.innerText('.modal').catch(() => '')), '36b: tocar no próximo abre a execução do Crucifixo');
+  await p.screenshot({ path: '/tmp/sessao-critica-proximo-video.png' });
+  await p.keyboard.press('Escape').catch(() => {}); if (await p.locator('.modal').count()) await p.mouse.click(5, 5); await p.waitForTimeout(400);
+  if (await p.locator('.modal').count()) await p.evaluate(() => document.querySelector('.modal')?.remove());
+  ok(await p.locator('#rest:not(.mini)').count() === 1, '36b: fechou a execução e o descanso segue na tela'); }
 await p.click('#rest-x'); await p.waitForTimeout(400);
 ok(/Próximo: Crucifixo/i.test(await p.innerText('#rest-n')), `36: barra minimizada também diz o próximo (${await p.innerText('#rest-n')})`);
 await p.click('#rest-n'); await p.waitForTimeout(300);
