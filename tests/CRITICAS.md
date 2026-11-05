@@ -499,3 +499,8 @@ Pendente:
 - [x] 03/11 ~5h: vídeo gravado da Ativação de glúteo em pé com elástico (videos/ativacao-gluteo-em-pe-elastico.mp4, 540p sem áudio). Não pega Glúteo coice polia nem caminhada lateral.
 - [x] 03/11 ~5h45: vídeo gravado da Rosca direta halter com rotação (videos/rosca-direta-halter-rotacao.mp4, 540p sem áudio). Só pega nomes com "rotação"; rosca direta com halter simples segue com a animação. Preparado de manhã, lançado à noite. SW v59.
 - [x] 03/11 ~5h50: vídeo gravado do Desenvolvimento sentado com halter (videos/desenvolvimento-sentado-halter.mp4, 540p sem áudio). Não pega Arnold, em pé, unilateral, smith, barra nem máquina. Lançado à noite junto com a rosca.
+
+## 04/11/2026 — Plano de corrida (estilo Runna) — ramo `corrida-plano`, não lançado
+- [x] Programa extra "Corrida": plano por meta (5/10/21 km), dias e data da prova; ritmos por VDOT; treino guiado por blocos com apito; teste de 3 km e prova recalculam o ritmo; plano "do zero" corre/caminha; kcal pelo peso dela; registra como `Corrida · ...` (incompleto não pontua). Traduções nos 6 idiomas. Teste: `tests/corrida.mjs`. Regras: docs/metodologia/corrida.md.
+- [x] Pular bloco conta o tempo corrido até o toque (não o último quadro do relógio).
+- [ ] Fase 2: Igor ver/ajustar o plano da aluna no painel (precisa de tabela no Supabase) e puxar distância/pace do Strava.
