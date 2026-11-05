@@ -214,6 +214,8 @@ const D = {
   "Não consegui enviar agora. Confere a internet e tenta de novo.": ["Couldn't send it now. Check your internet and try again.", "No pude enviarlo ahora. Revisa internet e intenta de nuevo.", "现在发送失败，检查网络后再试。", "अभी नहीं भेज पाए। इंटरनेट देखो और फिर कोशिश करो।", "Impossible d'envoyer maintenant. Vérifie ta connexion et réessaie."],
   "com o Igor": ["with Igor", "con Igor", "和 Igor", "Igor के साथ", "avec Igor"],
   "Treino com o Igor": ["Workout with Igor", "Entreno con Igor", "和 Igor 训练", "Igor के साथ वर्कआउट", "Séance avec Igor"],
+  "{a} de {b} séries": ["{a} of {b} sets", "{a} de {b} series", "{a}/{b} 组", "{b} में से {a} सेट", "{a} sur {b} séries"],
+  "Voltar pro A{n}, que é a vez": ["Back to A{n}, it's its turn", "Volver al A{n}, que es su turno", "回到 A{n}，轮到它了", "A{n} पर वापस, अब उसकी बारी", "Retour à A{n}, c'est son tour"],
   "Próximo exercício": ["Next exercise", "Próximo ejercicio", "下一个动作", "अगली एक्सरसाइज़", "Exercice suivant"],
   "Próxima: série {n} de {t} · {x}": ["Next: set {n} of {t} · {x}", "Siguiente: serie {n} de {t} · {x}", "下一组：第 {n}/{t} 组 · {x}", "अगला: सेट {n}/{t} · {x}", "Suivante : série {n} sur {t} · {x}"],
   "carga: {kg} kg": ["load: {kg} kg", "carga: {kg} kg", "重量：{kg} kg", "वज़न: {kg} kg", "charge : {kg} kg"],

@@ -467,3 +467,14 @@ details.mais .rapidos{margin-top:8px}
 @media (max-width:359px){.scale{grid-template-columns:repeat(6,1fr);gap:6px}.scale button{min-height:48px;font-size:1rem}}
 /* Anamnese: rótulos de peso e altura na mesma linha mesmo com letra grande */
 .grid2.medidas{align-items:start}.grid2.medidas .l{min-height:2.6em;display:flex;align-items:flex-end}
+/* Bi-set vai e volta (04/11): abas A1/A2 e um exercício por vez */
+.bitabs{display:grid;gap:6px}
+.bitab{min-width:0;position:relative;background:#17171a;border:1px solid #2e2e33;border-radius:12px;padding:8px 10px;text-align:left;color:var(--fg);font:inherit;display:flex;flex-direction:column;gap:2px;min-height:56px;cursor:pointer}
+.bitab b{font-family:var(--display);text-transform:uppercase;font-size:.9375rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bitab .muted{font-size:.75rem}.bitab .tag{align-self:flex-start}
+.bitab.on{border-color:var(--accent);background:#24160c}
+.bitab.ok:not(.on){opacity:.7}
+.bitab .vez{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(255,107,26,.25)}
+.bivista.desliza{animation:biDesliza .28s ease}
+@keyframes biDesliza{from{transform:translateX(28px);opacity:.25}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.bivista.desliza{animation:none}}

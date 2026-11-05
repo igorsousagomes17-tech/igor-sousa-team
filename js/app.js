@@ -715,6 +715,9 @@ routes.sessao = () => {
   const passo = s.passos[s.p];
   const bi = passo.length > 1, fila = filaDoPasso(s, passo);
   const prox = fila.find(([i, k]) => !s.sets[i][k].done);
+  // Bi-set "vai e volta" (Igor escolheu a opção 2 em 04/11): um exercício por vez na tela; ao marcar o A1 a tela vai sozinha pro A2,
+  // depois do A2 vem o descanso e volta pro A1. As abas em cima deixam espiar o outro.
+  const vez = prox ? prox[0] : passo[0], ver = bi && passo.includes(s.biVer) ? s.biVer : vez, desliza = bi && s.biUlt != null && s.biUlt !== ver && s.biP === s.p; if (bi) { s.biUlt = ver; s.biP = s.p; }
   manterTelaAcesa();
   const bloco = (i, n) => {
     const e = s.exs[i], sets = s.sets[i], t = tempo(e.reps), lado = porLado(e.reps), sc = semCarga(e), pir = piramide(e.reps), ex = explicaReps(e.reps);
@@ -771,7 +774,9 @@ routes.sessao = () => {
   <div class="passos" role="tablist" aria-label="${t('Ir direto pra um exercício')}">${s.passos.map((g, j) => `<button class="${j === s.p ? 'on' : ''} ${g.every(i => completo(s, i)) ? 'ok' : ''}" data-passo="${j}" aria-label="${esc(s.exs[g[0]].nome)}">${g.every(i => completo(s, i)) ? '✓' : g.every(i => opcional(s.exs[i])) ? '+' : g.every(i => s.exs[i].aq === true) ? 'R' : g.map(i => s.exs[i].ordem ?? j + 1).filter((v, x, a) => a.indexOf(v) === x).join('-')}</button>`).join('')}</div>
   ${s.corrigir && s.corrigir.p !== s.p && s.passos[s.corrigir.p] && Date.now() - s.corrigir.em < 180000 ? `<button class="back small" id="corr" style="color:var(--accent);align-self:flex-start;min-height:40px">‹ ${t('Corrigir {x}', { x: esc(s.exs[s.passos[s.corrigir.p][0]].nome) })}</button>` : ''}
   ${bi || (seriesFeitas(s) < 3 && !s.dicaOk) ? `<p class="restHint">${hint}</p>` : ''}
-  ${passo.map(bloco).join('<div class="sep"></div>')}
+  ${bi ? `<div class="bitabs" role="tablist" style="grid-template-columns:repeat(${passo.length},minmax(0,1fr))">${passo.map((i, n) => { const e = s.exs[i], f = s.sets[i].filter(x => x.done).length, tot = s.sets[i].length; return `<button class="bitab ${i === ver ? 'on' : ''} ${f >= tot ? 'ok' : ''}" role="tab" aria-selected="${i === ver}" data-biv="${i}"><span class="tag">A${n + 1}</span>${i === vez && i !== ver ? '<i class="vez" aria-hidden="true"></i>' : ''}<b>${esc(tc(e.nome))}</b><span class="muted">${f >= tot ? '✓ ' : ''}${T('{a} de {b} séries', { a: f, b: tot })}</span></button>`; }).join('')}</div>
+  <div class="bivista ${desliza ? 'desliza' : ''}">${bloco(ver, passo.indexOf(ver))}</div>
+  ${ver !== vez ? `<button class="btn ghost sm" data-biv="${vez}">‹ ${T('Voltar pro A{n}, que é a vez', { n: passo.indexOf(vez) + 1 })}</button>` : ''}` : bloco(passo[0], 0)}
   <div class="card row between" style="margin-top:6px"><div><b style="font-size:0.9375rem">${passo.length > 3 ? t('Volta concluída?') : passo.length > 2 ? t('Tri-set concluído?') : bi ? t('Bi-set concluído?') : t('Exercício concluído?')}</b><p class="muted">${ultimo ? t('É o último: marca que eu fecho o treino.') : t('Marca que eu já puxo o próximo.')}</p></div><button class="sw ${ok ? 'on' : ''}" id="sw" aria-label="${t('Concluir')}"></button></div>
   ${ultimo ? `<button class="btn" id="fin">✓ ${t('Finalizar treino')}</button>` : ''}
   <div class="row" style="gap:8px">${s.p > 0 ? `<button class="btn ghost sm" id="prev" style="flex:1">‹ ${t('Anterior')}</button>` : ''}${!ultimo ? `<button class="btn ghost sm" id="pular" style="flex:1">${ok ? t('Seguir pro próximo') : t('Pular exercício')} ›</button>` : ''}</div>
@@ -854,7 +859,7 @@ routes.sessao = () => {
         if (ja !== true) { salvaSessao(); return ja === false ? tocar(i, k) : undefined; }
       } else if (fim?.parcial) parcial = fim.parcial; else if (fim !== true) { salvaSessao(); return; }
     }
-    marcarFeita(s, i, k); if (parcial) st.seg = parcial; salvaSessao();
+    marcarFeita(s, i, k); s.biVer = null; if (parcial) st.seg = parcial; salvaSessao();
     // Marcou série sem kg num exercício com carga: pergunta uma vez por exercício, na própria tela (não trava o descanso)
     if (!t && !semCarga(e) && e.aq !== true && st.kg === '' && !s.kgPerg?.[e.nome]) { s.kgPerg = { ...s.kgPerg, [e.nome]: { i, k } }; salvaSessao(); }
     if (parcial) toast(T('Registrei {t} de {x} ✓', { t: fmtMin(parcial), x: fmtMin(porLado(e.reps) ? t * 2 : t) }));
@@ -938,6 +943,7 @@ routes.sessao = () => {
   // Fez uma série a mais (ou a menos) que o planejado
   $$('[data-mais]').forEach(b => b.onclick = () => { const i0 = +b.dataset.mais, alvo = passo.includes(i0) && bi ? passo : [i0]; const n0 = s.sets[i0].length; alvo.forEach(i => { const l = s.sets[i]; if (l.length > n0) return; const u = l[l.length - 1]; l.push({ kg: u?.kg || '', reps: '', done: false }); delete s.feito[i]; }); salvaSessao(); routes.sessao(); }); // bi-set: a série a mais vale pro A1 e pro A2
   $$('[data-menos]').forEach(b => b.onclick = () => { const i = +b.dataset.menos, l = s.sets[i]; if (l.length > 1 && !l[l.length - 1].done) { l.pop(); salvaSessao(); routes.sessao(); } });
+  $$('[data-biv]').forEach(b => b.onclick = () => { const i = +b.dataset.biv; s.biVer = i === (fila.find(([a, c]) => !s.sets[a][c].done)?.[0] ?? passo[0]) ? null : i; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); });
   $$('[data-passo]').forEach(b => b.onclick = () => { const j = +b.dataset.passo; if (j === s.p) return; s.p = j; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); });
   if ($('#prev')) $('#prev').onclick = () => { s.p--; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
   if ($('#pular')) $('#pular').onclick = () => { s.p++; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
