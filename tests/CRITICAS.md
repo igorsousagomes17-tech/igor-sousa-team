@@ -655,3 +655,13 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - [ ] Anotação de regulagem fica só no celular (trocou de celular, perde): subir pro banco precisa de tabela nova — decisão do Igor se vale.
 - [ ] Interrupções/o que faltou só chegam pro Igor quando ela escreve algo no feedback (sem texto, não entra na lista pra responder, pra não lotar o painel).
 - [ ] Seguem: publicar de novo a função `assistente`, campo de plano misto pro "Treinou presencial", foto do presencial "no aparelho", "Aparelho ocupado" em casa, migrações 021/022/023 se ainda não rodaram, WhatsApp, vídeos, fotos dos prêmios, capa do PDF clara, link definitivo da Kiwify, aviso no celular quando o Igor responde. Nada de banco novo nesta rodada.
+## 04/11/2026 — Plano de corrida (estilo Runna) — ramo `corrida-plano`, não lançado
+- [x] Programa extra "Corrida": plano por meta (5/10/21 km), dias e data da prova; ritmos por VDOT; treino guiado por blocos com apito; teste de 3 km e prova recalculam o ritmo; plano "do zero" corre/caminha; kcal pelo peso dela; registra como `Corrida · ...` (incompleto não pontua). Traduções nos 6 idiomas. Teste: `tests/corrida.mjs`. Regras: docs/metodologia/corrida.md.
+- [x] Pular bloco conta o tempo corrido até o toque (não o último quadro do relógio).
+- [ ] Fase 2: Igor ver/ajustar o plano da aluna no painel (precisa de tabela no Supabase) e puxar distância/pace do Strava.
+
+## 2026-11-23 — Corrida trazida pra versão atual (ramo corrida-v3, não lançado)
+- [x] Plano de corrida (ramo corrida-plano-v2 de 05/11) nunca tinha ido pro main; reaplicado sobre o main atual: rota corrida/corridaTreino, card nos Programas extras, fila offline aceita "Corrida ·", js/corrida.js no cache (SW v83), 158 textos da corrida em js/i18n-fonte.js + js/i18n/* regenerados.
+- Testes: corrida, fluxo-treino, regressao (375 e 360), hyrox, express, bibliotecas, rodada-2111, idiomas (6 línguas) — todos passando.
+- [ ] Fase 2 (relógios), caminho escolhido pelo Igor: direto com cada marca (grátis). Ordem: Garmin (Training + Activity API, cadastro dele) e Apple Watch (WorkoutKit/HealthKit no app iPhone, nova revisão da Apple); depois COROS, Suunto, Amazfit/Zepp (cadastros de parceiro) e Polar (AccessLink, só puxar).
+- [ ] Painel do Igor ver/ajustar o plano de cada aluna: precisa guardar o plano no banco (hoje fica só no celular dela) — migração a mostrar antes.
