@@ -37,7 +37,7 @@ function go(name, arg, { hist = true } = {}) {
   if (recarregarDepois && TELA_CALMA.test('#' + name) && !document.querySelector('.modal')) { recarregarDepois = false; history.replaceState({ name, arg: null }, '', '#' + name); return location.reload(); } // versão nova chegou no meio de algo: atualiza na próxima aba
   if (!S.perfil && !['entrada', 'login'].includes(name)) name = 'entrada';
   if (S.perfil?.senha_trocada === false && S.perfil.role !== 'admin' && !['entrada', 'login'].includes(name)) { fecharToast(); return criarSenha(); } // 1º acesso: voltar/URL não pula a troca da senha
-  fecharToast(); A.fecharPasseio(); if (name !== 'spinAula') { pararSpin?.(); pararSpin = null; }
+  fecharToast(); A.fecharPasseio(); if (name !== 'spinAula' && name !== 'corridaTreino') { pararSpin?.(); pararSpin = null; }
   // "? Dúvida" no meio do treino: abre o tira-dúvidas sem pausar o treino nem matar o descanso (só minimiza)
   if (rotaAtual === 'sessao' && name === 'assistente' && S.sessao) { duvidaNoTreino = true; clearInterval(clockIv); minimizarDescanso(); }
   else if ((['sessao', 'fim'].includes(rotaAtual) || duvidaNoTreino) && !['sessao', 'fim'].includes(name)) { duvidaNoTreino = false; sairDaSessao(); }
@@ -58,7 +58,8 @@ window.addEventListener('popstate', ev => {
   if (voltarOverlay) { voltarOverlay(); return repoe(); } // anamnese: voltar = pergunta anterior
   if ($('#overlay').innerHTML) { closeOverlay(); const c = cancelarPopup; cancelarPopup = null; c?.(); return repoe(); } // voltar fecha pop-up primeiro (pergunta aberta = cancelada)
   if (minimizarDescanso()) return repoe(); // descanso aberto: voltar só minimiza, o tempo continua
-  if (rotaAtual === 'spinAula' && $('#sPausa') && !$('#sPausa').disabled) { $('#sSair').click(); return repoe(); } // aula rodando: voltar pergunta (não perde a aula)
+  if (rotaAtual === 'spinAula' && $('#sPausa') && !$('#sPausa').disabled) { $('#sSair').click(); return repoe(); }
+  if (rotaAtual === 'corridaTreino' && $('#cPausa') && !$('#cPausa').disabled) { $('#cSair').click(); return repoe(); } // corrida rodando: idem // aula rodando: voltar pergunta (não perde a aula)
   const st = ev.state || { name: S.perfil ? 'home' : 'entrada' };
   if (!S.perfil && !['entrada', 'login'].includes(st.name)) return go('entrada', null, { hist: false });
   if (S.perfil && ['entrada', 'login'].includes(st.name)) { history.replaceState({ name: 'home', arg: null }, '', '#home'); return go('home', null, { hist: false }); }
@@ -158,7 +159,7 @@ routes.login = () => {
 // Treinos feitos sem sinal entram na contagem na hora (sequência, meta, treino de hoje), antes de subir pro banco.
 // Cada item da fila tem dono: treino feito sem sinal nunca sobe na conta de outra pessoa que entrar no mesmo celular.
 const daFila = it => !it.dono || it.dono === S.perfil?.id;
-const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && ((it.series || []).length > 0 || /^Spinning/.test(it.s?.titulo || ''))).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.patch.exercicios_total ?? it.s.total, duracao_s: it.patch.duracao_s, pendente: true, series: it.series || [] })); // séries vão junto: dá pra conferir o que fez antes de subir
+const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && ((it.series || []).length > 0 || /^(Spinning|Corrida) ·/.test(it.s?.titulo || ''))).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.patch.exercicios_total ?? it.s.total, duracao_s: it.patch.duracao_s, pendente: true, series: it.series || [] })); // séries vão junto: dá pra conferir o que fez antes de subir
 async function sessoesComFila(p, lim) { const ss = await rapido(db.minhasSessoes(p.id, lim), db.LS.get('sessoes', [])); return [...pendentesDaFila(), ...ss].sort((a, b) => b.finalizada_em.localeCompare(a.finalizada_em)); }
 const seriesFeitas = s => Object.values(s.sets).flat().filter(x => x.done).length;
 const pillPausa = sa => sa.pausadoEm ? (haQuanto(sa.pausadoEm) ? t('Treino pausado há {t}', { t: haQuanto(sa.pausadoEm) }) : t('Treino pausado há pouco')) : t('Treino em andamento');
@@ -210,7 +211,7 @@ routes.home = async () => {
   <button class="card row home-ia" data-go="assistente" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex-shrink:0;color:var(--accent-ink);font-size:1.25rem">💬</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('Tira-dúvidas 24h')}</b><p class="muted">${t('Pergunta sobre seu treino, execução, carga, cardio... a IA do time responde na hora.')}</p></div></button>
   <button class="card row home-time" data-go="comunidade" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:#2a2a2e;display:grid;place-items:center;flex-shrink:0;font-size:1.25rem">🔥</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('O time')}</b><p class="muted" id="timeHoje">${t('Veja quem já treinou hoje e o ranking do mês.')}</p></div></button>
   <div class="row between"><h3>${t('Programas extras')}</h3><button class="back" style="color:var(--accent)" data-go="lib">${t('ver todos')}</button></div>
-  <div class="hscroll">${emCasa() ? '' : cardSpin(true) + cardHyrox(true)}${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), 126, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin(true) + cardHyrox(true) : ''}</div></div>`, 'home');
+  <div class="hscroll">${cardCorrida(true)}${emCasa() ? '' : cardSpin(true) + cardHyrox(true)}${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), 126, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin(true) + cardHyrox(true) : ''}</div></div>`, 'home');
   // Desafio batido: só fala dos pontos quando eles já entraram de verdade
   if (mesCount >= dmeta) rapido(db.meusPontos(p.id), []).then(log => { const el = $('#desaf'); const d = log.find(l => l.motivo === 'desafio' && (l.ref === mesLocal() || mesLocal(l.created_at) === mesLocal())); if (el && d) el.textContent = t('Batido! +{n} pts', { n: d.pontos }); });
   if ($('#desc')) $('#desc').onclick = async () => { if (await perguntar(t('Descartar treino?'), t('O que você marcou nesse treino vai ser apagado.'), t('Descartar'), t('Manter'))) { pararDescanso(); db.desfazerCargas(S.sessao?.chave); S.sessao = null; db.LS.del('sessao'); routes.home(); } };
@@ -515,7 +516,7 @@ routes.videos = async () => {
 routes.lib = async () => {
   const programas = S.programas || await rapido(db.programas(), db.LS.get('programas', []));
   render(`<div class="view fx"><div class="topbar"><h2>${t('Programas extras')}</h2></div><p class="muted">${t('Liberado pra todas as alunas, além do seu treino.')}</p>
-  <div class="grid2">${emCasa() ? '' : cardSpin() + cardHyrox()}${programas.map(pr => `<button class="lib" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), (Math.min(innerWidth, 480) - 42) / 2 - 24, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin() + cardHyrox() : ''}</div></div>`, 'home');
+  <div class="grid2">${cardCorrida()}${emCasa() ? '' : cardSpin() + cardHyrox()}${programas.map(pr => `<button class="lib" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), (Math.min(innerWidth, 480) - 42) / 2 - 24, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin() + cardHyrox() : ''}</div></div>`, 'home');
 };
 routes.programa = async (slug) => {
   const programas = S.programas || await rapido(db.programas(), db.LS.get('programas', [])); const pr = programas.find(p => p.slug === slug); if (!pr) return go('lib');
@@ -1361,6 +1362,153 @@ routes.hyrox = async (trocar) => {
   $$('[data-ht]').forEach(b => b.onclick = async () => { if (saude) { const ok = await perguntar(t('Liberação do médico'), t('Na sua ficha você marcou um cuidado de saúde. O Hyrox é treino forte: só faz com a liberação do seu médico. Se sentir dor no peito, falta de ar ou tontura, para na hora.'), t('Já tenho liberação'), t('Voltar')); if (ok !== true) return; db.LS.set('hyroxLib', true); }
     const tr = treinos[+b.dataset.ht]; b.disabled = true; iniciarSessao({ titulo: `Hyrox · ${tr.nome}`, exercicios: tr.exercicios, duracao_min: tr.duracao_min }).finally(() => { b.disabled = false; }); });
   $$('[data-hf]').forEach(b => b.onclick = () => { const [ti, j] = b.dataset.hf.split('-').map(Number); const e = treinos[ti].exercicios[j]; abrirHistorico(e.nome, e); });
+};
+// PLANO DE CORRIDA (estilo Runna; opcional, nos dois planos; serve pra rua ou esteira) ---------
+const cardCorrida = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="corrida" data-bg="icons/corrida_s.jpg"><b>${t('Corrida')}</b><span>${t('Plano 5, 10 ou 21 km')}</span></button>`;
+const importaCorrida = () => import('./corrida.js').catch(() => import('./corrida.js?r=' + Date.now())).catch(() => { toast(t('Sem internet pra abrir agora. Depois da 1ª vez abre sem sinal.'), true); return null; });
+// Configuração dela fica no celular (igual ao nível do Hyrox): { dono, meta, dias, comeco, vdot, teste, prova, inicio, semanas, feitos }
+const cfgCorrida = () => { const c = db.LS.get('corridaPlano', null); return c && c.dono === S.perfil?.id ? c : null; };
+const salvaCorrida = c => db.LS.set('corridaPlano', { ...c, dono: S.perfil?.id });
+const topoCorrida = (volta = 'lib') => `<div class="topbar"><button class="back" data-go="${volta}">‹ ${volta === 'lib' ? t('Programas') : t('Corrida')}</button><h2>${t('Corrida')}</h2></div>`;
+// Pop-up pra digitar um tempo (teste, prova ou tempo recente)
+function pedirTempo(titulo, texto, ph = '28:30') {
+  return new Promise(res => {
+    overlay(`<div class="modal" id="m"><div class="box" style="padding:18px;display:flex;flex-direction:column;gap:12px"><h2>${esc(titulo)}</h2><p class="muted">${esc(texto)}</p>
+    <input class="input" id="cT" inputmode="numeric" placeholder="${esc(ph)}" aria-label="${t('Tempo')}" autocomplete="off"><p class="muted small">${t('Minutos:segundos (28:30) ou horas:minutos:segundos (1:58:00).')}</p>
+    <button class="btn sm" id="cOk">${t('Salvar')}</button><button class="btn ghost sm" id="cNo">${t('Agora não')}</button></div></div>`);
+    cancelarPopup = () => res(null);
+    $('#cOk').onclick = () => { cancelarPopup = null; const v = $('#cT').value; closeOverlay(); res(v); };
+    $('#cNo').onclick = () => { cancelarPopup = null; closeOverlay(); res(null); };
+    setTimeout(() => $('#cT')?.focus(), 50);
+  });
+}
+
+routes.corrida = async (modo) => {
+  const R = await importaCorrida(); if (!R) { if (rotaAtual === 'corrida') go('lib', null, { hist: false }); return; } if (rotaAtual !== 'corrida') return;
+  const c = modo === 'novo' ? null : cfgCorrida();
+  if (!c) return montarCorrida(R);
+  const plano = R.gerarPlano(c), M = R.METAS[c.meta], wRaw = R.semanaAtual(c.inicio), w = Math.max(0, Math.min(plano.n - 1, wRaw)), sem = plano.semanas[w], fz = R.FASES[sem.fase];
+  const prox = R.proxima(plano, c.inicio, c.feitos || {}), antes = wRaw < 0, acabou = !prox || wRaw >= plano.n;
+  const prev = c.vdot ? R.previsao(c.vdot, M.km) : null, feitos = c.feitos || {};
+  const linhaSessao = (s, destaque) => `<button class="card spin-aula" data-cs="${s.id}" style="${destaque ? 'border-color:var(--accent)' : ''}"><div class="row between" style="gap:10px"><div style="min-width:0"><b>${feitos[s.id] ? '✓ ' : ''}${esc(R.nomeT(s))}</b><p class="muted small">${t('{n} min', { n: s.min })}${kcalTxt(R.kcalSessao(S.perfil, s, c.vdot, M.km))}</p></div><span class="pill">${feitos[s.id] ? t('feito') : t('{n}º', { n: s.ordem + 1 })}</span></div>${R.trilha(s)}</button>`;
+  const ritmos = ['leve', 'limiar', 'intervalo', 'prova'].map(z => `<div class="row between"><span>${t(R.ZONAS[z].nome)}</span><b>${c.vdot ? R.alvo({ zona: z }, c.vdot, M.km) : '—'}</b></div>`).join('');
+  render(`<div class="view fx">${topoCorrida()}
+  <div class="card hero" style="color:#1a0d00"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Meta')}: ${esc(t(M.nome))}${c.comeco ? ' · ' + t('do zero') : ''}</span>
+    <div class="logo" style="font-size:1.8rem;margin:8px 0 2px;color:#1a0d00">${antes ? t('Começa em {d}', { d: fmtData(c.inicio) }) : t('Semana {a} de {b}', { a: w + 1, b: plano.n })}</div>
+    <p style="font-weight:700">${t(fz.nome)}${sem.alivio ? ' · ' + t('semana de alívio') : ''}</p><p style="font-weight:500">${t(fz.txt)}</p>
+    ${c.prova ? `<p style="font-weight:600;margin-top:6px">🏁 ${t('Prova: {d}', { d: fmtData(c.prova) })}${prev ? ' · ' + t('previsão {x}', { x: R.fmtTempo(prev) }) : ''}</p>` : prev ? `<p style="font-weight:600;margin-top:6px">${t('Previsão pra {k}: {x}', { k: t(M.nome), x: R.fmtTempo(prev) })}</p>` : ''}</div>
+  ${antes ? `<div class="card"><b>${t('Até lá')}</b><p class="muted">${t('Corre leve 2 a 3 vezes por semana, 20 a 30 min, pra chegar no plano com o corpo acostumado.')}</p></div>` : ''}
+  ${acabou ? `<div class="card"><b>${t('Plano concluído! 🏁')}</b><p class="muted">${t('Monta um plano novo com a próxima meta.')}</p><button class="btn mt" data-go="corrida" data-arg="novo" style="width:100%">${t('Novo plano')}</button></div>` : `<h3>${t('Próximo treino')}</h3>${linhaSessao(prox, true)}<button class="btn" data-cs="${prox.id}">▶ ${t('Começar')}</button>`}
+  <h3>${t('Essa semana')}</h3><div class="spin-lista">${sem.sessoes.map(s => linhaSessao(s, false)).join('')}</div>
+  <div class="card"><div class="row between"><b>${t('Seus ritmos')}</b><button class="back" style="color:var(--accent)" id="cRit">${t('atualizar')}</button></div>
+    ${c.vdot ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">${ritmos}</div>` : `<p class="muted">${t('Sem um tempo seu, os treinos vão pela sensação (dá pra conversar, frases curtas, quase sem falar). Faz o teste de 3 km da semana 4 ou coloca um tempo recente.')}</p>`}</div>
+  <details class="card"><summary><b>${t('Ver plano completo')}</b></summary><div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${plano.semanas.map(s => `<div><b class="small">${t('Semana {n}', { n: s.n + 1 })} · ${t(R.FASES[s.fase].nome)}${s.alivio ? ' · ' + t('alívio') : ''}</b><p class="muted small">${s.sessoes.map(x => `${feitos[x.id] ? '✓ ' : ''}${esc(R.nomeT(x))} (${t('{n} min', { n: x.min })})`).join(' · ')}</p></div>`).join('')}</div></details>
+  <div class="card"><b>📍 ${t('Distância e GPS')}</b><p class="muted">${t('O app guia o tempo e o ritmo de cada bloco. Pra ver a distância e o pace na hora, usa o relógio ou o Strava junto.')}</p></div>
+  <div class="card" style="border:1px solid var(--accent)"><b>⚠ ${t('Cuidado com a canela e o joelho')}</b><p class="muted">${t('Dor que piora correndo ou que dura mais de 2 dias: para e chama o Igor. Treino perdido não se recupera dobrando: segue o plano de onde está.')}</p></div>
+  <button class="link-fim" data-go="corrida" data-arg="novo">${t('Trocar meta / refazer plano')}</button></div>`, 'home');
+  $$('[data-cs]').forEach(b => b.onclick = async () => {
+    if (cuidadoSaude(S.perfil || {}) && !db.LS.get('corridaLib')) { const ok = await perguntar(t('Liberação do médico'), t('Na sua ficha você marcou um cuidado de saúde. Corrida forte só com a liberação do seu médico. Se sentir dor no peito, tontura ou falta de ar fora do normal, para na hora.'), t('Tenho liberação'), t('Voltar')); if (!ok) return; db.LS.set('corridaLib', 1); }
+    go('corridaTreino', b.dataset.cs);
+  });
+  $('#cRit').onclick = () => atualizaRitmo(R, c);
+};
+
+// Novo tempo (teste, prova ou de outra corrida) → recalcula todos os ritmos do plano
+async function atualizaRitmo(R, c, km = null, titulo = null) {
+  let dist = km;
+  if (!dist) { const o = await escolher(t('Qual distância você correu?'), t('Usa um tempo de até 2 meses atrás, feito no seu máximo.'), ['3 km', '5 km', '10 km', '21 km', t('Cancelar')]); if (o < 0 || o > 3) return false; dist = [3, 5, 10, 21.0975][o]; }
+  const txt = await pedirTempo(titulo || t('Seu tempo nos {k}', { k: dist > 21 ? '21 km' : dist + ' km' }), t('O plano recalcula os ritmos de todos os treinos com esse tempo.')); if (txt == null) return false;
+  const seg = R.lerTempo(txt), v = seg && R.vdotDe(dist, seg);
+  if (!v) { toast(t('Esse tempo não parece certo. Confere e tenta de novo.'), true); return false; }
+  const ant = c.vdot; salvaCorrida({ ...c, vdot: v, comeco: false, teste: { km: dist, seg, em: diaLocal() } });
+  const r = R.ritmo(v, 'leve');
+  toast(ant && v > ant ? t('Evoluiu! 🔥 Seu leve agora é {p}/km.', { p: R.fmtPace(r[0]) + '–' + R.fmtPace(r[1]) }) : t('Ritmos atualizados ✓'));
+  if (rotaAtual === 'corrida') routes.corrida(); return true;
+}
+
+function montarCorrida(R) {
+  const ant = cfgCorrida(), st = { meta: ant?.meta || '5k', dias: ant?.dias || 3, comeco: false, dist: 5 };
+  const opt = (k, v, rot, on) => `<button class="${on ? 'on' : ''}" data-k="${k}" data-v="${v}">${rot}</button>`;
+  const desenha = () => {
+    render(`<div class="view fx">${topoCorrida()}
+    <div class="lib" style="aspect-ratio:16/9;background-image:url(icons/corrida_s.jpg)"><b style="font-size:26px">${t('Plano de corrida')}</b><span>${t('Montado pra sua meta, com o ritmo certo de cada treino')}</span></div>
+    <p class="muted">${t('Você escolhe a meta e quantos dias corre. O app monta as semanas até a prova e diz o ritmo de cada treino. Quando você evolui, os ritmos sobem junto.')}</p>
+    <h3>${t('Qual a meta?')}</h3><div class="spin-filtro" role="group">${['5k', '10k', '21k'].map(m => opt('meta', m, t(R.METAS[m].nome), st.meta === m)).join('')}</div>
+    ${st.meta === '5k' ? `<div class="spin-filtro" role="group">${opt('comeco', '0', t('Já corro 20 min seguidos'), !st.comeco)}${opt('comeco', '1', t('Ainda não'), st.comeco)}</div>` : ''}
+    <h3>${t('Quantos dias por semana?')}</h3><div class="spin-filtro" role="group">${[2, 3, 4].map(d => opt('dias', d, tp(d, '{n} dia', '{n} dias'), st.dias === d)).join('')}</div>
+    ${st.comeco ? '' : `<h3>${t('Um tempo recente seu')}</h3><p class="muted small">${t('O melhor que você fez nos últimos 2 meses. Não sabe? Deixa em branco: os treinos vão pela sensação e o teste da semana 4 acerta o ritmo.')}</p>
+    <div class="spin-filtro" role="group">${[3, 5, 10, 21.0975].map(k => opt('dist', k, k > 21 ? '21 km' : k + ' km', st.dist === k)).join('')}</div>
+    <input class="input" id="cTempo" inputmode="numeric" placeholder="${t('ex.: 32:00')}" aria-label="${t('Tempo')}" autocomplete="off" value="${esc(st.tempo || '')}">`}
+    <h3>${t('Data da prova (opcional)')}</h3><input class="input" id="cProva" type="date" min="${diaLocal()}" value="${esc(st.prova || '')}" aria-label="${t('Data da prova')}">
+    <p class="muted small">${t('Sem data: o plano tem {n} semanas.', { n: st.comeco ? R.SEMANAS_COMECO : R.METAS[st.meta].padrao })}</p>
+    <button class="btn" id="cGerar">${t('Montar meu plano')}</button></div>`, 'home');
+    $$('[data-k]').forEach(b => b.onclick = () => { st.tempo = $('#cTempo')?.value ?? st.tempo; st.prova = $('#cProva').value; const k = b.dataset.k, v = b.dataset.v; st[k] = k === 'meta' ? v : k === 'comeco' ? v === '1' : +v; if (k === 'meta' && v !== '5k') st.comeco = false; desenha(); });
+    $('#cGerar').onclick = async () => {
+      st.tempo = $('#cTempo')?.value || ''; st.prova = $('#cProva').value || '';
+      let vdot = null;
+      if (!st.comeco && st.tempo.trim()) { const seg = R.lerTempo(st.tempo); vdot = seg && R.vdotDe(st.dist, seg); if (!vdot) return toast(t('Esse tempo não parece certo. Confere e tenta de novo.'), true); }
+      let semanas = null, inicio = R.segundaDe();
+      if (st.prova) {
+        semanas = R.semanasAte(st.prova); const minimo = R.METAS[st.meta].min;
+        if (semanas == null || semanas < 4) return toast(t('A prova tá perto demais pra um plano. Escolhe outra data ou deixa sem data.'), true);
+        if (semanas < minimo && !(await perguntar(t('Prazo curto'), t('Pra {k} o ideal são {n} semanas ou mais. Dá pra fazer um plano mais curto, focado em chegar bem. Seguir?', { k: t(R.METAS[st.meta].nome), n: minimo }), t('Seguir'), t('Trocar data')))) return;
+        if (semanas > R.MAX_SEMANAS) { inicio = new Date(inicio.getTime() + (semanas - R.MAX_SEMANAS) * 7 * 86400000); semanas = R.MAX_SEMANAS; }
+      }
+      salvaCorrida({ meta: st.meta, dias: st.dias, comeco: st.comeco, vdot, teste: vdot ? { km: st.dist, seg: R.lerTempo(st.tempo), em: diaLocal() } : null, prova: st.prova || null, inicio: diaLocal(inicio), semanas, feitos: {} });
+      toast(t('Plano montado ✓')); go('corrida', null, { hist: false });
+    };
+  };
+  desenha();
+}
+
+// TREINO DE CORRIDA GUIADO ----------------------------------------------------------------------
+const corridaGuardada = id => { const g = db.LS.get('corridaAberta', null); return g && g.dono === S.perfil?.id && g.id === id && Date.now() - g.em < 12 * 3600000 ? g : null; };
+function registraCorrida(s, seg, total, nomePt) {
+  if (seg < 60) return false;
+  const completa = seg >= total * 0.9;
+  novaFila({ s: { titulo: `Corrida · ${nomePt}`, total: 1 }, sid: null, seriesOk: true, series: [], patch: { duracao_s: seg, exercicios_feitos: completa ? 1 : 0, exercicios_total: 1, finalizada_em: new Date().toISOString() } });
+  S.sessoes = null;
+  if (completa) { const c = cfgCorrida(); if (c) salvaCorrida({ ...c, feitos: { ...(c.feitos || {}), [s.id]: true } }); }
+  return true;
+}
+routes.corridaTreino = async (id) => {
+  const R = await importaCorrida(); if (!R || rotaAtual !== 'corridaTreino') return;
+  const c = cfgCorrida(); if (!c) return go('corrida');
+  const plano = R.gerarPlano(c), s = R.sessaoPorId(plano, id); if (!s) return go('corrida');
+  pararSpin?.();
+  render(`<div class="view fx spin-view"><div class="topbar"><button class="back" id="cVolta">‹ ${t('Corrida')}</button><span class="pill">${t('Semana {n}', { n: s.sem + 1 })} · ${t('{n} min', { n: s.min })}</span></div>${R.htmlPlayer(s, c, S.perfil)}</div>`);
+  const km = R.METAS[c.meta].km;
+  const feitoTela = async (seg, total, registrado) => {
+    const completa = registrado && seg >= total * 0.9, mins = Math.max(1, Math.round(seg / 60)), k = R.kcalSessao(S.perfil, s, c.vdot, km, seg);
+    render(`<div class="view fx"><div class="card hero" style="color:#1a0d00;text-align:center"><div class="logo" style="font-size:2.4rem;color:#1a0d00">${completa ? t('Corrida feita!') + ' 🔥' : registrado ? t('Boa, registrado!') : t('Treino pulado')}</div><p style="font-weight:700;font-size:1.1rem">${seg < 60 ? t('{n} s correndo', { n: seg }) : t('{n} min correndo', { n: mins })}${kcalTxt(k)}</p><p style="font-weight:600">${esc(R.nomeT(s))}</p></div>
+    <p class="muted center">${!registrado ? t('Menos de 1 min não conta como treino.') : completa ? t('Bebe água e alonga panturrilha, posterior e quadril. Conta como treino da semana.') : t('Treino incompleto fica no seu histórico, mas não pontua nem conta na semana.')}</p>
+    ${registrado ? `<button class="btn" id="crStory">${t('Postar no story')}</button>` : ''}<button class="btn ${registrado ? 'ghost' : ''}" data-go="corrida">${t('Voltar pro plano')}</button></div>`, 'home');
+    if ($('#crStory')) $('#crStory').onclick = async () => {
+      const bt = $('#crStory'), rot = bt.textContent; if (bt.disabled) return; bt.disabled = true; bt.textContent = t('Gerando imagem…');
+      const stk = streakDias(await sessoesComFila(S.perfil).catch(() => []));
+      let r; try { r = await cardImagem({ nome: primeiroNome(S.perfil.nome), titulo: `${t('Corrida')} · ${R.nomeT(s)}`, minutos: mins, exercicios: 1, series: 0, streak: stk.semanas, data: dataLocal(Date.now(), { day: 'numeric', month: 'short' }), insta: C.INSTAGRAM, completo: completa, rotulo: completa ? t('CORRIDA|FEITA') : t('CORRIDA|REGISTRADA'), stat2: k ? [`~${num(k)}`, 'kcal'] : [`${s.blocos.length}`, t('blocos')] }); } catch { r = 'erro'; } finally { if (document.body.contains(bt)) { bt.disabled = false; bt.textContent = rot; } }
+      if (r === 'erro') return toast(t('Não consegui gerar a imagem agora. Tira um print dessa tela e posta 😉'), true);
+      if (r !== 'cancel') pontosStory(r);
+    };
+    // Teste ou prova: pede o tempo e recalcula os ritmos
+    if (registrado && (s.tipo === 'teste' || s.tipo === 'prova')) setTimeout(() => atualizaRitmo(R, cfgCorrida() || c, s.tipo === 'teste' ? 3 : km, s.tipo === 'teste' ? t('Quanto deu seu teste de 3 km?') : t('Qual foi seu tempo na prova?')), 600);
+  };
+  const g = corridaGuardada(s.id);
+  pararSpin = R.iniciarPlayer(s, c, {
+    manterTela: manterTelaAcesa, soltarTela, retomar: g,
+    salvar: st => st ? db.LS.set('corridaAberta', { ...st, dono: S.perfil?.id }) : db.LS.del('corridaAberta'),
+    aoTerminar: ({ seg, total }) => { pararSpin = null; db.LS.del('corridaAberta'); const ok = registraCorrida(s, seg, total, R.nomePt(s)); feitoTela(seg, total, ok); beep('fim'); },
+    aoSair: async ({ seg, total, comecou, voltar }) => {
+      if (!comecou) { pararSpin?.(); pararSpin = null; db.LS.del('corridaAberta'); return go('corrida'); }
+      const o = await escolher(t('Sair do treino?'), seg >= 60 ? t('Você correu {n} min desse treino.', { n: Math.round(seg / 60) }) : t('Menos de 1 min não conta como treino.'), seg >= 60 ? [t('Continuar correndo'), t('Registrar e sair'), t('Sair sem registrar')] : [t('Continuar correndo'), t('Sair')]);
+      if (o <= 0 || rotaAtual !== 'corridaTreino') return voltar();
+      pararSpin?.(); pararSpin = null; db.LS.del('corridaAberta');
+      if (o === 1 && seg >= 60) { const ok = registraCorrida(s, seg, total, R.nomePt(s)); return feitoTela(seg, total, ok); }
+      go('corrida');
+    },
+  });
+  if (g) toast(t('Seu treino ficou pausado. Toca em Seguir quando estiver pronta.'));
+  $('#cVolta').onclick = () => $('#cSair').click();
 };
 // SPINNING GUIADO ---------------------------------------------------------------------
 const cardSpin = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="spin" data-bg="icons/spin_s.jpg"><b>${t('Spinning')}</b><span>${emCasa() ? t('Precisa de bike') : t('Aulas guiadas · 10 a 30 min')}</span></button>`;

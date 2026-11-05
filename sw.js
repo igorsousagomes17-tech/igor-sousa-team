@@ -6,7 +6,7 @@ const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quan
 const EXTRAS = 'isteam-extras';
 const ehExtra = u => /\/js\/vendor\/|\/icons\/|\.(png|jpe?g|webp|gif|svg|woff2?)$/i.test(u.pathname) || /fonts\.(googleapis|gstatic)\.com$/.test(u.hostname);
 // Só o que a aluna usa ao abrir (painel do Igor, demo e fotos-guia entram no cache no 1º uso).
-const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/conteudo.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/acolhe.js','./js/kcal.js','./js/spin.js','./js/spin-aulas.js','./js/hyrox.js','./js/animacoes.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
+const SHELL = ['./','./index.html','./css/app.css','./js/app.js','./js/i18n.js','./js/conteudo.js','./js/db.js','./js/ui.js','./js/pdf.js','./js/acolhe.js','./js/kcal.js','./js/spin.js','./js/spin-aulas.js','./js/hyrox.js','./js/corrida.js','./js/animacoes.js','./js/vendor/supabase.js','./js/config.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/igor_s.jpg']; // capas dos programas entram no cache no 1º uso
 
 self.addEventListener('install', e => {
