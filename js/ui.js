@@ -8,7 +8,7 @@ let tt, ttEm = 0;
 // Aviso embaixo (não cobre o título), fica mais tempo e fecha com um toque.
 // fixo: fica até ela tocar (ex.: "descanso acabou há 2 min" quando ela volta pro app).
 export function toast(msg, err = false, { fixo = false, curto = false } = {}) {
-  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + ($('#overlay')?.innerHTML && fixo ? ' atras' : '') + (err ? ' err' : '') + (fixo ? ' fixo' : '') + (location.hash === '#fim' || location.hash === '#sessao' || $('#overlay')?.innerHTML ? ' topo' : '') + (location.hash === '#sessao' && !$('#overlay')?.innerHTML ? ' sess' : ''); // na sessão: abaixo do "‹ Pausar" e do relógio // no feedback do fim e com pop-up aberto fica em cima (não cobre o "Enviar" nem o "Fechar")
+  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + ($('#overlay')?.innerHTML && fixo ? ' atras' : '') + (err ? ' err' : '') + (fixo ? ' fixo' : '') + ((location.hash === '#fim' || location.hash === '#sessao' || $('#overlay')?.innerHTML) && !$('#overlay #salvaArte') ? ' topo' : '') + (location.hash === '#sessao' && !$('#overlay')?.innerHTML ? ' sess' : ''); // na sessão: abaixo do "‹ Pausar" e do relógio // no feedback do fim e com pop-up aberto fica em cima (não cobre o "Enviar" nem o "Fechar")
   t.onclick = () => t.classList.remove('on');
   clearTimeout(tt); if (!fixo) tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : curto ? 2500 : 4500);
 }
@@ -68,14 +68,16 @@ export function videoModal(nome, url, dica) {
     $('#vm-close').onclick = closeOverlay; $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });
     return;
   }
+  // Vídeo gravado do Igor (~1,5 MB): no 4G só baixa quando ela tocar no ▶ (o 4G fraco do Android diz "4g" e baixava tudo na hora)
+  const gravado = /(^|\/)videos\/[a-z0-9-]+\.mp4$/.test(url || ''), dadosAviso = gravado && navigator.connection?.type !== 'wifi' ? `<br><span>${t('Toca no ▶ pra ver (uns 1,5 MB de internet).')}</span>` : '';
   const anim = /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(url || ''), img = /\.(jpe?g|png|webp|gif|heic)(\?|$)/i.test(url || '');
   const inner = yt ? `<iframe src="${yt}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`
     : anim ? `<video src="${esc(url)}" autoplay loop muted playsinline></video>`
     : img ? `<img src="${esc(url)}" alt="${esc(tc(nome))}" style="width:100%;height:100%;object-fit:contain">`
-    : url ? `<video src="${esc(url)}" ${redeFraca() ? 'preload="none"' : navigator.connection ? 'autoplay loop' : 'autoplay'} muted playsinline controls></video>`
+    : url ? `<video src="${esc(url)}" ${redeFraca() || (gravado && navigator.connection?.type !== 'wifi') ? 'preload="metadata"' : navigator.connection ? 'autoplay loop' : 'autoplay'} muted playsinline controls></video>`
     : null;
   const o = overlay(inner ? `<div class="modal" id="vm"><div class="box"><div class="area${anim ? ' anim' : ''}">${inner}</div>
-    <div class="row between" style="padding:10px 14px"><span class="muted small">${anim ? `<b style="display:block;color:var(--fg)">${esc(tc(nome))}</b>${t('Animação de como fazer · o vídeo do Igor tá chegando')}${dica ? '<br>' + esc(tc(dica)) : ''}` : esc(dica || nome)}</span><button class="back" style="color:var(--accent)" id="vm-close">${t('Fechar')}</button></div></div></div>`
+    <div class="row between" style="padding:10px 14px"><span class="muted small">${anim ? `<b style="display:block;color:var(--fg)">${esc(tc(nome))}</b>${t('Animação de como fazer · o vídeo do Igor tá chegando')}${dica ? '<br>' + esc(tc(dica)) : ''}` : esc(dica || nome) + dadosAviso}</span><button class="back" style="color:var(--accent)" id="vm-close">${t('Fechar')}</button></div></div></div>`
     : `<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">🎬 ${t('vídeo em gravação')}</span><h2>${esc(tc(nome))}</h2>
       ${dica ? `<div class="card" style="background:#101012"><b style="font-size:0.875rem;color:var(--accent)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(tc(dica))}</p></div>` : ''}
       <p class="muted small">${t('O Igor tá gravando os vídeos de todos os exercícios. Ficou com dúvida na execução?')}</p><button class="btn sm" data-duvida="${esc(nome)}">? ${t('Tirar dúvida da execução com a IA')}</button><a class="btn ghost sm" href="https://wa.me/${esc(window.ISTEAM_CONFIG?.WHATSAPP_IGOR || '')}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a><button class="link-fim" id="vm-close" style="margin-top:0">${t('Fechar')}</button></div></div>`);

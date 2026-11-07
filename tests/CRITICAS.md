@@ -499,3 +499,51 @@ Pendente:
 - [x] 03/11 ~5h: vídeo gravado da Ativação de glúteo em pé com elástico (videos/ativacao-gluteo-em-pe-elastico.mp4, 540p sem áudio). Não pega Glúteo coice polia nem caminhada lateral.
 - [x] 03/11 ~5h45: vídeo gravado da Rosca direta halter com rotação (videos/rosca-direta-halter-rotacao.mp4, 540p sem áudio). Só pega nomes com "rotação"; rosca direta com halter simples segue com a animação. Preparado de manhã, lançado à noite. SW v59.
 - [x] 03/11 ~5h50: vídeo gravado do Desenvolvimento sentado com halter (videos/desenvolvimento-sentado-halter.mp4, 540p sem áudio). Não pega Arnold, em pé, unilateral, smith, barra nem máquina. Lançado à noite junto com a rosca.
+
+## 2026-11-07 (rodada automática, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~41 únicos)
+Antes de começar: o bi-set "vai e volta" de 04/11 tinha quebrado 6 testes antigos (fluxo-treino, 2410, 2610b, 2810, 3110, pontos-parciais) e o assistente-demo — só os testes, o app estava ok. Ajustados (helper `tests/_vaievolta.mjs` abre a aba A1/A2 antes de clicar).
+**Júlia (23, iniciante, iPhone):** trocar exercício mantinha o vídeo do original (agachamento livre mostrando o Smith); "Treinou presencial com o Igor?" pra todas, com selfie valendo +50; "Encerrar" prometia pontos que não vinham; Vídeos dizia "vídeo chegando" pra exercício com animação e contava o boneco como "gravado com o Igor"; depois do descanso no bi-set a tela rolava e escondia nome/abas; Início dizia "feito ✓" com treino pela metade; lista com "descanso 90s" no A1 do bi-set; avisos "✓" acumulando 6 linhas; IA do demo sem anamnese/trocar ordem/esqueci de marcar/não apitou.
+**Carla (34, Android lento):** toque duplo no "✓ → A2" marcava o A2 e abria descanso; tocar de novo no campo emendava (10 → 1120) sem conferir; drop: série 2 só no ✓ gravava as quedas vazias; Enter no bi-set jogava o peso do A2 no A1 série 2; começando pelo A2 o descanso caía no meio do par e sumia no fim; "− série" tirava só de um exercício; "‹ Corrigir" abria sempre o A1; abas cortadas em 360 px.
+**Márcia (52, zoom 130%):** Pontos chamava treino incompleto e presencial de "Treino completo" e as regras estavam velhas; erro do servidor no login aparecia como "senha errada"; errar 5x não levava a lugar nenhum; abas A1/A2 "AGACHAME···" e bolinha de 9 px pra vez; esforço/nota com botões de 27 px em 360; presencial com botão apagado sem explicação; "AGACHA-MENTO" em 300 px; prêmios com o nome por cima do emoji; sem opção de letra grande, "Pts/Evol." menores e chave desligada invisível.
+**Renata (29, mãe, Personalizado):** histórico "Treino completo +20"; IA dizia que pela metade não pontua; depois do presencial o Início cobrava treino; app congelado 13 h voltava com relógio em 780 min (suspeita); Express pausado à noite virava Completo de manhã; registro do mês com 1 foto jogava fora o peso; painel não marcava "senti a lombar" como dor; 5 min fora no descanso contavam quase tudo; selos do painel encavalados; "1 séries marcadas".
+**Bia (19, celular velho, sinal ruim):** "Salvar na galeria" (Android) trocava o aviso da figurinha por "escolhe a imagem" (fundo preto); marcar Casa não mudava nada e "Treino em casa" vazio dizia "liberados"; programas extras sem a animação que existe; 4G lento travava 22 s em "Enviando…"; vídeo gravado de 1,5 MB baixando sozinho; trocar pra Casa não perguntava o que tem em casa; "Os dois" tratado como academia; pergunta à IA e resposta pro Igor não saíam sozinhas quando o sinal voltava; presencial sem sinal perdia a foto (suspeita); PDF depois de falha sem sinal (suspeita).
+
+### Corrigido
+- [x] Bi-set: toque duplo — o 2º toque (até 0,45 s, em outro exercício) não marca o A2 que deslizou pra baixo do dedo.
+- [x] Bi-set: Enter nas reps do A1 vai pro kg do A2 na mesma série; do A2 volta pro A1 na seguinte (troca de aba sozinho).
+- [x] Bi-set: começando pelo A2 não tem descanso no meio do par; o descanso vem quando a rodada do par fecha; o botão diz pra qual exercício vai ("✓ → A1").
+- [x] Bi-set: "− série" tira do A1 e do A2 juntos; "‹ Corrigir" abre no exercício da última série marcada (e o botão diz o nome dele).
+- [x] Bi-set: depois do descanso a tela rola até as abas A1/A2 (sabe de qual exercício é a série); abas com o nome inteiro em até 3 linhas, sem partir palavra; "SUA VEZ" escrito na aba; "Voltar pro A1, que é a vez" logo abaixo das abas.
+- [x] Tocar de novo num campo já em foco substitui o número (antes emendava 10 → 1120); reps absurdas (> 100 ou > 4× a meta) perguntam "Confere as repetições" com "Corrigir" em destaque. Apagar o kg digitado não conta mais como "série preenchida sem marcar".
+- [x] Drop: série marcada só no ✓ herda as quedas (kg) da série anterior de hoje e as reps do Igor.
+- [x] Encerrar e "Terminou o treino?" dizem o que ela ganha de verdade: "+N pontos pelo que fez", ou "menos de 10 min não pontua"/"sem nenhum exercício completo não pontua" + "Pausando, você termina depois". Tela de feedback explica o motivo do zero.
+- [x] Pontos: histórico com "Treino (4 de 7)" / "Treino pela metade" / "Treino com o Igor"; "Como ganhar" com proporcional e presencial; texto da regra atualizado. IA do demo e prompt da IA real (supabase/functions/assistente) com a regra nova.
+- [x] Início: treino pela metade aparece "Treino A registrado (4 de 7) · faltaram 3…", não "feito ✓"; treino presencial com o Igor conta como o treino do dia.
+- [x] Presencial: diz "Primeiro tira a foto" quando o botão está apagado; texto "pra quem treina presencial com o Igor (plano misto)"; sem sinal a foto fica guardada no celular e sobe sozinha (card com "pontos quando a internet voltar").
+- [x] Trocar exercício / aparelho ocupado: vídeo (ou animação) e dica passam a ser do exercício novo; voltar pro original devolve os dele.
+- [x] Vídeos: exercícios com animação deixam de aparecer em "vídeo chegando" (inclui programas extras e Hyrox); topo conta "{a} com vídeo do Igor e {b} com animação".
+- [x] Lista do treino: A1 do bi-set sem "descanso 90s"; A2 com "descanso 90s depois do par".
+- [x] Aviso "Exercício ✓" substitui o anterior em vez de juntar (só junta com o aviso fixo da volta).
+- [x] IA do demo: anamnese, trocar a ordem dos treinos, esqueci de marcar, cronômetro não apitou.
+- [x] Login: só culpa a senha quando o servidor diz que é a senha; "muitas tentativas" e erro do servidor com aviso próprio; da 2ª senha errada em diante "Esqueci minha senha" em destaque + "Chamar o Igor no WhatsApp", senha selecionada pra redigitar.
+- [x] Letra: Perfil › "Tamanho da letra" (Normal / Grande / Maior, guardado no celular); esforço/nota em 2 linhas até 400 px (botões de 48 px); título do exercício não parte palavra; prêmios com o emoji acima do nome; "Pts/Evol." no mesmo tamanho; chave desligada com borda visível.
+- [x] Registro do mês com 1 ou 2 fotos: peso e cintura são salvos ("Fotos: falta lado, costas"), fotos escolhidas continuam guardadas esperando as 3.
+- [x] Express pausado: aba Treino segue a versão do treino pausado; card de pausado mostra "⚡ Express".
+- [x] Treino largado: último uso conta só toque de verdade (salvamento automático do fim do descanso não vale), então app congelado 13 h cai no "Treino pela metade" com a hora certa. "1 série marcada" no singular.
+- [x] Celular no bolso no descanso: tolerância = fim do descanso + 2 min (antes + 3, que contava quase tudo de 5 min fora).
+- [x] Painel: "senti a lombar/joelho/ombro…", "incômodo" e a resposta dela também ganham selo "dor"; selos não se encavalam.
+- [x] Story Android: "Salvar na galeria" mostra um aviso só (figurinha por cima da foto), embaixo, sem cobrir a arte.
+- [x] Casa: "Os dois" também manda Spinning/Hyrox pro fim; programas sem aparelho com treino vêm primeiro; card de casa não diz "liberados" se o Treino em casa ainda não tem treinos; trocar pra Casa na revisão da ficha já pergunta o que tem em casa (obrigatório).
+- [x] 4G lento: no máximo 6 s em "Enviando…"; depois vai pra fila e abre o card (a chamada lenta que chegar depois não duplica).
+- [x] Vídeo gravado do Igor (~1,5 MB): fora do Wi-Fi só baixa quando ela toca no ▶, com o aviso do tamanho.
+- [x] Sem sinal: pergunta à IA sai sozinha quando ela volta no tira-dúvidas com sinal; resposta pro Igor sai sozinha quando o sinal volta.
+- [x] PDF/Hyrox/Spinning: a 2ª tentativa ("?r=") acha o arquivo guardado sem sinal.
+- [x] SW v64. Teste novo: `tests/rodada-0711.mjs`; ajustados fluxo-treino, 2410, 2610b (A2 primeiro não tem descanso no meio do par), 2810, 3110, pontos-parciais, assistente-demo. Traduções das frases novas nos 6 idiomas.
+
+### Pendente
+- [ ] Publicar de novo a função `assistente` (supabase/functions/assistente/index.ts: regra de pontos proporcionais e presencial). Sem publicar, a IA real continua dizendo só "treino concluído".
+- [ ] Quem vê "Treinou presencial com o Igor?": hoje aparece pra todas (agora diz "plano misto"). Esconder de quem é só online precisa de um campo de plano misto no cadastro (decisão do Igor; mexe no banco).
+- [ ] "Treino" e "Vídeos" quase grudados na barra de baixo com letra grande: o espaço extra fazia as abas cortarem o nome (teste das abas com letra grande quebrou); revertido, fica pra próxima.
+- [ ] Foto do presencial aceita "no aparelho" (sem o Igor): regra do Igor.
+- [ ] Treino em casa sem treinos e "Aparelho ocupado" sem opção de casa: conteúdo/regra de treino do Igor.
+- [ ] SUSPEITA não confirmada: compartilhar story no iPhone; seguem os pendentes de antes (migrações 021/022/023 se ainda não rodaram, WhatsApp, vídeos, fotos dos prêmios, capa do PDF clara, link definitivo da Kiwify, aviso no celular quando o Igor responde).

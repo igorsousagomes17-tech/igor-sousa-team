@@ -1,5 +1,5 @@
 // Service worker: cache do app (casca) + treino salvo pra abrir sem sinal. Vídeo nunca é cacheado.
-const CACHE = 'isteam-v63';
+const CACHE = 'isteam-v64';
 const DADOS = 'isteam-dados'; // o que o lembrete precisa saber (não apaga quando o app atualiza)
 // Gerador de PDF, capas, fotos e fontes: não mudam com a versão do app, então ficam de uma versão pra outra
 // (antes cada atualização apagava e o PDF/capas paravam de abrir sem sinal até baixar tudo de novo)
@@ -37,10 +37,12 @@ self.addEventListener('fetch', e => {
   if (url.hostname.includes('supabase') || url.hostname.includes('youtube') || url.hostname.includes('ytimg')) return;
   // Casca do app: cache primeiro, sem baixar de novo a cada abertura (economiza o pacote de dados).
   // Versão nova chega quando o sw.js muda (CACHE novo baixa tudo uma vez). Página com ?demo usa a mesma casca.
+  // "?r=123" é só o app tentando de novo depois de uma falha (PDF, Hyrox, Spinning): vale o mesmo arquivo guardado (antes, sem sinal, nunca achava)
+  const rTenta = /^\?r=\d+$/.test(url.search), chave = rTenta ? url.origin + url.pathname : e.request;
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: e.request.mode === 'navigate' }).then(cached => cached || fetch(e.request).then(res => {
+    caches.match(chave, { ignoreSearch: e.request.mode === 'navigate' }).then(cached => cached || fetch(e.request).then(res => {
       // arquivos do app (inclui o gerador de PDF, guardado no 1º uso) e as fontes: ficam pra abrir sem sinal
-      if (res.ok && res.status === 200 && (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname))) { const cp = res.clone(); caches.open(ehExtra(url) ? EXTRAS : CACHE).then(c => c.put(e.request, cp)); }
+      if (res.ok && res.status === 200 && (url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname))) { const cp = res.clone(); caches.open(ehExtra(url) ? EXTRAS : CACHE).then(c => c.put(chave, cp)); }
       return res;
     }))
   );

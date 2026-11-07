@@ -1,3 +1,4 @@
+import { vaiEVolta } from './_vaievolta.mjs';
 // Testes da 2ª rodada de 26/10 (cronômetro pausado no Pausar, lado 1:00, card incompleto sem "feito" nem cardio, sequência só com treino completo, recorde só com a meta de reps, próxima série fora de ordem, anamnese que não apaga no Voltar, senha com espaço, aviso que deixa o toque passar, recomeçar do zero, contagens "de 7 · 1 opcional", voltar na aba Treino, feedback que diz o que falta, pausa sozinha com 10 min parado, Evolução com letra grande, story do resumo pontua). Uso: W=360 OUT=/tmp/shots node tests/rodada-2610b.mjs
 import { chromium } from 'playwright';
 import path from 'path';
@@ -8,7 +9,7 @@ const ok = (cond, msg) => { console.log((cond ? '  ok  ' : '  FALHOU ') + msg); 
 const rota = p => p.route('**/*', r => { const u = new URL(r.request().url()); if (u.hostname === 'app.local') { const f = u.pathname === '/' ? '/index.html' : u.pathname; return r.fulfill({ path: APP + f }); } return r.abort(); });
 async function nova(t0, w = W) {
   const ctx = await b.newContext({ locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', viewport: { width: w, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block', acceptDownloads: true });
-  const p = await ctx.newPage(); if (t0) await p.clock.install({ time: t0 });
+  const p = vaiEVolta(await ctx.newPage()); if (t0) await p.clock.install({ time: t0 });
   await rota(p); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => { errs.push('DIALOG ' + d.message()); d.dismiss(); });
   return { ctx, p };
 }
@@ -49,9 +50,9 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
 { const T = new Date('2026-10-26T09:00:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p);
   const fogo0 = await txt(p, '.topbar'); await abrirTreino(p, 'A');
   await p.click('#pular'); await espera(p, 300); // bi-set Smith (pirâmide) + Goblet
-  // fora de ordem: Goblet (A2) antes do Smith (A1) → o descanso diz que a próxima é o Smith série 1
+  // fora de ordem: Goblet (A2) antes do Smith (A1) → sem descanso no meio do par (07/11, Carla): a tela vai pro Smith; o descanso vem quando o par da série fecha
   await p.click('.set[data-i="2"][data-k="0"] .rest'); await espera(p, 600);
-  ok(/Agachamento Smith · série 1|série 1 de 3 · Agachamento Smith/i.test(await txt(p, '#rest-p')), `marcou o A2 antes: descanso aponta a série 1 do Smith (${await txt(p, '#rest-p')})`);
+  ok(!(await p.$('#rest:not(.mini) #rest-p')) && !!(await p.$('.bitab.on[data-biv="1"]')), 'marcou o A2 antes: sem descanso no meio do par, a tela vai pro Smith');
   await fecharDescanso(p);
   for (const [k, kg, r] of [[0, '22', '12'], [1, '25', '10'], [2, '29', '3']]) { await p.fill(`.set[data-i="1"][data-k="${k}"] input[data-f="kg"]`, kg); await p.fill(`.set[data-i="1"][data-k="${k}"] input[data-f="reps"]`, r); await p.click(`.set[data-i="1"][data-k="${k}"] .rest`); await espera(p, 500); await fecharDescanso(p); }
   await terminar(p); const v = await txt(p, '.view');
@@ -92,7 +93,8 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   await p.click('#ini'); await espera(p, 400); ok(/Recomeçar do zero/i.test(await txt(p, '#overlay')) && !/Registrar/i.test(await txt(p, '#overlay')), 'recomeçar o mesmo treino só pergunta se apaga (não oferece registrar)');
   await p.click('#m [data-o="1"]'); await espera(p, 700); ok((await st(p)).sessoes.filter(x => x.finalizada_em).length === antes && !(await sessao(p)).sets[1][0].done, 'apagou e recomeçou sem gravar treino pela metade');
   await p.click('#fim'); await espera(p); await p.click('#volta'); await espera(p, 200);
-  await p.click('.set[data-i="0"] .rest').catch(() => {}); await espera(p, 300); if (await p.$('#rest-skip')) { await p.click('#rest-skip'); await espera(p, 300); if (await p.$('#q-s')) await p.click('#q-s'); await espera(p, 400); }
+  await p.click('.set[data-i="0"] .rest').catch(() => {}); await espera(p, 900); /* o cronômetro abre um pouco depois do toque */ if (await p.$('#rest-skip')) { await p.click('#rest-skip'); await espera(p, 300); if (await p.$('#q-s')) await p.click('#q-s'); await espera(p, 400); }
+  await espera(p, 600); await fecharDescanso(p);
   await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); }
   ok(/\+\d+ pontos|vale 50 pontos/i.test(await txt(p, '.view')), 'feedback incompleto explica os pontos (proporcional, sem punir)');
   await p.click('#esf button >> nth=6'); await p.click('#env'); await espera(p, 400); ok(/Falta a nota/i.test(await txt(p, '#e')), 'feedback diz qual escala falta ("Falta a nota")');

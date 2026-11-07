@@ -52,3 +52,8 @@ IA do demo: execução/12-10-8/descanso/saldo, abas com nome inteiro quando cabe
 bi-set com Senti dor à vista e Enter A1 → A2; "Onde é a dor?" com peito/192; "Pausar e terminar depois"; pausa congela o descanso; responder o Igor em caixa grande com rascunho e conversa de volta pelo painel;
 Hyrox começando na Base, distância sem reps, voltas e PDF; registro do mês sem peso antigo; busca em frase e Hyrox; letra grande em 300 px; iPhone sem contradição do apito):
 `W=360 OUT=/tmp/shots node tests/rodada-3110.mjs`. `rodada-2610b` agora fixa uma segunda-feira pro resumo da semana (antes falhava de quinta a domingo).
+
+`tests/rodada-0711.mjs` testa a rodada 07/11 (bi-set: toque duplo, Enter A1 → A2, começar pelo A2 sem descanso no meio, − série nos dois; reps absurdas; encerrar diz se pontua;
+Pontos "Treino (4 de 7)"; Início sem "feito ✓" pela metade; presencial sem sinal na fila; login com senha errada/muitas tentativas; letra grande no Perfil; vídeo acompanha a troca;
+registro do mês com 1 foto salva o peso; aviso da arte do story no Android): `W=360 OUT=/tmp/shots node tests/rodada-0711.mjs`.
+`tests/_vaievolta.mjs` não é teste: ajuda os testes antigos a abrir a aba A1/A2 antes de clicar numa série (bi-set vai e volta de 04/11).

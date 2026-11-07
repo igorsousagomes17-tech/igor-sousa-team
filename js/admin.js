@@ -10,10 +10,10 @@ const wa = (num, txt) => `https://wa.me/55${String(num || '').replace(/\D/g, '')
 let db;
 // Precisa da resposta do Igor: comentou, ou deu nota baixa / esforço no limite sem escrever nada
 const precisa = f => !f.resposta_igor && !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
-const DOR = /⚠ dor|\bdor(es)?\b|doeu|doendo|les[aã]o|machuc|\bpain|hurt|dolor|duel|doli|douleur|疼|痛|दर्द/i;
+const DOR = /⚠ dor|\bdor(es)?\b|doeu|doendo|les[aã]o|machuc|incomod|senti (a|o|na|no|minha|meu) (lombar|joelho|ombro|coluna|costas|quadril|tornozelo|punho|cotovelo|pesco[cç]o)|\blombar\b|\bpain|hurt|dolor|duel|doli|douleur|疼|痛|दर्द/i; // "senti a lombar" também é dor (Renata 07/11)
 const parou = f => f.exercicios_total > 0 && (f.exercicios_feitos ?? 0) / f.exercicios_total < 0.6;
 const selo = f => (parou(f) ? ' <span class="pill warn">parou no meio</span>' : '') + seloDor(f);
-const seloDor = f => DOR.test(f.comentario || '') ? ' <span class="pill warn">dor</span>' : !String(f.comentario || '').trim() && f.nota != null && f.nota <= 4 ? ' <span class="pill warn">nota baixa</span>' : !String(f.comentario || '').trim() && f.esforco >= 9 ? ' <span class="pill warn">esforço no limite</span>' : '';
+const seloDor = f => DOR.test((f.comentario || '') + ' ' + (f.resposta_aluna || '')) ? ' <span class="pill warn">dor</span>' : !String(f.comentario || '').trim() && f.nota != null && f.nota <= 4 ? ' <span class="pill warn">nota baixa</span>' : !String(f.comentario || '').trim() && f.esforco >= 9 ? ' <span class="pill warn">esforço no limite</span>' : '';
 const pl = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
 // Ícones do painel (traço simples, herdam a cor)
 const ic = {

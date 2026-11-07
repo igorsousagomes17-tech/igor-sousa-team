@@ -11,8 +11,8 @@ console.log(JSON.stringify(pts));
 ok(pts['5/9 2520s']===30 && pts['9/9 600s']===50 && pts['1/9 700s']===10 && pts['3/9 300s']===0 && pts['0/9 2000s']===0, 'pontos: 5/9=30, completo=50, mínimo 10, <10 min ou nada feito=0');
 // card de treino incompleto (5 de 9, 42 min)
 await p.evaluate(()=>{ history.pushState({ name:'card', arg: JSON.stringify({ titulo:'Treino B', min:42, seg:2520, ex:5, total:9, series:15, completo:false, kcal:270 }) }, '', '#card'); dispatchEvent(new PopStateEvent('popstate', { state: history.state })); });
-await p.waitForTimeout(1200); const v = await p.innerText('.view');
-ok(/\+30 pts/i.test(v) && !/sem pontos/i.test(v), `incompleto 5/9 em 42 min mostra +30 pts (${(v.match(/\+\d+ pts|sem pontos|treino registrado/i)||[''])[0]})`);
+await p.waitForTimeout(1200); const v = await p.innerText('body');
+ok(/\+30\s*pts/i.test(v) && !/sem pontos/i.test(v), `incompleto 5/9 em 42 min mostra +30 pts (${(v.match(/\+\d+ pts|sem pontos|treino registrado/i)||[''])[0]})`);
 ok(await p.$('#share') && await p.$('#shareFoto'), 'incompleto pode postar no story e baixar com fundo transparente');
 await p.screenshot({ path: '/tmp/pontos-parciais-card.png' });
 console.log(errs.length?'ERROS: '+errs.join(' | '):'tudo certo'); await b.close(); process.exit(errs.length?1:0);

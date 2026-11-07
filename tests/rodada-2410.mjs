@@ -1,3 +1,4 @@
+import { vaiEVolta } from './_vaievolta.mjs';
 // Testes das correções da rodada 24/10 (5 alunas críticas). Uso: W=360 OUT=/tmp/shots node tests/rodada-2410.mjs
 import { chromium } from 'playwright';
 import path from 'path';
@@ -8,7 +9,7 @@ const ok = (cond, msg) => { console.log((cond ? '  ok  ' : '  FALHOU ') + msg); 
 const rota = p => p.route('**/*', r => { const u = new URL(r.request().url()); if (u.hostname === 'app.local') { const f = u.pathname === '/' ? '/index.html' : u.pathname; return r.fulfill({ path: APP + f }); } return r.abort(); });
 async function nova(t0) {
   const ctx = await b.newContext({ locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', viewport: { width: W, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
-  const p = await ctx.newPage(); if (t0) await p.clock.install({ time: t0 });
+  const p = vaiEVolta(await ctx.newPage()); if (t0) await p.clock.install({ time: t0 });
   await rota(p); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => { errs.push('DIALOG ' + d.message()); d.dismiss(); });
   return { ctx, p };
 }
@@ -54,7 +55,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
 
 // 5. Duas abas no mesmo treino: nenhuma apaga a série da outra
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'A'); await p.click('#pular'); await espera(p);
-  const p2 = await ctx.newPage(); await rota(p2); await p2.goto('http://app.local/?demo#sessao'); await espera(p2, 1200);
+  const p2 = vaiEVolta(await ctx.newPage()); await rota(p2); await p2.goto('http://app.local/?demo#sessao'); await espera(p2, 1200);
   await p.click('.set[data-i="1"][data-k="0"] .rest'); await espera(p, 500);
   await p2.click('.set[data-i="1"][data-k="1"] .rest'); await espera(p2, 600);
   await p.click('.set[data-i="1"][data-k="2"] .rest'); await espera(p, 600);

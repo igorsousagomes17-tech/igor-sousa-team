@@ -13,6 +13,7 @@ await p.click('.tabs [data-go="treino"]'); await p.waitForTimeout(600); await p.
 await p.click('[data-duvida] >> nth=0'); await p.waitForTimeout(900); console.log('preenchido:', await p.inputValue('#tx')); await p.screenshot({path:(process.env.OUT||'/tmp')+'/c3.png'});
 await p.goBack(); await p.waitForTimeout(800); console.log('volta p/ treino:', await p.evaluate(()=>location.hash));
 // admin
-await p.evaluate(()=>{localStorage.clear()}); await p.goto('http://app.local/?demo'); await p.waitForTimeout(500); await p.click('text=ENTRAR'); await p.press('#pw','Enter'); await p.waitForTimeout(1500);
+await p.goto('http://app.local/?demo'); await p.waitForTimeout(300); await p.evaluate(()=>{localStorage.clear()}); await p.reload(); await p.waitForTimeout(1200); // limpa depois de sair da sessão (o pagehide da sessão regravava o login da aluna)
+for (let k = 0; k < 3 && !(await p.$('#pw')); k++) { await p.click('text=ENTRAR').catch(() => {}); await p.waitForTimeout(600); } await p.press('#pw','Enter'); await p.waitForTimeout(1500);
 await p.click('#a-duv'); await p.waitForTimeout(500); console.log('painel duvidas:', (await p.innerText('#duv')).replace(/\s+/g,' ').slice(0,120));
 console.log('erros', errs); await b.close();

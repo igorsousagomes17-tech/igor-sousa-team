@@ -1,3 +1,4 @@
+import { vaiEVolta } from './_vaievolta.mjs';
 // Rodada 31/10 (Júlia, Carla, Márcia, Renata, Bia): W=360 OUT=/tmp node tests/rodada-3110.mjs
 import { chromium } from 'playwright';
 import path from 'path'; const APP = process.env.APP || path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'); const D = process.env.OUT || '/tmp'; const W = +(process.env.W || 360);
@@ -5,7 +6,7 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 const errs = [], ok = (c, m) => { console.log((c ? 'ok   ' : 'FALHOU ') + m); if (!c) errs.push(m); };
 async function nova({ w = W, h = 780, iphone = false } = {}) {
   const ctx = await b.newContext({ locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', viewport: { width: w, height: h }, serviceWorkers: 'block', hasTouch: true, isMobile: true, ...(iphone ? { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' } : {}) });
-  const p = await ctx.newPage();
+  const p = vaiEVolta(await ctx.newPage());
   await p.route('**/*', r => { const u = new URL(r.request().url()); if (u.hostname === 'app.local') { const f = u.pathname === '/' ? '/index.html' : u.pathname; return r.fulfill({ path: APP + f.split('?')[0] }).catch(() => r.abort()); } return r.abort(); });
   p.on('pageerror', e => errs.push('PAGEERR ' + e.message)); p.on('dialog', d => { errs.push('DIALOG ' + d.message()); d.dismiss(); });
   return { ctx, p };
@@ -90,6 +91,7 @@ const fechar = async p => { if (await p.locator('#rest-skip').count()) { await p
   ok(/Dica e opções/.test(v), 'rodapé diz onde trocar o aparelho');
   await p.locator('[data-ht]').first().click(); await w(p, 900);
   await passo(p, 'Corrida');
+  { const rt = p.locator('.bitab:has-text("Remo")'); if (await rt.count()) { await rt.first().click(); await w(p, 400); } } // vai e volta: um exercício por vez
   const b2 = await p.innerText('.view'); ok(/VOLTAS?|voltas ×/i.test(b2), 'circuito fala em voltas');
   ok(await p.locator('.set .dist').count() >= 1 && await p.locator('.bloco:has(.dist) input[data-f="reps"]').count() === 0, 'remo "250 m": mostra a distância, sem campo de reps');
   await ctx.close(); }

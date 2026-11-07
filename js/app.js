@@ -5,6 +5,7 @@ import { ligarAvisoRemoto, beep, $, $$, esc, toast, fecharToast, overlay, closeO
 import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma, loc, tc, tlivre, ligarTradutor } from './i18n.js';
 import * as A from './acolhe.js';
 import { cargaPorNome, equivalentes } from './conteudo.js';
+import { videoDe, animDe, ehAnim } from './animacoes.js';
 import * as K from './kcal.js'; // T = t, pra quando "t" já é nome de variável
 
 const C = window.ISTEAM_CONFIG;
@@ -141,6 +142,7 @@ routes.login = () => {
     <p class="muted center" style="margin-top:6px">${t('Ainda não é aluna?')} <a href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 4px">${t('Assinar')}</a></p>
     <p class="muted center small">${t('Pagamento pela Kiwify. Confirmou, recebe o acesso no WhatsApp.')}</p></form></div>`);
   $('#lang').onclick = escolherIdioma;
+  let erros = 0;
   $('#f').onsubmit = async e => {
     e.preventDefault(); $('#err').hidden = true;
     const vazio = !$('#em').value.trim() ? ['#em', t('Digita seu e-mail.')] : !$('#pw').value ? ['#pw', t('Digita sua senha (1ª vez: seu WhatsApp, só números).')] : null;
@@ -149,7 +151,13 @@ routes.login = () => {
     const pw = $('#pw').value, dig = pw.replace(/\D/g, '');
     // Digitou o WhatsApp do jeito que aparece no celular, "(62) 99999-0000": tenta também só com os números
     try { await db.login($('#em').value, pw).catch(er => { if (dig !== pw && dig.length >= 10 && dig.length <= 13 && !/fetch|network|Failed/i.test(String(er?.message))) return db.login($('#em').value, dig); throw er; }); await boot(); }
-    catch (er) { $('#err').textContent = /fetch|network|Failed/i.test(String(er?.message)) ? t('Sem internet agora. Tenta de novo quando o sinal voltar.') : t('E-mail ou senha não conferem. Se for sua primeira vez, a senha é seu WhatsApp (só números, com DDD).'); $('#err').hidden = false; $('#bt').disabled = false; }
+    catch (er) { const m = String(er?.message || er || ''), rede = /fetch|network|Failed/i.test(m), senha = /invalid.*(credential|login|grant|password)|senha|password/i.test(m), muitas = /rate limit|too many|429/i.test(m);
+      if (senha) erros++;
+      // Só culpa a senha quando o servidor diz que é a senha; muitas tentativas ou erro do servidor têm aviso próprio (antes tudo virava "senha não confere")
+      $('#err').textContent = rede ? t('Sem internet agora. Tenta de novo quando o sinal voltar.') : muitas ? t('Muitas tentativas seguidas. Espera uns minutos ou toca em "Esqueci minha senha" que eu te mando um link.') : !senha ? t('Não deu pra entrar agora (o problema não é a sua senha). Tenta de novo daqui a pouco; se continuar, chama o Igor.') : erros >= 2 ? t('A senha ainda não confere. Toca em "Esqueci minha senha" aqui embaixo que eu te mando um link pra criar outra, ou chama o Igor.') : t('E-mail ou senha não conferem. Se for sua primeira vez, a senha é seu WhatsApp (só números, com DDD).');
+      $('#err').hidden = false; $('#bt').disabled = false;
+      if (senha) { try { $('#pw').select(); } catch {} } // errou: a senha fica selecionada pra redigitar
+      if (erros >= 2 || muitas) { $('#esq').classList.remove('ghost'); if (!$('#zapIgor') && C.WHATSAPP_IGOR) $('#esq').insertAdjacentHTML('afterend', `<a class="btn ghost sm" id="zapIgor" style="width:100%;margin-top:8px" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}?text=${encodeURIComponent('Oi Igor! Não tô conseguindo entrar no app.')}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a>`); } }
   };
   $('#esq').onclick = async e => { e.preventDefault(); const em = $('#em').value.trim(); if (!/^\S+@\S+\.\S{2,}$/.test(em)) { $('#err').textContent = em ? t('Confere o e-mail: falta alguma parte (ex. nome@gmail.com).') : t('Digita seu e-mail no campo acima e toca de novo.'); $('#err').hidden = false; $('#em').focus(); return; } $('#err').hidden = true; try { await db.esqueciSenha(em); toast(t('Te mandei um link por e-mail pra criar outra senha.') + ' ' + t('Não chegou? Olha no spam ou nas promoções.'), false, { fixo: true }); } catch { toast(t('Não consegui. Chama o Igor no WhatsApp.'), true); } };
 };
@@ -158,7 +166,7 @@ routes.login = () => {
 // Treinos feitos sem sinal entram na contagem na hora (sequência, meta, treino de hoje), antes de subir pro banco.
 // Cada item da fila tem dono: treino feito sem sinal nunca sobe na conta de outra pessoa que entrar no mesmo celular.
 const daFila = it => !it.dono || it.dono === S.perfil?.id;
-const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && ((it.series || []).length > 0 || /^Spinning/.test(it.s?.titulo || ''))).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.patch.exercicios_total ?? it.s.total, duracao_s: it.patch.duracao_s, pendente: true, series: it.series || [] })); // séries vão junto: dá pra conferir o que fez antes de subir
+const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo === 'presencial').map(it => ({ titulo: 'Treino com o Igor', finalizada_em: it.quando, exercicios_feitos: 0, exercicios_total: 0, duracao_s: 3600, pendente: true, series: [] })).concat(db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && it.tipo !== 'presencial' && ((it.series || []).length > 0 || /^Spinning/.test(it.s?.titulo || ''))).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.patch.exercicios_total ?? it.s.total, duracao_s: it.patch.duracao_s, pendente: true, series: it.series || [] }))); // séries vão junto: dá pra conferir o que fez antes de subir
 async function sessoesComFila(p, lim) { const ss = await rapido(db.minhasSessoes(p.id, lim), db.LS.get('sessoes', [])); return [...pendentesDaFila(), ...ss].sort((a, b) => b.finalizada_em.localeCompare(a.finalizada_em)); }
 const seriesFeitas = s => Object.values(s.sets).flat().filter(x => x.done).length;
 const pillPausa = sa => sa.pausadoEm ? (haQuanto(sa.pausadoEm) ? t('Treino pausado há {t}', { t: haQuanto(sa.pausadoEm) }) : t('Treino pausado há pouco')) : t('Treino em andamento');
@@ -180,7 +188,7 @@ routes.home = async () => {
   const st = streakDias(sessoes);
   const sa = S.sessao, resp = respostaNova(sessoes);
   const mesCount = sessoes.filter(s => mesLocal(s.finalizada_em) === mesLocal() && treinoCompleto(s)).length;
-  const feitoHoje = !sa && sessoes.find(s => /^Treino [A-Z]$/.test(s.titulo || '') && diaLocal(s.finalizada_em) === diaLocal() && !pelaMetade(s));
+  const feitoHoje = !sa && sessoes.find(s => (/^Treino [A-Z]$/.test(s.titulo || '') || s.titulo === 'Treino com o Igor') && diaLocal(s.finalizada_em) === diaLocal() && !pelaMetade(s)), feitoInc = feitoHoje && !treinoCompleto(feitoHoje) && /^Treino [A-Z]$/.test(feitoHoje.titulo); // pela metade não vira "feito"; presencial com o Igor conta
   const wk = isoWeek(new Date()); const semCount = sessoes.filter(s => isoWeek(new Date(s.finalizada_em)) === wk && treinoCompleto(s)).length;
   const meta = p.dias_semana || 4; const dmeta = desafio?.meta_treinos || 16;
   const prox = proximoTreino(plano, sessoes);
@@ -191,14 +199,14 @@ routes.home = async () => {
   ${avisoVencimento(plano)}
   ${!p.anamnese_em && p.role !== 'admin' ? (p.objetivo ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1rem">${t('Confere sua anamnese')}</b><p class="muted">${t('O Igor já preencheu o que você respondeu antes. É só conferir e completar o que faltar.')}</p><button class="btn sm mt" id="anam" style="width:100%">${t('Conferir agora')}</button></div>` : `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1rem">${t('Falta me contar de você')}</b><p class="muted">${t('Umas 20 perguntas rápidas (uns 3 min) pro Igor montar o seu treino.')}</p><button class="btn sm mt" id="anam" style="width:100%">${t('Responder agora')}</button></div>`) : ''}
   ${sa && sa.fimEm ? `<div class="card hero"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Falta enviar')}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${t('Seu treino ainda não foi registrado: falta tocar em Enviar (o esforço e o recado pro Igor).')}</p><button class="btn dark" style="margin-top:8px" data-go="fim">${t('Enviar agora')}</button></div>`
-    : sa ? `<div class="card hero"><span class="pill" id="pausaPill" style="background:rgba(0,0,0,.18);color:#1a0d00">${pillPausa(sa)}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${tp(sf, '{n} série feita', '{n} séries feitas')} · ${t('{a} de {b} exercícios · tudo salvo', contaObr(sa))}</p><button class="btn dark" style="margin-top:8px" data-go="sessao">${t('Continuar de onde parei')}</button><button class="back" id="desc" style="color:#1a0d00;margin-top:4px;text-decoration:underline">${t('descartar esse treino')}</button></div>`
-    : perguntaSemana(plano, sessoes) || (feitoHoje && prox ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1.0625rem">${t('Treino de hoje feito ✓')}</b><p class="muted">${t('{x} registrado. Descansa e volta amanhã: o próximo é o {y}.', { x: esc(nomeTreino(feitoHoje.titulo)), y: t('Treino {l}', { l: esc(prox.letra) }) })}</p><button class="btn ghost sm mt" style="width:100%" data-go="treino" data-arg="${esc(prox.letra)}">${t('Ver o Treino {l}', { l: esc(prox.letra) })}</button></div>`
+    : sa ? `<div class="card hero"><span class="pill" id="pausaPill" style="background:rgba(0,0,0,.18);color:#1a0d00">${pillPausa(sa)}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}${sa.express ? ` <span style="font-size:1rem">⚡ ${t('Express')}</span>` : ''}</div><p style="color:#1a0d00;font-weight:600">${tp(sf, '{n} série feita', '{n} séries feitas')} · ${t('{a} de {b} exercícios · tudo salvo', contaObr(sa))}</p><button class="btn dark" style="margin-top:8px" data-go="sessao">${t('Continuar de onde parei')}</button><button class="back" id="desc" style="color:#1a0d00;margin-top:4px;text-decoration:underline">${t('descartar esse treino')}</button></div>`
+    : perguntaSemana(plano, sessoes) || (feitoHoje && prox ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1.0625rem">${feitoInc ? t('{x} registrado ({a} de {b})', { x: esc(nomeTreino(feitoHoje.titulo)), a: feitoHoje.exercicios_feitos, b: feitoHoje.exercicios_total }) : t('Treino de hoje feito ✓')}</b><p class="muted">${feitoInc ? tp(feitoHoje.exercicios_total - feitoHoje.exercicios_feitos, 'Faltou {n} exercício. Completo vale 50 e conta na meta: se der, faz ele inteiro na próxima. O próximo é o {y}.', 'Faltaram {n} exercícios. Completo vale 50 e conta na meta: se der, faz ele inteiro na próxima. O próximo é o {y}.', { y: t('Treino {l}', { l: esc(prox.letra) }) }) : t('{x} registrado. Descansa e volta amanhã: o próximo é o {y}.', { x: esc(nomeTreino(feitoHoje.titulo)), y: t('Treino {l}', { l: esc(prox.letra) }) })}</p><button class="btn ghost sm mt" style="width:100%" data-go="treino" data-arg="${esc(prox.letra)}">${t('Ver o Treino {l}', { l: esc(prox.letra) })}</button></div>`
     : prox ? `<div class="card hero"><div class="row between"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Treino de hoje')}</span><span class="small" style="font-weight:600">${expressHoje() ? `⚡ ${t('Express')} ~${t('{n} min', { n: durExpress(prox.duracao_min) })}` : `~${t('{n} min', { n: prox.duracao_min || 40 })}${kcalTxt(K.kcalTreino(p, prox.exercicios || [], prox.duracao_min || 40))}`}</span></div>
     <div class="logo" style="font-size:1.875rem;margin:8px 0 4px;color:#1a0d00">${t('Treino {l}', { l: esc(prox.letra) })}<br><span style="font-weight:600;font-size:1.0625rem;font-family:var(--body);text-transform:none">${esc(tc(prox.nome))}</span></div>
     ${prox.repete ? `<p style="color:#1a0d00;font-weight:600">${prox.repete.exercicios_feitos ? t('Da última vez ele ficou pela metade ({a} de {b}). Bora fazer inteiro?', { a: prox.repete.exercicios_feitos, b: prox.repete.exercicios_total }) : t('Da última vez ele ficou só no começo. Bora fazer inteiro?')}</p>` : semCount >= meta ? `<p style="color:#1a0d00;font-weight:600">${t('Semana fechada 💪 Esse é só se você quiser treinar a mais.')}</p>` : ''}
     <button class="btn dark" style="margin-top:8px" data-go="treino" data-arg="${esc(prox.letra)}">${t('Abrir treino')}</button>${prox.repete ? `<button class="back" id="seguirMeia" style="color:#1a0d00;text-decoration:underline">${t('Não, seguir pro próximo')}</button>` : ''}${inicioDaSemana(plano) === prox.letra && !semCount ? `<button class="back" id="semTroca" style="color:#1a0d00;text-decoration:underline">${t('Você escolheu começar a semana por ele · trocar')}</button>` : ''}</div>`
     : `<div class="card"><b>${t('Seu treino do mês tá chegando.')}</b><p class="muted">${t('O Igor tá montando com base na sua anamnese. Enquanto isso, os programas extras já estão liberados.')}</p></div>`)}
-  ${p.local_treino === 'casa' && !db.LS.get('casaOk') && (plano?.treinos || []).some(x => x.exercicios.some(e => /m[aá]quina|cadeira|mesa|leg|polia|cabo|puxada|smith|graviton|hack|crossover|banco/i.test(e.nome))) ? `<div class="card" id="casa" style="border:1px solid var(--line)"><b style="font-size:0.9375rem">🏠 ${t('Você treina em casa?')}</b><p class="muted">${t('Seu treino do mês tem aparelhos de academia. Chama o Igor pra adaptar pra casa. Enquanto isso, os programas extras sem aparelho estão liberados.')}</p><div class="row mt" style="gap:8px"><a class="btn sm" style="flex:2" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}?text=${encodeURIComponent('Oi Igor! Treino em casa, dá pra adaptar meu treino do mês?')}" target="_blank" rel="noopener">${t('Chamar o Igor')}</a><button class="btn ghost sm" id="casaOk" style="flex:1">${t('Ok')}</button></div></div>` : ''}
+  ${p.local_treino === 'casa' && !db.LS.get('casaOk') && (plano?.treinos || []).some(x => x.exercicios.some(e => /m[aá]quina|cadeira|mesa|leg|polia|cabo|puxada|smith|graviton|hack|crossover|banco/i.test(e.nome))) ? `<div class="card" id="casa" style="border:1px solid var(--line)"><b style="font-size:0.9375rem">🏠 ${t('Você treina em casa?')}</b><p class="muted">${(S.programas || db.LS.get('programas', [])).some(x => /casa/.test(x.slug) && (x.programa_treinos || []).length) ? t('Seu treino do mês tem aparelhos de academia. Chama o Igor pra adaptar pra casa. Enquanto isso, os programas extras sem aparelho estão liberados.') : t('Seu treino do mês tem aparelhos de academia. Chama o Igor pra ele adaptar pra casa.')}</p><div class="row mt" style="gap:8px"><a class="btn sm" style="flex:2" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}?text=${encodeURIComponent('Oi Igor! Treino em casa, dá pra adaptar meu treino do mês?')}" target="_blank" rel="noopener">${t('Chamar o Igor')}</a><button class="btn ghost sm" id="casaOk" style="flex:1">${t('Ok')}</button></div></div>` : ''}
   ${!sa ? A.cardVolta(p, sessoes, prox) : ''}
   ${resumoAnt ? A.cardResumoHome(resumoAnt) : ''}
   ${resp ? `<button class="card" id="resp" style="text-align:left;border:1px solid var(--accent);color:var(--fg);width:100%"><b style="font-size:0.9375rem">💬 ${t('O Igor te respondeu')}</b><p class="muted">"${esc(tlivre(resp.resposta_igor))}"</p><p class="small mt" style="color:var(--accent)">${t('toca pra ver')}</p></button>` : ''}
@@ -210,7 +218,7 @@ routes.home = async () => {
   <button class="card row home-ia" data-go="assistente" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex-shrink:0;color:var(--accent-ink);font-size:1.25rem">💬</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('Tira-dúvidas 24h')}</b><p class="muted">${t('Pergunta sobre seu treino, execução, carga, cardio... a IA do time responde na hora.')}</p></div></button>
   <button class="card row home-time" data-go="comunidade" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:#2a2a2e;display:grid;place-items:center;flex-shrink:0;font-size:1.25rem">🔥</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('O time')}</b><p class="muted" id="timeHoje">${t('Veja quem já treinou hoje e o ranking do mês.')}</p></div></button>
   <div class="row between"><h3>${t('Programas extras')}</h3><button class="back" style="color:var(--accent)" data-go="lib">${t('ver todos')}</button></div>
-  <div class="hscroll">${emCasa() ? '' : cardSpin(true) + cardHyrox(true)}${programas.map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), 126, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin(true) + cardHyrox(true) : ''}</div></div>`, 'home');
+  <div class="hscroll">${emCasa() ? '' : cardSpin(true) + cardHyrox(true)}${ordemProg(programas).map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), 126, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin(true) + cardHyrox(true) : ''}</div></div>`, 'home');
   // Desafio batido: só fala dos pontos quando eles já entraram de verdade
   if (mesCount >= dmeta) rapido(db.meusPontos(p.id), []).then(log => { const el = $('#desaf'); const d = log.find(l => l.motivo === 'desafio' && (l.ref === mesLocal() || mesLocal(l.created_at) === mesLocal())); if (el && d) el.textContent = t('Batido! +{n} pts', { n: d.pontos }); });
   if ($('#desc')) $('#desc').onclick = async () => { if (await perguntar(t('Descartar treino?'), t('O que você marcou nesse treino vai ser apagado.'), t('Descartar'), t('Manter'))) { pararDescanso(); db.desfazerCargas(S.sessao?.chave); S.sessao = null; db.LS.del('sessao'); routes.home(); } };
@@ -287,26 +295,30 @@ function perguntaSemana(plano, sessoes) {
 async function registrarPresencial() {
   let foto = null, ontem = false; const ses = S.sessoes || await sessoesComFila(S.perfil).catch(() => []);
   overlay(`<div class="modal" id="m"><div class="box" style="padding:18px;display:flex;flex-direction:column;gap:12px"><h2>🤝 ${t('Treino presencial')}</h2>
-    <p class="muted">${t('Tira uma foto no treino (você na academia, com o Igor ou no aparelho) pra registrar. Vale como treino completo: +50 pontos e conta na sua meta da semana.')}</p>
+    <p class="muted">${t('Pra quem treina presencial com o Igor (plano misto). Tira uma foto no treino (você na academia, com o Igor ou no aparelho) pra registrar. Vale como treino completo: +50 pontos e conta na sua meta da semana.')}</p>
     <div class="row" style="gap:6px"><button class="pill big-pill on" id="pHoje">${t('Hoje')}</button><button class="pill big-pill" id="pOntem">${t('Ontem')}</button></div>
     <label class="btn ghost sm" style="display:flex;align-items:center;justify-content:center;gap:6px">📸 <span id="pRot">${t('Tirar foto')}</span><input type="file" accept="image/*" capture="environment" id="pFoto" style="display:none"></label>
     <img id="pPrev" alt="" style="display:none;width:100%;max-height:38vh;object-fit:cover;border-radius:12px">
     <p class="muted small" id="pAviso"></p>
     <button class="btn sm" id="pOk" disabled>${t('Registrar treino')}</button><button class="btn ghost sm" id="pX">${t('Cancelar')}</button></div></div>`);
-  const aviso = () => { const d = new Date(Date.now() - (ontem ? 86400e3 : 0)), ja = ses.some(x => x.titulo === 'Treino com o Igor' && x.finalizada_em && diaLocal(x.finalizada_em) === diaLocal(d)); $('#pAviso').textContent = ja ? (ontem ? t('Você já registrou um treino presencial ontem.') : t('Você já registrou um treino presencial hoje.')) : ''; $('#pOk').disabled = !foto || ja; };
+  const aviso = () => { const d = new Date(Date.now() - (ontem ? 86400e3 : 0)), ja = ses.some(x => x.titulo === 'Treino com o Igor' && x.finalizada_em && diaLocal(x.finalizada_em) === diaLocal(d)); $('#pAviso').textContent = ja ? (ontem ? t('Você já registrou um treino presencial ontem.') : t('Você já registrou um treino presencial hoje.')) : !foto ? t('Primeiro tira a foto (botão acima): aí o Registrar acende.') : ''; $('#pOk').disabled = !foto || ja; };
   $('#pHoje').onclick = () => { ontem = false; $('#pHoje').classList.add('on'); $('#pOntem').classList.remove('on'); aviso(); };
   $('#pOntem').onclick = () => { ontem = true; $('#pOntem').classList.add('on'); $('#pHoje').classList.remove('on'); aviso(); };
   $('#pX').onclick = closeOverlay;
   $('#pFoto').onchange = async ev => { const f = ev.target.files?.[0]; if (!f) return; try { foto = await comprimir(f); $('#pPrev').src = URL.createObjectURL(foto); $('#pPrev').style.display = 'block'; $('#pRot').textContent = t('Trocar foto'); } catch { foto = null; $('#pAviso').textContent = t('Essa foto não abriu aqui. Tenta tirar outra.'); } aviso(); };
   aviso();
   $('#pOk').onclick = async () => {
-    if (navigator.onLine === false) { $('#pAviso').textContent = t('Precisa de internet pra enviar a foto. Tenta de novo quando tiver sinal.'); return; }
     const b = $('#pOk'); b.disabled = true; b.textContent = t('Enviando…');
     const quando = ontem ? new Date(Date.now() - 86400e3) : new Date();
-    try { await comLimite(db.registrarPresencial(S.perfil.id, foto, quando), 30000); }
-    catch { b.disabled = false; b.textContent = t('Registrar treino'); $('#pAviso').textContent = t('Não consegui enviar agora. Confere a internet e tenta de novo.'); return; }
+    // Sem sinal na academia: a foto fica guardada no celular e vai sozinha quando a internet voltar (antes perdia a foto e o dia)
+    const guarda = async () => { const uid = 'pr' + Date.now(); await idb('readwrite', st => st.put(foto, uid)); novaFila({ tipo: 'presencial', idb: uid, quando: quando.toISOString() }); };
+    let fila = false;
+    if (navigator.onLine === false) { try { await guarda(); fila = true; } catch { b.disabled = false; b.textContent = t('Registrar treino'); $('#pAviso').textContent = t('Precisa de internet pra enviar a foto. Tenta de novo quando tiver sinal.'); return; } }
+    else try { await comLimite(db.registrarPresencial(S.perfil.id, foto, quando), 30000); }
+    catch (er) { if (erroDeRede(er)) { try { await guarda(); fila = true; } catch {} } if (!fila) { b.disabled = false; b.textContent = t('Registrar treino'); $('#pAviso').textContent = t('Não consegui enviar agora. Confere a internet e tenta de novo.'); return; } }
     closeOverlay(); S.sessoes = null;
-    go('card', JSON.stringify({ presencial: true, titulo: 'Treino com o Igor', min: 60, seg: 3600, ex: 0, series: 0, total: 0, completo: true, quando: quando.toISOString() }));
+    go('card', JSON.stringify({ presencial: true, titulo: 'Treino com o Igor', min: 60, seg: 3600, ex: 0, series: 0, total: 0, completo: true, quando: quando.toISOString(), ...(fila ? { pontos: false } : {}) }));
+    if (fila) toast(t('Sem sinal agora: a foto ficou guardada no celular. Envio sozinha quando a internet voltar.'));
   };
 }
 routes.treino = async (letra) => {
@@ -317,7 +329,7 @@ routes.treino = async (letra) => {
   const tr = plano.treinos.find(x => x.letra === letra) || plano.treinos[0];
   if (rotaAtual === 'treino' && argAtual !== tr.letra) { argAtual = tr.letra; history.replaceState({ name: 'treino', arg: tr.letra }, '', '#treino'); }
   // Versão express (~25 min): mesmos exercícios, menos séries e descanso mais curto, sem o cardio do fim. Lembrada só no dia (amanhã volta o Completo).
-  const expr = expressHoje(), exs = expr ? expressDe(tr.exercicios) : tr.exercicios;
+  const expr = S.sessao && S.sessao.treino_id && S.sessao.treino_id === tr.id ? !!S.sessao.express : expressHoje(), exs = expr ? expressDe(tr.exercicios) : tr.exercicios; // pausado à noite e aberto de manhã: segue a versão do treino pausado (antes voltava pro Completo)
   const dur = expr ? Math.max(15, Math.round((tr.duracao_min || 40) * 0.6 / 5) * 5) : (tr.duracao_min || 40);
   // Plano com fim: mostra até quando vale ("até 1/11"); senão o mês
   const mes = plano.fim ? t('até {d}', { d: dataLocal(plano.fim + 'T12:00', { day: 'numeric', month: 'numeric' }) }) : dataLocal(plano.mes + 'T12:00', { month: 'long' });
@@ -326,7 +338,7 @@ routes.treino = async (letra) => {
   <div class="hscroll" style="gap:6px">${plano.treinos.map(x => `<button class="pill big-pill ${x.letra === tr.letra ? 'on' : ''}" style="flex-shrink:0;white-space:nowrap" data-go="treino" data-arg="${esc(x.letra)}">${t('Treino {l}', { l: esc(x.letra) })}</button>`).join('')}</div>
   <div><h1>${t('Treino {l}', { l: esc(tr.letra) })}</h1><p class="muted">${esc(tc(tr.nome))} · ${tp(exs.length, '{n} exercício', '{n} exercícios')} · ~${t('{n} min', { n: dur })}${kcalTxt(K.kcalTreino(S.perfil, exs, dur, { express: expr }))}</p>${K.faltaDado(S.perfil) ? `<button class="back small" id="kcalDado" style="color:var(--accent);text-decoration:underline;margin-top:2px">${t('Ver quantas kcal você gasta: completa peso, altura e nascimento')}</button>` : ''}<div class="versao" role="group" aria-label="${t('Versão do treino')}"><button class="${expr ? '' : 'on'}" data-ver="0">${t('Completo')} <small>~${t('{n} min', { n: tr.duracao_min || 40 })}</small></button><button class="${expr ? 'on' : ''}" data-ver="1">⚡ ${t('Express')} <small>~${t('{n} min', { n: Math.max(15, Math.round((tr.duracao_min || 40) * 0.6 / 5) * 5) })}</small></button></div>${expr ? `<p class="small mt" style="color:var(--accent)">${t('Express: mesmos exercícios, menos séries e descanso mais curto. Pra dia corrido, sem culpa.')}</p>` : ''}<p class="muted small mt">${t('Toca no nome do exercício pra ver como fazer e suas cargas.')}</p>${semPend ? `<p class="small mt" style="color:var(--accent)">${t('Semana nova: o treino que você iniciar aqui vira o começo da sua semana.')}</p>` : ''}</div>
   ${plano.obs ? `<div class="card" style="padding:10px 14px"><p class="muted"><b style="color:var(--fg)">${t('Do Igor:')}</b> ${esc(tlivre(plano.obs))}</p></div>` : ''}
-  <div>${exs.map((e, j) => `<div class="ex"><div class="n">${e.ordem}</div><button class="t" data-ficha="${j}"><b>${esc(tc(e.nome))}</b><span>${e.series > 1 ? t('{n} séries ×', { n: e.series }) + ' ' : ''}${esc(tc(e.reps))}${e.descanso_s ? ' · ' + t('descanso {n}s', { n: e.descanso_s }) : ''}${e.biset_com ? ' · <b style="color:var(--accent);display:inline;font-size:0.8125rem">' + t('bi-set com o {n} (no treino: A1 + A2)', { n: e.biset_com }) + '</b>' : ''}${tecnicaDe(e) ? `<span class="tecnica mini">⚡ ${esc(tc(tecnicaDe(e)))}</span>` : ''}${e.aq ? `<span class="tecnica mini">↻ ${t('Série de reconhecimento antes: {n} reps leves ({s}s de descanso)', { n: esc(e.aq), s: 45 })}</span>` : ''}</span>${explicaReps(e.reps) || e.biset_com || ehHiit(e) ? `<span class="explica">${esc([explicaReps(e.reps), e.biset_com ? t('Bi-set = 2 exercícios seguidos, sem descanso entre eles.') : '', ehHiit(e) ? t(/casa/.test(S.perfil?.local_treino || '') ? HIIT_CASA : HIIT_TXT) : ''].filter(Boolean).join(' '))}</span>` : ''}<span class="ult" data-n="${esc(e.nome)}"></span></button>${e.video_url ? `<button class="play" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url)}" data-dica="${esc(e.dica || '')}" aria-label="${t('Ver vídeo')}"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></button>` : `<button class="play info" data-ficha="${j}" aria-label="${t('Como fazer')}">i</button>`}</div>`).join('')}</div>
+  <div>${exs.map((e, j) => `<div class="ex"><div class="n">${e.ordem}</div><button class="t" data-ficha="${j}"><b>${esc(tc(e.nome))}</b><span>${e.series > 1 ? t('{n} séries ×', { n: e.series }) + ' ' : ''}${esc(tc(e.reps))}${(pj => pj > j ? '' /* 1º do bi-set: emenda direto (o "bi-set com o N" já diz) */ : e.descanso_s ? ' · ' + (pj >= 0 ? t('descanso {n}s depois do par', { n: e.descanso_s }) : t('descanso {n}s', { n: e.descanso_s })) : '')(exs.findIndex((x, q) => q !== j && x.ordem != null && (e.biset_com === x.ordem || x.biset_com === e.ordem)))}${e.biset_com ? ' · <b style="color:var(--accent);display:inline;font-size:0.8125rem">' + t('bi-set com o {n} (no treino: A1 + A2)', { n: e.biset_com }) + '</b>' : ''}${tecnicaDe(e) ? `<span class="tecnica mini">⚡ ${esc(tc(tecnicaDe(e)))}</span>` : ''}${e.aq ? `<span class="tecnica mini">↻ ${t('Série de reconhecimento antes: {n} reps leves ({s}s de descanso)', { n: esc(e.aq), s: 45 })}</span>` : ''}</span>${explicaReps(e.reps) || e.biset_com || ehHiit(e) ? `<span class="explica">${esc([explicaReps(e.reps), e.biset_com ? t('Bi-set = 2 exercícios seguidos, sem descanso entre eles.') : '', ehHiit(e) ? t(/casa/.test(S.perfil?.local_treino || '') ? HIIT_CASA : HIIT_TXT) : ''].filter(Boolean).join(' '))}</span>` : ''}<span class="ult" data-n="${esc(e.nome)}"></span></button>${e.video_url ? `<button class="play" data-vid="${esc(e.nome)}" data-url="${esc(e.video_url)}" data-dica="${esc(e.dica || '')}" aria-label="${t('Ver vídeo')}"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></button>` : `<button class="play info" data-ficha="${j}" aria-label="${t('Como fazer')}">i</button>`}</div>`).join('')}</div>
   <div class="cta">${S.sessao ? `<button class="btn" data-go="sessao">▶ ${t('Continuar {x}', { x: esc(nomeTreino(S.sessao.titulo).replace(/^(Hyrox|Spinning|Programa)\s*·.*$/, '$1')) })} (${contaObr(S.sessao).a}/${contaObr(S.sessao).b})</button><button class="btn ghost sm" id="ini" style="width:100%">${S.sessao.titulo === `Treino ${tr.letra}` ? t('Recomeçar o Treino {l} do zero', { l: esc(tr.letra) }) : t('Iniciar o Treino {l}', { l: esc(tr.letra) })}</button>` : `<button class="btn" id="ini">▶ ${t('Iniciar treino')}</button>`}</div><button class="btn ghost" id="pdf">📄 ${t('Baixar treino em PDF')}</button><button class="card row" id="presencial" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><span style="font-size:1.5rem">🤝</span><span style="flex:1"><b style="font-size:0.9375rem">${t('Treinou presencial com o Igor?')}</b><span class="muted" style="display:block">${t('Registra aqui com uma foto: conta como treino da semana.')}</span></span></button><p class="muted center small">${t('Esse treino fica salvo no celular e abre mesmo sem sinal. Vídeo e o 1º PDF precisam de internet.')}</p></div>`, 'treino');
   // Última carga de cada exercício: mostra o que tem no celular na hora e atualiza com o banco em segundo plano.
   const mostraUlt = (nome, u) => { const el = $$('.ult').find(x => x.dataset.n === nome); if (el && u?.kg) el.innerHTML = `${t('Última:')} <b>${dec(u.kg)} kg</b>${u.reps ? ' × ' + u.reps : ''}`; };
@@ -426,6 +438,7 @@ routes.assistente = async (arg) => {
   if (Date.now() - db.LS.get('chatEm', 0) > 5 * 60000 && !db.LS.get('chatPend', null)) rapido(db.assistente.historico(S.perfil.id), null, 8000).then(h => { if (h && !db.LS.get('chatPend', null)) { db.LS.set('chat', h); db.LS.set('chatEm', Date.now()); mostra(); } });
   const tx = $('#tx'); const ajusta = () => { tx.style.height = 'auto'; tx.style.height = Math.min(innerHeight * 0.4, tx.scrollHeight) + 'px'; };
   tx.oninput = () => { ajusta(); db.LS.set('chatRasc', tx.value); }; ajusta();
+  if (db.LS.get('chatOff') && db.LS.get('chatRasc', '') && navigator.onLine !== false) setTimeout(() => { if (rotaAtual === 'assistente' && $('#env')) $('#env').click(); }, 700); // pergunta feita sem sinal: sai sozinha quando ela volta aqui com sinal
   if (a.pergunta && !a.enviar) { tx.focus(); tx.setSelectionRange(tx.value.length, tx.value.length); }
   tx.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } };
   $('#env').onclick = () => enviar();
@@ -437,12 +450,12 @@ routes.assistente = async (arg) => {
     if (pend0 && !pend0.falhou) return toast(t('Espera a resposta da anterior chegar 🙂'));
     if (restHoje() === 0) return;
     if (!navigator.onLine) {
-      if (rascunhoAntes == null) db.LS.set('chatRasc', texto); else tx.value = rascunhoAntes;
+      if (rascunhoAntes == null) { db.LS.set('chatRasc', texto); db.LS.set('chatOff', 1); } else tx.value = rascunhoAntes;
       ofertaCardio = CARDIO_RX.test(texto) || !!a.cardio; mostra();
-      return toast(t('Sem internet: sua pergunta ficou guardada aqui. Quando o sinal voltar, toca em ➤.'), true);
+      return toast(t('Sem internet: sua pergunta ficou guardada aqui. Quando o sinal voltar, eu mando.'), true);
     }
     ofertaCardio = false; lento = false;
-    if (String(db.LS.get('chatRasc', '')).trim() === texto) db.LS.del('chatRasc'); else if (rascunhoAntes) db.LS.set('chatRasc', rascunhoAntes);
+    db.LS.del('chatOff'); if (String(db.LS.get('chatRasc', '')).trim() === texto) db.LS.del('chatRasc'); else if (rascunhoAntes) db.LS.set('chatRasc', rascunhoAntes);
     tx.value = rascunhoAntes != null ? rascunhoAntes : ''; ajusta();
     db.LS.set('chatPend', { texto, em: Date.now() }); mostra();
     const ctx = a.contexto; a.contexto = null; a.cardio = false;
@@ -475,18 +488,18 @@ routes.assistente = async (arg) => {
 routes.videos = async () => {
   const [plano, programas] = await Promise.all([S.plano || rapido(db.planoAtual(S.perfil.id), db.LS.get('plano')), S.programas || rapido(db.programas(), db.LS.get('programas', []))]);
   const mapa = new Map();
-  const add = (e, onde) => { if (!e?.nome) return; const k = e.nome.trim().toLowerCase(); const a = mapa.get(k) || { nome: e.nome, video_url: null, dica: null, onde: new Set(), ondeT: new Set() }; a.video_url = a.video_url || e.video_url || null; a.dica = a.dica || e.dica || null; a.onde.add(onde[0]); a.ondeT.add(onde[1]); mapa.set(k, a); };
+  const add = (e, onde) => { if (!e?.nome) return; const k = e.nome.trim().toLowerCase(); const a = mapa.get(k) || { nome: e.nome, video_url: null, dica: null, onde: new Set(), ondeT: new Set() }; a.video_url = a.video_url || e.video_url || videoDe(e.nome) || animDe(e.nome) || null; a.dica = a.dica || e.dica || null; a.onde.add(onde[0]); a.ondeT.add(onde[1]); mapa.set(k, a); };
   // onde = [português pra busca, rótulo no idioma dela]
   (plano?.treinos || []).forEach(t => t.exercicios.forEach(e => { add(e, [T('Treino {l}', { l: t.letra }) + ' · ' + t.nome, T('Treino {l}', { l: t.letra }) + ' · ' + tc(t.nome)]); if (e.alternativa) add({ nome: e.alternativa }, [T('troca do {x}', { x: e.nome }), T('troca do {x}', { x: tc(e.nome) })]); }));
   (programas || []).forEach(pr => (pr.programa_treinos || []).forEach(t => (t.exercicios || []).forEach(e => add(e, [pr.titulo, tc(pr.titulo)]))));
   const todos = [...mapa.values()].sort((a, b) => tc(a.nome).localeCompare(tc(b.nome), loc())); // ordem do nome que ela lê
   const ehCardio = x => /hiit|cardio/i.test(x.nome), lista = todos.filter(x => !ehCardio(x)); // cardio só aparece buscando
   // Hyrox (programa no próprio app): os exercícios aparecem buscando ("wall ball", "remo", "hyrox")
-  const H = await import('./hyrox.js').catch(() => null), hy = new Map(); if (H?.TODOS) Object.values(H.TODOS).flat(2).forEach(tr => H.montar(tr.blocos).forEach(e => { const k = e.nome.trim().toLowerCase(); if (!mapa.has(k) && !hy.has(k)) hy.set(k, { nome: e.nome, video_url: null, dica: e.dica || null, onde: new Set(['Hyrox']), ondeT: new Set([t('Hyrox')]) }); if (e.alternativa && !mapa.has(e.alternativa.toLowerCase()) && !hy.has(e.alternativa.toLowerCase())) hy.set(e.alternativa.toLowerCase(), { nome: e.alternativa, video_url: null, dica: null, onde: new Set(['Hyrox']), ondeT: new Set([t('Hyrox')]) }); }));
+  const H = await import('./hyrox.js').catch(() => null), hy = new Map(); if (H?.TODOS) Object.values(H.TODOS).flat(2).forEach(tr => H.montar(tr.blocos).forEach(e => { const k = e.nome.trim().toLowerCase(); if (!mapa.has(k) && !hy.has(k)) hy.set(k, { nome: e.nome, video_url: videoDe(e.nome) || animDe(e.nome) || null, dica: e.dica || null, onde: new Set(['Hyrox']), ondeT: new Set([t('Hyrox')]) }); if (e.alternativa && !mapa.has(e.alternativa.toLowerCase()) && !hy.has(e.alternativa.toLowerCase())) hy.set(e.alternativa.toLowerCase(), { nome: e.alternativa, video_url: null, dica: null, onde: new Set(['Hyrox']), ondeT: new Set([t('Hyrox')]) }); }));
   if (rotaAtual !== 'videos') return;
-  const comVideo = lista.filter(x => x.video_url).length;
+  const comVideo = lista.filter(x => x.video_url).length, doIgor = lista.filter(x => x.video_url && !ehAnim(x.video_url)).length; // animação do boneco não é vídeo do Igor
   render(`<div class="view fx"><div class="topbar"><h2>${t('Vídeos')}</h2><span class="pill">${tp(lista.length, '{n} exercício', '{n} exercícios')}</span></div>
-  ${navigator.onLine === false ? `<div class="card" style="padding:10px 14px"><p class="muted">📶 ${t('Sem internet agora: os vídeos precisam de sinal. A dica de cada exercício abre mesmo assim.')}</p></div>` : ''}${!comVideo ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:0.9375rem">🎬 ${t('Os vídeos do Igor estão sendo gravados')}</b><p class="muted">${t('Enquanto isso, toca no exercício pra ler a dica dele de como fazer.')}</p></div>` : `<p class="muted">${t('Como fazer cada exercício, com o Igor. Dá pra assistir antes de ir pra academia.')}${comVideo < lista.length ? ' ' + t('<b style="color:var(--fg)">{n} já gravados</b>, o resto chegando.', { n: comVideo }) : ''}</p>`}
+  ${navigator.onLine === false ? `<div class="card" style="padding:10px 14px"><p class="muted">📶 ${t('Sem internet agora: os vídeos precisam de sinal. A dica de cada exercício abre mesmo assim.')}</p></div>` : ''}${!comVideo ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:0.9375rem">🎬 ${t('Os vídeos do Igor estão sendo gravados')}</b><p class="muted">${t('Enquanto isso, toca no exercício pra ler a dica dele de como fazer.')}</p></div>` : `<p class="muted">${t('Como fazer cada exercício, com o Igor. Dá pra assistir antes de ir pra academia.')}${' ' + t('<b style="color:var(--fg)">{a} com vídeo do Igor</b> e {b} com animação.', { a: doIgor, b: comVideo - doIgor })}${comVideo < lista.length ? ' ' + t('O resto chegando.') : ''}</p>`}
   <input class="input" id="busca" type="search" placeholder="${t('Buscar exercício')}" aria-label="${t('Buscar: perna, bumbum, barriga, casa, cardio...')}" autocomplete="off">
   <div id="lv"></div></div>`, 'videos');
   const norm = x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -515,7 +528,7 @@ routes.videos = async () => {
 routes.lib = async () => {
   const programas = S.programas || await rapido(db.programas(), db.LS.get('programas', []));
   render(`<div class="view fx"><div class="topbar"><h2>${t('Programas extras')}</h2></div><p class="muted">${t('Liberado pra todas as alunas, além do seu treino.')}</p>
-  <div class="grid2">${emCasa() ? '' : cardSpin() + cardHyrox()}${programas.map(pr => `<button class="lib" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), (Math.min(innerWidth, 480) - 42) / 2 - 24, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin() + cardHyrox() : ''}</div></div>`, 'home');
+  <div class="grid2">${emCasa() ? '' : cardSpin() + cardHyrox()}${ordemProg(programas).map(pr => `<button class="lib" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), (Math.min(innerWidth, 480) - 42) / 2 - 24, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin() + cardHyrox() : ''}</div></div>`, 'home');
 };
 routes.programa = async (slug) => {
   const programas = S.programas || await rapido(db.programas(), db.LS.get('programas', [])); const pr = programas.find(p => p.slug === slug); if (!pr) return go('lib');
@@ -530,7 +543,7 @@ routes.programa = async (slug) => {
 };
 
 // Exercícios de um treino de programa extra, com os mesmos padrões no app, na lista e no PDF
-const exsProg = (pr, t) => (t.exercicios || []).map((e, i) => ({ ordem: i + 1, series: 3, reps: '12', descanso_s: 45, ...(/casa|mobilidade|abd/i.test(pr.slug) ? { carga: false } : {}), ...e }));
+const exsProg = (pr, t) => (t.exercicios || []).map((e, i) => ({ ordem: i + 1, series: 3, reps: '12', descanso_s: 45, ...(/casa|mobilidade|abd/i.test(pr.slug) ? { carga: false } : {}), ...e, video_url: e.video_url || videoDe(e.nome) || animDe(e.nome) || null })); // animação que existe aparece também nos programas (antes "vídeo em gravação")
 // SESSÃO -------------------------------------------------------------------------
 // Tudo da sessão fica salvo no celular a cada toque: se o app fechar, ela continua de onde parou.
 const tempo = r => { const m = String(r || '').match(/(\d+(?:[.,]\d+)?)\s*(s|seg|min)\b/i); return m ? Math.round(parseFloat(m[1].replace(',', '.')) * (/min/i.test(m[2]) ? 60 : 1)) : 0; };
@@ -572,14 +585,14 @@ const temDrop = e => !!e && !tempo(e.reps) && !semCarga(e) && (/drop.?set|\bdrop
 // Reps da série: com drop vale só a 1ª parte ("12+4+4" com as quedas anotadas = 12; as quedas vão à parte). Sem drop, "12+4+4" soma.
 const repsSerie = (st, comDrop) => { const v = String(st?.reps ?? ''); if (!comDrop) return repsNum(v); const m = v.match(/\d+/); return m ? +m[0] : null; };
 // ✓ numa série com drop: queda com kg e sem reps ganha as reps prescritas; queda vazia ganha a carga da última vez
-function completaDrops(e, st) { if (!temDrop(e) || !st.drops?.length) return; const pr = dropsPresc(e); st.drops.forEach((d, j) => { const ant = e.ultima?.drops?.[j]; if (d.kg === '' && d.reps === '' && ant?.kg != null) d.kg = String(ant.kg); if (d.kg !== '' && d.reps === '' && (pr[j] ?? pr[pr.length - 1])) d.reps = String(pr[j] ?? pr[pr.length - 1]); }); }
+function completaDrops(e, st, antHoje) { if (!temDrop(e) || !st.drops?.length) return; const pr = dropsPresc(e); st.drops.forEach((d, j) => { const h = antHoje?.drops?.[j], ant = h && h.kg !== '' ? { kg: h.kg } : e.ultima?.drops?.[j]; /* série 2 só no ✓: as quedas seguem as da série anterior de hoje (antes iam vazias) */ if (d.kg === '' && d.reps === '' && ant?.kg != null) d.kg = String(ant.kg); if (d.kg !== '' && d.reps === '' && (pr[j] ?? pr[pr.length - 1])) d.reps = String(pr[j] ?? pr[pr.length - 1]); }); }
 const dropsDe = st => (st?.drops || []).filter(d => d.kg !== '' || d.reps !== '').map(d => ({ kg: d.kg === '' ? null : numero(d.kg), reps: d.reps === '' ? null : repsNum(d.reps) }));
 // "40×12 → 30×8 → 20×6" (a 1ª carga é a que vale pro recorde)
 const fmtDrops = (kg, reps, drops) => [`${kg != null ? dec(kg) : '–'}×${reps ?? '–'}`, ...(drops || []).map(d => `${d.kg != null ? dec(d.kg) : '–'}×${d.reps ?? '–'}`)].join(' → ');
 const intervalosDe = e => { const m = `${e.dica || ''} ${e.reps || ''}`.match(/(\d+)\s*s\w*\s*(?:forte|r[aá]pido|intenso)\s*\/\s*(\d+)\s*s\w*\s*(?:leve|devagar|lento)/i); return m ? [+m[1], +m[2]] : null; };
 const durCurta = sec => sec < 60 ? t('<1 min') : t('{n} min', { n: Math.round(sec / 60) }); // mesma duração no card, no histórico e no painel
 const durTxt = sec => sec >= 60 ? t('{n} min', { n: Math.round(sec / 60) }) : sec + 's';
-const salvaSessao = () => { if (S.sessao) { S.sessao.ult = Date.now(); db.LS.set('sessao', S.sessao); } for (const k in fresco) if (k.startsWith('ult@')) delete fresco[k]; }; // carga nova: a "Última" vem de novo do banco
+const salvaSessao = () => { if (S.sessao) { S.sessao.ult = Date.now(); if (!S.sessao.toqueEm || Date.now() - ultToque < 15000) S.sessao.toqueEm = Date.now(); /* último uso de verdade (salvamento automático do fim do descanso não conta: app congelado 13 h não parece "agora") */ db.LS.set('sessao', S.sessao); } for (const k in fresco) if (k.startsWith('ult@')) delete fresco[k]; }; // carga nova: a "Última" vem de novo do banco
 // Saiu da tela do treino (pausar, aba, voltar): o relógio do treino para e o descanso é encerrado.
 function sairDaSessao() {
   clearInterval(clockIv); soltarTela();
@@ -641,7 +654,9 @@ async function iniciarSessao({ titulo, treino_id = null, programa_treino_id = nu
     });
   } finally { iniciando = false; }
 }
-let clockIv, wake, ultToque = 0; const INATIVO = 10 * 60000;
+let clockIv, wake, ultToque = 0, ultMarca = { em: 0, i: -1 }; const INATIVO = 10 * 60000;
+// Bi-set: exercício da última série marcada no passo (o "‹ Corrigir" abre nele, não sempre no A1)
+const ultimoMarcado = (s, g) => g.reduce((a, x) => Math.max(0, ...s.sets[x].map(z => z.feitaEm || 0)) > Math.max(0, ...s.sets[a].map(z => z.feitaEm || 0)) ? x : a, g[0]);
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { ultToque = Date.now(); }, { capture: true, passive: true }));
 async function manterTelaAcesa() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch {} }
 function soltarTela() { try { wake?.release(); } catch {} wake = null; }
@@ -656,8 +671,8 @@ function descontaFora(s) {
 }
 document.addEventListener('visibilitychange', () => {
   const s = S.sessao; if (!s || !(rotaAtual === 'sessao' || (rotaAtual === 'assistente' && duvidaNoTreino))) return; // "? Dúvida" no meio do treino também conta como treino aberto
-  // Celular no bolso no descanso também é treino: conta até o fim do descanso + 3 min (o tempo da série)
-  if (document.visibilityState === 'hidden') { if (!s.ocultoEm) s.ocultoEm = Date.now(); s.trabFim = trabalhoFim() || (s.descansoAte ? s.descansoAte + 3 * 60000 : null); salvaSessao(); return; }
+  // Celular no bolso no descanso também é treino: conta até o fim do descanso + 2 min (o tempo da série; 3 min contava quase tudo de 5 min fora)
+  if (document.visibilityState === 'hidden') { if (!s.ocultoEm) s.ocultoEm = Date.now(); s.trabFim = trabalhoFim() || (s.descansoAte ? s.descansoAte + 2 * 60000 : null); salvaSessao(); return; }
   manterTelaAcesa(); ultToque = Date.now(); // voltou pro app: o tempo fora já foi descontado, não vira "10 min parado"
   const gap = descontaFora(s); if (gap >= 60000) { toast(t('Você ficou fora: tirei {n} min de tempo parado do relógio do treino.', { n: Math.round(gap / 60000) })); const c = $('#clock'); if (c) c.textContent = fmtMin(Math.floor((Date.now() - s.inicio) / 1000)); }
 });
@@ -700,9 +715,14 @@ async function descanso(seg, txt) {
 // Nº da série no treino completo (no Express a 2ª série da pirâmide 12/8 é a 3ª do completo)
 const serieN = (e, k) => (e.serieIdx?.[k] ?? k) + 1;
 function marcarFeita(s, i, k) { const st = s.sets[i][k], e = s.exs[i];
-  if (!tempo(e.reps)) { if (!semCarga(e) && st.kg === '') { const sug = sugKg(s, i, k); if (sug != null) st.kg = String(sug); } if (st.reps === '') { const r = repsAlvo(e.reps, k); if (r) st.reps = String(r); } completaDrops(e, st); } /* o que aparece é o que fica salvo */ st.done = true; st.feitaEm = Date.now(); st.nome = e.nome; st.eid = e.nome === e.original ? (e.id || null) : null; }
+  if (!tempo(e.reps)) { if (!semCarga(e) && st.kg === '') { const sug = sugKg(s, i, k); if (sug != null) st.kg = String(sug); } if (st.reps === '') { const r = repsAlvo(e.reps, k); if (r) st.reps = String(r); } completaDrops(e, st, s.sets[i].slice(0, k).reverse().find(x => x.done && x.drops?.length)); } /* o que aparece é o que fica salvo */ st.done = true; st.feitaEm = Date.now(); st.nome = e.nome; st.eid = e.nome === e.original ? (e.id || null) : null; }
 // Enter/"próximo" do teclado: segue a ordem em que ela faz (no bi-set A1 s1 → A2 s1 → A1 s2; quedas do drop logo depois da série)
-function proxCampo(ev) { if (ev.key !== 'Enter') return; ev.preventDefault(); const inp = ev.currentTarget || ev.target, todos = $$('.set input, .dl input').map((x, d) => ({ x, d, k: +(x.closest('[data-k]')?.dataset.k ?? 0) })).sort((a, b) => a.k - b.k || a.d - b.d).map(o => o.x), j = todos.indexOf(inp); if (todos[j + 1]) todos[j + 1].focus(); else inp.blur(); }
+function proxCampo(ev) { if (ev.key !== 'Enter') return; ev.preventDefault(); const inp = ev.currentTarget || ev.target, todos = $$('.set input, .dl input').map((x, d) => ({ x, d, k: +(x.closest('[data-k]')?.dataset.k ?? 0) })).sort((a, b) => a.k - b.k || a.d - b.d).map(o => o.x), j = todos.indexOf(inp);
+  // Bi-set vai e volta (um exercício por vez na tela): acabou a série do A1 → vai pro A2 na mesma série; do A2 → volta pro A1 na seguinte
+  const s = S.sessao, el = inp.closest('[data-i][data-k]'), i = +el?.dataset.i, k = +el?.dataset.k, passo = s?.passos[s.p] || [], nk = todos[j + 1] ? +(todos[j + 1].closest('[data-k]')?.dataset.k ?? 0) : -1;
+  if (s && passo.length > 1 && el && passo.includes(i) && nk !== k) { const n = passo.indexOf(i), alvo = n < passo.length - 1 ? [passo[n + 1], k] : [passo[0], k + 1];
+    if (s.sets[alvo[0]]?.[alvo[1]]) { s.biVer = alvo[0]; salvaSessao(); routes.sessao(); const x = $(`.set[data-i="${alvo[0]}"][data-k="${alvo[1]}"] input`); if (x) { x.focus(); x.scrollIntoView({ block: 'center' }); } return; } }
+  if (todos[j + 1]) todos[j + 1].focus(); else inp.blur(); }
 routes.sessao = () => {
   const s = S.sessao; if (!s) return go('home');
   const voltouDaPausa = !!s.pausadoEm || s.descansoMini; if (s.pausadoEm) fecharToast(true); // "Pausei seu treino" some no Continuar // recarregou com o descanso em tela cheia: volta em tela cheia; minimizado ou voltando da pausa: minimizado
@@ -725,7 +745,9 @@ routes.sessao = () => {
     const botao = (k) => {
       const st = sets[k];
       if (t) return `<button class="rest tm" data-i="${i}" data-k="${k}">${st.done ? '✓ ' + (st.seg ? fmtMin(st.seg) : T('feito')) : s.trab?.i === i && s.trab?.k === k ? '⏱ ' + T('abrir') : lado ? `▶ ${T('{t} cada lado', { t: durTxt(t) })}` : `▶ ${fmtMin(t)}`}</button>`;
-      if (bi && !ultimoDoPar) return `<button class="rest" data-i="${i}" data-k="${k}" aria-label="${T('Série feita, vai pro A{n}', { n: n + 2 })}">${st.done ? '✓' : `✓ → A${n + 2}`}</button>`;
+      const falta = bi && !st.done ? [...passo.slice(n + 1), ...passo.slice(0, n)].find(x => s.sets[x][k] && !s.sets[x][k].done) : undefined; // o par dessa série que ainda falta
+      if (falta != null) return `<button class="rest" data-i="${i}" data-k="${k}" aria-label="${T('Série feita, vai pro A{n}', { n: passo.indexOf(falta) + 1 })}">✓ → A${passo.indexOf(falta) + 1}</button>`;
+      if (bi && !ultimoDoPar && st.done) return `<button class="rest" data-i="${i}" data-k="${k}">✓</button>`;
       return `<button class="rest" data-i="${i}" data-k="${k}" aria-label="${T('Série feita, iniciar descanso')}">${st.done ? '✓' : e.descanso_s ? `<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/></svg>${e.descanso_s}s` : '✓'}</button>`;
     };
     // Ver execução, Dúvida e "Senti dor" numa linha só, sempre à vista; no bi-set ficam logo abaixo das séries de cada exercício (as séries continuam na 1ª tela)
@@ -772,11 +794,11 @@ routes.sessao = () => {
   <div class="row between"><span class="muted">${esc(nomeCurto(s.titulo))}${s.express ? ' · ⚡ ' + t('Express') : ''}${bi ? ' · <span style="white-space:nowrap">' + (passo.length > 3 ? t('Circuito') : passo.length > 2 ? t('Tri-set') : t('Bi-set')) + '</span>' : ''}</span><span class="muted">${totalTxt(s)}</span></div>
   <div class="bar"><i style="width:${Math.min(100, obrigatorios(s).filter(i => completo(s, i)).length / Math.max(1, obrigatorios(s).length) * 100)}%"></i></div>
   <div class="passos" role="tablist" aria-label="${t('Ir direto pra um exercício')}">${s.passos.map((g, j) => `<button class="${j === s.p ? 'on' : ''} ${g.every(i => completo(s, i)) ? 'ok' : ''}" data-passo="${j}" aria-label="${esc(s.exs[g[0]].nome)}">${g.every(i => completo(s, i)) ? '✓' : g.every(i => opcional(s.exs[i])) ? '+' : g.every(i => s.exs[i].aq === true) ? 'R' : g.map(i => s.exs[i].ordem ?? j + 1).filter((v, x, a) => a.indexOf(v) === x).join('-')}</button>`).join('')}</div>
-  ${s.corrigir && s.corrigir.p !== s.p && s.passos[s.corrigir.p] && Date.now() - s.corrigir.em < 180000 ? `<button class="back small" id="corr" style="color:var(--accent);align-self:flex-start;min-height:40px">‹ ${t('Corrigir {x}', { x: esc(s.exs[s.passos[s.corrigir.p][0]].nome) })}</button>` : ''}
+  ${s.corrigir && s.corrigir.p !== s.p && s.passos[s.corrigir.p] && Date.now() - s.corrigir.em < 180000 ? `<button class="back small" id="corr" style="color:var(--accent);align-self:flex-start;min-height:40px">‹ ${t('Corrigir {x}', { x: esc(s.exs[ultimoMarcado(s, s.passos[s.corrigir.p])].nome) })}</button>` : ''}
   ${bi || (seriesFeitas(s) < 3 && !s.dicaOk) ? `<p class="restHint">${hint}</p>` : ''}
-  ${bi ? `<div class="bitabs" role="tablist" style="grid-template-columns:repeat(${passo.length},minmax(0,1fr))">${passo.map((i, n) => { const e = s.exs[i], f = s.sets[i].filter(x => x.done).length, tot = s.sets[i].length; return `<button class="bitab ${i === ver ? 'on' : ''} ${f >= tot ? 'ok' : ''}" role="tab" aria-selected="${i === ver}" data-biv="${i}"><span class="tag">A${n + 1}</span>${i === vez && i !== ver ? '<i class="vez" aria-hidden="true"></i>' : ''}<b>${esc(tc(e.nome))}</b><span class="muted">${f >= tot ? '✓ ' : ''}${T('{a} de {b} séries', { a: f, b: tot })}</span></button>`; }).join('')}</div>
-  <div class="bivista ${desliza ? 'desliza' : ''}">${bloco(ver, passo.indexOf(ver))}</div>
-  ${ver !== vez ? `<button class="btn ghost sm" data-biv="${vez}">‹ ${T('Voltar pro A{n}, que é a vez', { n: passo.indexOf(vez) + 1 })}</button>` : ''}` : bloco(passo[0], 0)}
+  ${bi ? `<div class="bitabs" role="tablist" style="grid-template-columns:repeat(${passo.length},minmax(0,1fr))">${passo.map((i, n) => { const e = s.exs[i], f = s.sets[i].filter(x => x.done).length, tot = s.sets[i].length; return `<button class="bitab ${i === ver ? 'on' : ''} ${f >= tot ? 'ok' : ''}" role="tab" aria-selected="${i === ver}" data-biv="${i}"><span class="tag">A${n + 1}</span>${i === vez && i !== ver ? `<i class="vez">${T('sua vez')}</i>` : ''}<b>${esc(tc(e.nome))}</b><span class="muted">${f >= tot ? '✓ ' : ''}${T('{a} de {b} séries', { a: f, b: tot })}</span></button>`; }).join('')}</div>
+  ${ver !== vez ? `<button class="btn ghost sm" data-biv="${vez}">‹ ${T('Voltar pro A{n}, que é a vez', { n: passo.indexOf(vez) + 1 })}</button>` : ''}
+  <div class="bivista ${desliza ? 'desliza' : ''}">${bloco(ver, passo.indexOf(ver))}</div>` : bloco(passo[0], 0)}
   <div class="card row between" style="margin-top:6px"><div><b style="font-size:0.9375rem">${passo.length > 3 ? t('Volta concluída?') : passo.length > 2 ? t('Tri-set concluído?') : bi ? t('Bi-set concluído?') : t('Exercício concluído?')}</b><p class="muted">${ultimo ? t('É o último: marca que eu fecho o treino.') : t('Marca que eu já puxo o próximo.')}</p></div><button class="sw ${ok ? 'on' : ''}" id="sw" aria-label="${t('Concluir')}"></button></div>
   ${ultimo ? `<button class="btn" id="fin">✓ ${t('Finalizar treino')}</button>` : ''}
   <div class="row" style="gap:8px">${s.p > 0 ? `<button class="btn ghost sm" id="prev" style="flex:1">‹ ${t('Anterior')}</button>` : ''}${!ultimo ? `<button class="btn ghost sm" id="pular" style="flex:1">${ok ? t('Seguir pro próximo') : t('Pular exercício')} ›</button>` : ''}</div>
@@ -798,12 +820,13 @@ routes.sessao = () => {
     s.sets[i][k][f] = inp.value;
     // carga digitada vale pras próximas séries ainda vazias (menos na pirâmide, que sobe a cada série)
     if (f === 'kg' && !piramide(s.exs[i].reps)) s.sets[i].forEach((st, j) => { if ((j > k && !st.done && !st.kgMan) || (j < k && st.done && st.kg === '')) { st.kg = inp.value; const x = $(`.set[data-i="${i}"][data-k="${j}"] input[data-f="kg"]`); if (x) x.value = inp.value; } }); // e preenche as anteriores já marcadas sem kg
-    if (f === 'kg') s.sets[i][k].kgMan = true;
+    if (f === 'kg') s.sets[i][k].kgMan = inp.value !== ''; // apagou o que digitou: não conta como "preenchida sem marcar"
     if (s.sets[i][k].done) guardaCargaDo(s, i); // corrigiu uma série já feita: a "Última" acompanha
     salvaSessao();
   });
   $$('.set input').forEach(inp => {
     inp.onfocus = () => setTimeout(() => { try { inp.select(); } catch {} }, 0); // tocou pra corrigir: substitui, não emenda (12 → 1122)
+    inp.addEventListener('pointerup', () => { if (document.activeElement === inp) setTimeout(() => { try { inp.select(); } catch {} }, 0); }); // tocou de novo com o teclado aberto (já em foco): também substitui
     inp.onkeydown = proxCampo;
   });
   $$('.dl input').forEach(inp => inp.addEventListener('keydown', proxCampo));
@@ -833,16 +856,22 @@ routes.sessao = () => {
       if (descansoAtivo() && s.descansoAte && fe >= Math.max(...Object.values(s.sets).flat().filter(x => x.done).map(x => x.feitaEm || 0), 0)) { pararDescanso(); s.descansoAte = null; }
       salvaSessao(); routes.sessao(); return toast(T('Série {n} desmarcada. Toca de novo pra marcar.', { n: k + 1 }));
     }
+    if (Date.now() - ultMarca.em < 450 && ultMarca.i !== i) return; // toque duplo: a tela deslizou pro A2 e o 2º toque cairia no ✓ dele
     const t = tempo(e.reps);
     if (!t) {
       // O que aparece no campo é o que fica salvo: sugestão vira o número de verdade (dá pra corrigir depois)
       if (!semCarga(e) && st.kg === '') { const sug = sugKg(s, i, k); if (sug != null) st.kg = String(sug); }
       if (st.reps === '') { const r = repsAlvo(e.reps, k); if (r) st.reps = String(r); }
-      completaDrops(e, st);
+      completaDrops(e, st, s.sets[i].slice(0, k).reverse().find(x => x.done && x.drops?.length));
       const v = cargaEstranha(s, i, k);
       if (v != null) {
         if (await perguntar(T('Confere a carga'), T('{v} kg na série {n}? Parece bem diferente do normal.', { v: dec(v), n: k + 1 }), T('Corrigir'), T('Tá certo')) !== false) return corrigirCarga(s, i, k); /* "Corrigir" em destaque: toque rápido não confirma o erro */
         if (S.sessao !== s) return; st.kgOk = true;
+      }
+      const rr = parseInt(String(st.reps).split('+')[0]), meta = repsAlvo(e.reps, k);
+      if (!distancia(e.reps) && rr > 0 && !st.repsOk && (rr > 100 || (meta && rr > Math.max(30, meta * 4)))) {
+        if (await perguntar(T('Confere as repetições'), T('{v} repetições na série {n}? Parece bem diferente do normal.', { v: rr, n: k + 1 }), T('Corrigir'), T('Tá certo')) !== false) { const x = $(`.set[data-i="${i}"][data-k="${k}"] input[data-f="reps"]`); if (x) { x.focus(); x.select(); } return; }
+        if (S.sessao !== s) return; st.repsOk = true;
       }
     }
     let parcial = 0;
@@ -859,14 +888,14 @@ routes.sessao = () => {
         if (ja !== true) { salvaSessao(); return ja === false ? tocar(i, k) : undefined; }
       } else if (fim?.parcial) parcial = fim.parcial; else if (fim !== true) { salvaSessao(); return; }
     }
-    marcarFeita(s, i, k); s.biVer = null; if (parcial) st.seg = parcial; salvaSessao();
+    marcarFeita(s, i, k); ultMarca = { em: Date.now(), i }; s.biVer = null; if (parcial) st.seg = parcial; salvaSessao();
     // Marcou série sem kg num exercício com carga: pergunta uma vez por exercício, na própria tela (não trava o descanso)
     if (!t && !semCarga(e) && e.aq !== true && st.kg === '' && !s.kgPerg?.[e.nome]) { s.kgPerg = { ...s.kgPerg, [e.nome]: { i, k } }; salvaSessao(); }
     if (parcial) toast(T('Registrei {t} de {x} ✓', { t: fmtMin(parcial), x: fmtMin(porLado(e.reps) ? t * 2 : t) }));
     if (rotaAtual !== 'sessao') return; // saiu do treino com o cardio rodando: os minutos ficam registrados, sem puxar ela de volta
     if (parcial && s.p === s.passos.length - 1) { routes.sessao(); return rolarProximo(); } // parou o cardio no meio do último exercício: fica na tela (ela decide se finaliza)
     const pos = fila.findIndex(([a, c]) => a === i && c === k), seguinte = fila.slice(pos + 1).find(([a, c]) => !s.sets[a][c].done && fila.slice(0, pos).every(([x, y]) => s.sets[x][y].done)) || fila.find(([a, c]) => !s.sets[a][c].done); // marcou fora de ordem (aparelho ocupado): a próxima é a 1ª que falta, não a que vem depois
-    const ultimoDoPar = !bi || passo.indexOf(i) === passo.length - 1;
+    const ultimoDoPar = !bi || passo.every(x => !s.sets[x][k] || s.sets[x][k].done); // descanso quando a rodada do par fecha (mesmo começando pelo A2)
     if (!seguinte && passo.every(x => s.sets[x].every(z => z.done))) {
       routes.sessao();
       const p0 = s.p;
@@ -892,6 +921,8 @@ routes.sessao = () => {
     if (e.alternativa) { e.trocadoDe = e.nome; e.nome = e.alternativa; e.alternativa = null; }
     else { e.alternativa = e.nome; e.nome = e.original; }
     e.ultima = cargaPorNome(db.LS.get('cargas', {}), e.nome); e.porSerie = null;
+    if (!('videoOrig' in e)) { e.videoOrig = e.video_url || null; e.dicaOrig = e.dica || null; } // vídeo e dica são do exercício: trocou, troca junto (antes mostrava o Smith no agachamento livre)
+    if (e.nome === e.original) { e.video_url = e.videoOrig; e.dica = e.dicaOrig; } else { e.video_url = videoDe(e.nome) || animDe(e.nome) || (S.plano?.treinos || []).flatMap(x => x.exercicios || []).find(x => x.nome === e.nome && x.video_url)?.video_url || null; e.dica = (S.plano?.treinos || []).flatMap(x => x.exercicios || []).find(x => x.nome === e.nome && x.dica)?.dica || null; }
     s.sets[i].forEach(st => { if (!st.done) { st.kg = ''; st.kgMan = false; } });
     salvaSessao(); routes.sessao(); window.scrollTo(0, 0); toast(e.nome === e.original ? t('Voltou pro original') : t('Trocado por {x} (só hoje)', { x: e.nome }), false, { curto: true }); // fica no título do exercício novo
     const nome = e.nome;
@@ -942,13 +973,13 @@ routes.sessao = () => {
   $$('[data-sempeso]').forEach(b => b.onclick = () => { const e = s.exs[+b.dataset.sempeso], vira = !semCarga(e); marcarSemPeso(e.nome, vira); if (vira) s.sets[+b.dataset.sempeso].forEach(st => { if (!st.done) st.kg = ''; }); salvaSessao(); routes.sessao(); });
   // Fez uma série a mais (ou a menos) que o planejado
   $$('[data-mais]').forEach(b => b.onclick = () => { const i0 = +b.dataset.mais, alvo = passo.includes(i0) && bi ? passo : [i0]; const n0 = s.sets[i0].length; alvo.forEach(i => { const l = s.sets[i]; if (l.length > n0) return; const u = l[l.length - 1]; l.push({ kg: u?.kg || '', reps: '', done: false }); delete s.feito[i]; }); salvaSessao(); routes.sessao(); }); // bi-set: a série a mais vale pro A1 e pro A2
-  $$('[data-menos]').forEach(b => b.onclick = () => { const i = +b.dataset.menos, l = s.sets[i]; if (l.length > 1 && !l[l.length - 1].done) { l.pop(); salvaSessao(); routes.sessao(); } });
+  $$('[data-menos]').forEach(b => b.onclick = () => { const i0 = +b.dataset.menos, n0 = s.sets[i0].length, alvo = bi && passo.includes(i0) ? passo : [i0]; let tirou = false; alvo.forEach(i => { const l = s.sets[i]; if (l.length === n0 && l.length > 1 && !l[l.length - 1].done) { l.pop(); tirou = true; } }); if (tirou) { salvaSessao(); routes.sessao(); } }); // bi-set: tira do A1 e do A2 juntos (igual ao + série)
   $$('[data-biv]').forEach(b => b.onclick = () => { const i = +b.dataset.biv; s.biVer = i === (fila.find(([a, c]) => !s.sets[a][c].done)?.[0] ?? passo[0]) ? null : i; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); });
   $$('[data-passo]').forEach(b => b.onclick = () => { const j = +b.dataset.passo; if (j === s.p) return; s.p = j; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); });
   if ($('#prev')) $('#prev').onclick = () => { s.p--; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
   if ($('#pular')) $('#pular').onclick = () => { s.p++; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
   $('#fim').onclick = confirmarFim;
-  if ($('#corr')) $('#corr').onclick = () => { s.p = s.corrigir.p; s.corrigir = null; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
+  if ($('#corr')) $('#corr').onclick = () => { s.p = s.corrigir.p; const g = s.passos[s.p]; s.biVer = g.length > 1 ? ultimoMarcado(s, g) : null; s.corrigir = null; salvaSessao(); routes.sessao(); window.scrollTo(0, 0); };
   $('#sair').onclick = () => { if (s.descansoAte && s.descansoAte > Date.now()) s.descansoResta = s.descansoAte - Date.now(); go('home'); toast(t('Treino pausado. O relógio parou, continua quando quiser.')); }; // pausa de verdade congela o descanso também
 };
 // Histórico de carga de um exercício (no treino, na lista do treino e em Evolução > Minhas cargas)
@@ -982,6 +1013,7 @@ async function abrirHistorico(nome, ex) {
 // Próxima série fora da tela (bi-set comprido): rola até ela, sem ela precisar procurar
 function rolarProximo() {
   const b = $('.rest.next'); if (!b) return; const r = b.getBoundingClientRect();
+  const ab = $('.bitabs'); if (ab) { const a = ab.getBoundingClientRect(); if (a.top < 60 || r.bottom > innerHeight - 100) window.scrollTo({ top: Math.max(0, scrollY + a.top - 64), behavior: 'smooth' }); return; } // bi-set: as abas A1/A2 ficam à vista (sabe de qual exercício é a série)
   if (r.top < 70 || r.bottom > innerHeight - 100) b.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 // "Última" guardada no celular = a série mais pesada do dia (o mesmo critério do histórico e de Minhas cargas)
@@ -1037,7 +1069,7 @@ function concluirPasso() {
   if (prox < 0) { s.p = s.passos.length - 1; salvaSessao(); if (rotaAtual === 'sessao') routes.sessao(); return document.hidden ? undefined : confirmarFim(); }
   s.p = prox; salvaSessao();
   const ant = avisoAtual(), msg = `${passo.map(i => tc(s.exs[i].nome)).join(' + ')} ✓` + (pulado ? ' · ' + t('Faltou o {x}, que você pulou', { x: tc(s.exs[s.passos[prox][0]].nome) }) : ''); // aviso da volta ("tirei 3 min") não some: junta
-  routes.sessao(); window.scrollTo(0, 0); toast(ant && !ant.txt.includes(msg) ? ant.txt + ' · ' + msg : msg, false, ant?.fixo ? { fixo: true } : { curto: !pulado && !ant });
+  routes.sessao(); window.scrollTo(0, 0); toast(ant?.fixo && !ant.txt.includes(msg) ? ant.txt + ' · ' + msg : msg, false, ant?.fixo ? { fixo: true } : { curto: !pulado });
 }
 function confirmarFim() {
   if (encerrarTrabalho()) return setTimeout(confirmarFim, 80); // cardio rodando: primeiro registra os minutos feitos
@@ -1064,12 +1096,15 @@ function confirmarFim() {
   const obr = s.exs.map((e, i) => i).filter(i => !opcional(s.exs[i])), faltam = obr.filter(i => !completo(s, i)), meio = faltam.filter(i => s.sets[i].some(x => x.done)).length, falta = faltam.length;
   if (!falta) return go('fim');
   overlay(`<div class="modal" id="m"><div class="box" style="padding:18px;display:flex;flex-direction:column;gap:12px"><h2>${n && falta === 1 ? t('Falta 1 exercício: {x}', { x: esc(tc(s.exs[faltam[0]].nome)) }) + (meio ? ' ' + t('(pela metade)') : '') : n ? tp(falta, 'Falta {n} exercício', 'Faltam {n} exercícios') + (meio ? ' ' + tp(meio, '({n} pela metade)', '({n} pela metade)') : '') : t('Nenhuma série marcada')}</h2>
-    <p class="muted">${n ? t('Quer encerrar assim mesmo? Fica no seu histórico e você ganha pontos pelo que fez.') : t('Se encerrar agora, esse treino não conta. Quer continuar?')}</p>
+    <p class="muted">${n ? ptsEncerrar(s) : t('Se encerrar agora, esse treino não conta. Quer continuar?')}</p>
     <button class="btn sm" id="volta">${t('Continuar treino')}</button>${n ? `<button class="btn ghost sm" id="depois">⏸ ${t('Pausar e terminar depois')}</button>` : ''}<button class="btn ghost sm" id="enc">${n ? t('Encerrar e registrar') : s.dor?.length ? t('Avisar o Igor da dor e encerrar') : t('Descartar treino')}</button>${n ? `<p class="muted small">${t('Pausado, fica tudo salvo: amanhã você continua de onde parou e, terminando, ele pontua.')}</p>` : ''}</div></div>`);
   $('#volta').onclick = closeOverlay;
   if ($('#depois')) $('#depois').onclick = () => { closeOverlay(); if (s.descansoAte && s.descansoAte > Date.now()) s.descansoResta = s.descansoAte - Date.now(); go('home'); toast(t('Treino pausado. O relógio parou, continua quando quiser.')); };
   $('#enc').onclick = () => { closeOverlay(); if (n || s.dor?.length) go('fim'); else { sairDaSessao(); db.desfazerCargas(s.chave); S.sessao = null; db.LS.del('sessao'); toast(t('Treino descartado')); go('home'); } };
 }
+// O que ela ganha se encerrar agora (antes prometia "pontos pelo que fez" mesmo quando não vinha nada)
+function ptsEncerrar(s, fim = Date.now()) { const c = contaObr(s), dur = Math.floor((fim - s.inicio) / 1000), pts = ptsTreino(c.a, c.b, dur);
+  return pts ? t('Quer encerrar assim mesmo? Fica no seu histórico e você ganha +{n} pontos pelo que fez (completo vale 50).', { n: pts }) : dur < 600 ? t('Quer encerrar assim mesmo? Fica no seu histórico, mas treino com menos de 10 min não pontua. Pausando, você termina depois e ganha os pontos.') : t('Quer encerrar assim mesmo? Fica no seu histórico, mas sem nenhum exercício completo não pontua. Pausando, você termina depois e ganha os pontos.'); }
 function seriesDaSessao(s) {
   const rows = [];
   // Cada série vai com o nome do exercício que ela fez de verdade (trocou no meio? cada uma no seu)
@@ -1091,7 +1126,7 @@ routes.fim = () => {
   const escala = (id, a, b) => `<div class="scale" id="${id}">${Array.from({ length: 11 }, (_, i) => `<button type="button" class="${s.fb[id] === i ? 'on' : ''}">${i}</button>`).join('')}</div><div class="row between muted small" style="margin-top:4px"><span>${a}</span><span>${b}</span></div>`;
   render(`<div class="view noTabs fx" style="padding-top:16px"><button class="back" id="volta" style="align-self:flex-start">‹ ${t('Voltar pro treino')}</button>
   ${s.dor?.length ? `<div class="card" style="border:1px solid var(--warn)"><b>⚠ ${t('Você anotou dor em {x}.', { x: esc(s.dor.map(tc).join(', ')) })}</b><p class="muted">${t('Vai junto com o seu recado pro Igor. Se quiser, conta mais embaixo.')}</p></div>` : ''}
-  <div><p class="muted">${esc(nomeCurto(s.titulo))} · ${dur < 60 ? t('{n} s', { n: dur }) : t('{n} min', { n: Math.round(dur / 60) })} · ${t('{a} de {b}', { a: nObr, b: obr.length })}${opcFeito(s) ? ' + ' + t('opcional ✓') : ''}</p><h1>${nObr >= obr.length ? t('Mandou bem!') : t('Boa! {a} de {b} feitos', { a: nObr, b: obr.length })}</h1>${nObr >= obr.length ? '' : `<div class="card" style="border:1.5px solid var(--accent);margin-top:8px"><p style="font-weight:600">${ptsTreino(nObr, obr.length, dur) ? t('Você ganha +{n} pontos pelo que fez. Completo vale 50 e conta no desafio e na meta da semana: dá pra voltar e terminar.', { n: ptsTreino(nObr, obr.length, dur) }) : t('Fica no seu histórico. Completo vale 50 pontos e conta no desafio: dá pra voltar e terminar.')}</p><p class="muted small mt">${t('Só fica registrado quando você tocar em Enviar, lá embaixo.')}</p></div>`}</div>
+  <div><p class="muted">${esc(nomeCurto(s.titulo))} · ${dur < 60 ? t('{n} s', { n: dur }) : t('{n} min', { n: Math.round(dur / 60) })} · ${t('{a} de {b}', { a: nObr, b: obr.length })}${opcFeito(s) ? ' + ' + t('opcional ✓') : ''}</p><h1>${nObr >= obr.length ? t('Mandou bem!') : t('Boa! {a} de {b} feitos', { a: nObr, b: obr.length })}</h1>${nObr >= obr.length ? '' : `<div class="card" style="border:1.5px solid var(--accent);margin-top:8px"><p style="font-weight:600">${ptsTreino(nObr, obr.length, dur) ? t('Você ganha +{n} pontos pelo que fez. Completo vale 50 e conta no desafio e na meta da semana: dá pra voltar e terminar.', { n: ptsTreino(nObr, obr.length, dur) }) : (dur < 600 ? t('Treino com menos de 10 min não pontua, mas fica no seu histórico. Completo vale 50 pontos e conta no desafio: dá pra voltar e terminar.') : t('Sem nenhum exercício completo não pontua, mas fica no seu histórico. Completo vale 50 pontos e conta no desafio: dá pra voltar e terminar.'))}</p><p class="muted small mt">${t('Só fica registrado quando você tocar em Enviar, lá embaixo.')}</p></div>`}</div>
   <p class="muted small">${t('Esforço = quanto cansou. Nota = quanto você curtiu.')}</p><div id="esfBox"><label class="l">${t('Quanto esforço foi?')}</label>${escala('esf', t('0 · muito leve'), t('10 · no limite'))}</div>
   <div id="notaBox"><label class="l">${t('Que nota você dá pro treino?')}</label>${escala('nota', t('0 · não curti'), t('10 · amei'))}</div>
   <div class="field"><label class="l" for="fb">${t('Quer falar algo pro Igor? (opcional)')}</label><textarea class="input" id="fb" placeholder="${t('Senti a lombar no búlgaro... / Tá leve, pode subir carga...')}">${esc(s.fb.txt || '')}</textarea></div>
@@ -1156,7 +1191,13 @@ async function enviarSessao(s, fb) {
   const item = () => ({ s: { titulo: s.titulo, treino_id: s.treino_id, programa_treino_id: s.programa_treino_id || null, total: s.exs.length }, sid: s.local ? null : s.id, seriesOk, series, patch });
   try {
     if (s.local) { novaFila(item()); pontos = false; }
-    else { await comLimite(db.salvarSeries(s.id, series), 12000); seriesOk = true; await comLimite(db.finalizarSessao(s.id, patch), 12000); }
+    else {
+      // 4G lento: espera no máximo 6 s; depois guarda na fila e segue pro card (antes ficava até 24 s em "Enviando…").
+      // Se a chamada lenta chegar depois, o reenvio não duplica (séries substituem, finalizar atualiza a mesma sessão).
+      const envia = (async () => { await comLimite(db.salvarSeries(s.id, series), 12000); seriesOk = true; await comLimite(db.finalizarSessao(s.id, patch), 12000); })();
+      const r = await Promise.race([envia.then(() => 'ok'), new Promise(res => setTimeout(() => res('lento'), 6000))]);
+      if (r === 'lento') { pontos = false; novaFila(item()); envia.then(() => db.LS.set('fila', db.LS.get('fila', []).filter(x => x.sid !== s.id))).catch(() => {}); }
+    }
   } catch (er) { pontos = false; novaFila(item()); }
   lancarNoStrava(s, patch);
   if (S.sessao === s) { S.sessao = null; db.LS.del('sessao'); }
@@ -1178,6 +1219,7 @@ async function sincronizarFila() {
       const lim = 15000 * 2 ** Math.min(it.lentas || 0, 2); L = p => comLimite(p, lim); // 4G que conecta mas é lento: cada volta espera mais (15 → 30 → 60 s), senão nunca sobe
       try {
         if (it.tipo === 'pontos') await L(db.registrarPontos(S.perfil.id, it.motivo, it.pontos, it.ref));
+        else if (it.tipo === 'presencial') { const f = await idb('readonly', st => st.get(it.idb)).catch(() => null); if (f) await L(db.registrarPresencial(S.perfil.id, f, new Date(it.quando))); idb('readwrite', st => st.delete(it.idb)).catch(() => {}); enviados++; }
         else if (it.tipo === 'evolucao') {
           const fotos = (await idb('readonly', st => st.get(it.idb)).catch(() => null)) || {};
           await L(db.salvarEvolucao(S.perfil.id, it.row, fotos));
@@ -1269,14 +1311,14 @@ function artePorCima(blob) {
   };
   $('#salvaArte').onclick = async () => {
     const file = new File([blob], 'treino-feito-sem-fundo.png', { type: 'image/png' });
-    if (android) { baixarImagem(blob, file.name); $('#salvaArte').textContent = t('Salva ✓'); $('#abreIg').hidden = false; toast(t('Arte salva na galeria ✓ Abre o story com a sua foto e põe a arte pela figurinha.')); ok('download'); return; }
+    if (android) { baixarImagem(blob, file.name); $('#salvaArte').textContent = t('Salva ✓'); $('#abreIg').hidden = false; ok('arte'); return; } // um aviso só, que não manda escolher a imagem como fundo (deixava o story preto)
     if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); ok('shared'); return; } catch (e) { if (e?.name === 'AbortError') return; } }
     const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); ok('download');
   };
 }
 // +30 do story (card do treino e resumo da semana, mesmo limite do dia). Avisa da imagem na hora; os pontos chegam depois.
 async function pontosStory(r) {
-  const ref = diaLocal(), onde = r === 'download' ? (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Imagem salva em Arquivos › Downloads: abre ela, toca em compartilhar e escolhe o Instagram.') : t('Imagem salva no celular (Downloads/Galeria): abre o Instagram e escolhe ela.')) + ' ' : t('Card pronto!') + ' ';
+  const ref = diaLocal(), onde = r === 'arte' ? t('Arte salva na galeria ✓ Abre o story com a sua foto e põe a arte pela figurinha.') + ' ' : r === 'download' ? (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Imagem salva em Arquivos › Downloads: abre ela, toca em compartilhar e escolhe o Instagram.') : t('Imagem salva no celular (Downloads/Galeria): abre o Instagram e escolhe ela.')) + ' ' : t('Card pronto!') + ' ';
   // Já tem story de hoje esperando sinal: não põe outro na fila (o limite é 30 por dia)
   const fila = () => { if (db.LS.get('fila', []).some(x => x.tipo === 'pontos' && x.motivo === 'story' && x.ref === ref)) return t('(os pontos do story de hoje já estão guardados)'); novaFila({ tipo: 'pontos', motivo: 'story', pontos: 30, ref }); return t('Os +30 pts entram quando a internet voltar.'); };
   if (navigator.onLine === false) return toast(onde + fila());
@@ -1305,7 +1347,7 @@ async function perguntaTreinoAberto() {
   s.perguntouFim = true; salvaSessao();
   const hora = new Date(comecou).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' });
   const c = contaObr(s), inc = c.a < c.b, metade = c.a < c.b / 2; // incompleto ganha pontos proporcionais (migração 022); faltando muito, "continuar" vem em destaque
-  const txt = t('Seu {x} tá aberto desde as {h}. Se já acabou, finaliza pra registrar.', { x: nomeTreino(s.titulo), h: hora }) + (inc ? ' ' + t('{a} de {b} feitos: finalizando, você ganha pontos pelo que fez.', c) : ' ' + t('Finalizando, entram os pontos.'));
+  const txt = t('Seu {x} tá aberto desde as {h}. Se já acabou, finaliza pra registrar.', { x: nomeTreino(s.titulo), h: hora }) + (inc ? ' ' + (ptsTreino(c.a, c.b, Math.floor(((s.ult || Date.now()) - s.inicio) / 1000)) ? t('{a} de {b} feitos: finalizando, você ganha +{n} pontos pelo que fez.', { ...c, n: ptsTreino(c.a, c.b, Math.floor(((s.ult || Date.now()) - s.inicio) / 1000)) }) : t('{a} de {b} feitos: fica no histórico, mas assim ainda não pontua.', c)) : ' ' + t('Finalizando, entram os pontos.'));
   const ops = metade ? [t('Ainda tô treinando'), t('Já terminei, finalizar')] : [t('Já terminei, finalizar'), t('Ainda tô treinando')];
   let o = await escolher(t('Terminou o treino? 💪'), txt, ops); if (metade && o >= 0) o = 1 - o;
   if (o === 0) { if (!s.fimEm) { s.fimEm = s.ult || Date.now(); s.pausadoEm = null; salvaSessao(); } go('fim'); }
@@ -1335,7 +1377,9 @@ if (!DEMO) ligarAvisoRemoto({
 // HYROX NA ACADEMIA (opcional, 3 níveis, troca todo mês) ---------------------------------
 const cardHyrox = mini => `<button class="lib ${mini ? 'mini' : ''}" data-go="hyrox" data-bg="icons/hyrox_s.jpg"><b>${t('Hyrox')}</b><span>${emCasa() ? t('Precisa de academia') : t('Na academia · 3 níveis')}</span></button>`;
 // Treina só em casa: Spinning e Hyrox (precisam de aparelho) vão pro fim da lista, com o aviso no card
-const emCasa = () => S.perfil?.local_treino === 'casa';
+const emCasa = () => /casa|ambos/.test(S.perfil?.local_treino || ''); // "os dois" também: Spinning/Hyrox vão pro fim (antes só "casa")
+// Quem treina em casa vê primeiro os programas sem aparelho que já têm treino
+const ordemProg = l => emCasa() ? [...l].sort((a, b) => (/casa|mobilidade|abd/i.test(b.slug) && (b.programa_treinos || []).length ? 1 : 0) - (/casa|mobilidade|abd/i.test(a.slug) && (a.programa_treinos || []).length ? 1 : 0)) : l;
 const importaHyrox = () => import('./hyrox.js').catch(() => import('./hyrox.js?r=' + Date.now())).catch(() => { toast(t('Sem internet pra abrir agora. Depois da 1ª vez abre sem sinal.'), true); return null; });
 const nivelHyrox = () => { const n = db.LS.get('hyroxNivel', null); return n && n.dono === S.perfil?.id ? n.id : null; };
 // Mês em que ela começou o Hyrox (quem escolheu o nível antes disso começa agora, na Base)
@@ -1460,20 +1504,22 @@ routes.semana = async (arg) => {
 
 // PONTOS --------------------------------------------------------------------------
 routes.pontos = async () => {
-  const [p0, log0] = await Promise.all([rapido(db.perfil(), null, 3000), rapido(db.meusPontos(S.perfil.id), null, 3000)]);
+  const [p0, log0, ses0] = await Promise.all([rapido(db.perfil(), null, 3000), rapido(db.meusPontos(S.perfil.id), null, 3000), rapido(sessoesComFila(S.perfil), [], 3000)]);
+  const porId = Object.fromEntries((ses0 || []).map(x => [x.id, x])); // treino pela metade e presencial com o nome certo no histórico (antes tudo era "Treino completo")
+  const nomeLog = l => { if (l.motivo !== 'treino') return null; const x = porId[l.ref]; if (x?.titulo === 'Treino com o Igor') return t('Treino com o Igor'); if (+l.pontos < 50) return x?.exercicios_total ? t('Treino ({a} de {b})', { a: x.exercicios_feitos, b: x.exercicios_total }) : t('Treino pela metade'); return null; };
   const p = p0 || S.perfil; S.perfil = p; const log = log0 || db.LS.get('pontosLog', []); if (log0) db.LS.set('pontosLog', log0.slice(0, 30));
   if (rotaAtual !== 'pontos') return;
   const nomes = { treino: 'Treino completo', semana: 'Semana completa', desafio: 'Desafio do mês', story: 'Card no story', checkin: 'Check-in com foto', evolucao: 'Foto de evolução', indicacao: 'Amiga indicada', renovacao: 'Mês renovado' };
   render(`<div class="view fx"><div class="topbar"><h2>${t('Meus pontos')}</h2><span class="pill on">${t('{n} pts', { n: num(p.pontos) })}</span></div>
   <div class="card"><h3>${t('Como ganhar')}</h3><div style="display:grid;gap:8px;margin-top:8px;font-size:0.875rem">
-    ${[['Treino completo', 50], ['Semana completa', 100], ['Desafio do mês', 200], ['Card no story', 30], ['Foto de evolução (1x/mês)', 80], ['Amiga indicada assinou', 300]].map(([a, b]) => `<div class="row between" style="gap:8px"><span>${t(a)}</span><b style="color:var(--accent)">+${b}</b></div>`).join('')}</div>
-    <p class="muted mt small">${t('Não precisa mandar comprovante dos treinos: os pontos entram sozinhos.')} ${t('Vale o treino completo (o HIIT opcional não precisa).')}</p></div>
+    ${[['Treino completo', 50], ['Treino pela metade (10 min ou mais)', t('uma parte')], ['Treino presencial com o Igor', 50], ['Semana completa', 100], ['Desafio do mês', 200], ['Card no story', 30], ['Foto de evolução (1x/mês)', 80], ['Amiga indicada assinou', 300]].map(([a, b]) => `<div class="row between" style="gap:8px"><span>${t(a)}</span><b style="color:var(--accent)">+${b}</b></div>`).join('')}</div>
+    <p class="muted mt small">${t('Não precisa mandar comprovante dos treinos: os pontos entram sozinhos.')} ${t('Completo é com todos os exercícios (o HIIT opcional não precisa). Fez só uma parte, com 10 min ou mais? Ganha proporcional: 3 de 7 = +20.')}</p></div>
   <div class="row between"><h3>${t('Prêmios do trimestre')}</h3><span class="muted small">${t('vale até {d}', { d: dataLocal(new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3 + 3, 0), { day: 'numeric', month: 'short' }) })}</span></div>
   ${(() => { const PR = [[900, 'Strap'], [1200, 'Elástico'], [1800, 'Luva'], [3000, 'Bag']], prox = PR.find(([v]) => v > p.pontos), ja = PR.some(([v]) => p.pontos >= v);
     return (ja ? `<p style="font-weight:600">${t('Você já pode escolher um prêmio! Chama o Igor no WhatsApp pra trocar.')}</p><a class="btn sm" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}?text=${encodeURIComponent('Oi Igor! Quero trocar meus pontos por um prêmio 🎁')}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a>` : '') + (prox ? `<p class="muted">${t('Faltam <b style="color:var(--fg)">{n} pts</b> pra {x}.', { n: num(prox[0] - p.pontos), x: t(prox[1]) })}</p>` : ''); })()}
-  <div class="grid2 pontos-premios">${[['Strap<br>IS Team', 900, 'faixa de punho pra puxar peso', '🏋️‍♀️'], ['Elástico<br>+ adesivo', 1200, '', '🎗️'], ['Luva', 1800, '', '🧤'], ['Bag', 3000, '', '🎒']].map(([n, v, sub, ic]) => `<div class="lib"><span aria-hidden="true" style="position:absolute;top:12px;left:12px;font-size:2.5rem;line-height:1">${ic}</span><b>${t(n)}</b>${sub ? `<span>${t(sub)}</span>` : ''}<span>${t('{n} pts', { n: num(v) })} · ${p.pontos >= v ? t('dá pra trocar') : t('faltam {n}', { n: num(v - p.pontos) })}</span></div>`).join('')}</div>
+  <div class="grid2 pontos-premios">${[['Strap<br>IS Team', 900, 'faixa de punho pra puxar peso', '🏋️‍♀️'], ['Elástico<br>+ adesivo', 1200, '', '🎗️'], ['Luva', 1800, '', '🧤'], ['Bag', 3000, '', '🎒']].map(([n, v, sub, ic]) => `<div class="lib"><span aria-hidden="true" style="display:block;font-size:2.5rem;line-height:1;margin-bottom:auto;padding-bottom:8px">${ic}</span><b>${t(n)}</b>${sub ? `<span>${t(sub)}</span>` : ''}<span>${t('{n} pts', { n: num(v) })} · ${p.pontos >= v ? t('dá pra trocar') : t('faltam {n}', { n: num(v - p.pontos) })}</span></div>`).join('')}</div>
   <p class="muted small">${t('Juntou pontos pra mais de um? O Igor te explica no WhatsApp como fica a troca.')}</p>
-  <div class="card"><h3>${t('Histórico')}</h3>${log.length ? log.slice(0, 15).map(l => `<div class="row between" style="padding:6px 0;font-size:0.8125rem;gap:8px"><span>${nomes[l.motivo] ? t(nomes[l.motivo]) : esc(l.motivo)}<span class="muted"> · ${fmtData(l.created_at)}</span></span><b style="color:var(--accent)">+${l.pontos}</b></div>`).join('') + (log.slice(0, 15).reduce((a, l) => a + (+l.pontos || 0), 0) < (p.pontos || 0) ? `<p class="muted small mt">${t('Aqui aparecem só os mais recentes. Os antigos continuam no seu saldo.')}</p>` : '') : `<p class="muted mt">${t('Seu primeiro treino concluído já vale 50.')}</p>`}</div></div>`, 'pontos');
+  <div class="card"><h3>${t('Histórico')}</h3>${log.length ? log.slice(0, 15).map(l => `<div class="row between" style="padding:6px 0;font-size:0.8125rem;gap:8px"><span>${nomeLog(l) || (nomes[l.motivo] ? t(nomes[l.motivo]) : esc(l.motivo))}<span class="muted"> · ${fmtData(l.created_at)}</span></span><b style="color:var(--accent)">+${l.pontos}</b></div>`).join('') + (log.slice(0, 15).reduce((a, l) => a + (+l.pontos || 0), 0) < (p.pontos || 0) ? `<p class="muted small mt">${t('Aqui aparecem só os mais recentes. Os antigos continuam no seu saldo.')}</p>` : '') : `<p class="muted mt">${t('Seu primeiro treino concluído já vale 50.')}</p>`}</div></div>`, 'pontos');
 };
 
 // EVOLUÇÃO -------------------------------------------------------------------------
@@ -1561,21 +1607,22 @@ routes.evolucao = async () => {
       if (cv && (cint == null || cint < 40 || cint > 200)) return erro(t('Confere a cintura em centímetros, ex. 72'));
       const arquivos = { ...escolhidas }; // lido antes de esperar qualquer coisa: se ela tocar em voltar, as fotos não se perdem
       const n = ['frente', 'lado', 'costas'].filter(k => arquivos[k]).length;
-      if (n > 0 && n < 3 && !mesCompleto) return erro(t('Faltam fotos: manda as 3 (frente, lado e costas) pra comparar certinho. As que você já escolheu ficam guardadas.'));
+      const parcial = n > 0 && n < 3 && !mesCompleto, faltaF = ['frente', 'lado', 'costas'].filter(k => !arquivos[k]).map(k => t(k[0].toUpperCase() + k.slice(1)).toLowerCase()).join(', '); // só 1 ou 2 fotos: o peso não se perde, as fotos esperam as 3
+      if (parcial && peso == null && cint == null) return erro(t('Faltam fotos: manda as 3 (frente, lado e costas) pra comparar certinho. As que você já escolheu ficam guardadas.'));
       if (!n && peso == null && cint == null) return erro(t('Coloca as fotos ou pelo menos o peso.'));
       $('#s').textContent = t('Salvando…');
-      const fotos = {}; try { for (const k of ['frente', 'lado', 'costas']) { const f = arquivos[k]; if (f) fotos[k] = await comprimir(f); } } catch { return erro(t('Uma das fotos não abriu aqui. Troca ela (tira outra na hora ou escolhe em JPG).')); }
+      const fotos = {}; try { for (const k of ['frente', 'lado', 'costas']) { const f = arquivos[k]; if (f && !parcial) fotos[k] = await comprimir(f); } } catch { return erro(t('Uma das fotos não abriu aqui. Troca ela (tira outra na hora ou escolhe em JPG).')); }
       const row = { data: diaLocal(), peso_kg: peso, cintura_cm: cint };
       try {
         await comLimite(db.salvarEvolucao(p.id, row, fotos), 25000);
         if (peso && peso !== p.peso_kg) db.salvarPerfil({ peso_kg: peso }).then(x => { if (x) S.perfil = x; }).catch(() => {});
         let ganhou = false; if (n === 3) ganhou = await comLimite(db.registrarPontos(p.id, 'evolucao', 80, mesAtual), 10000).catch(er => { if (!erroDeRede(er)) return false; novaFila({ tipo: 'pontos', motivo: 'evolucao', pontos: 80, ref: mesAtual }); return 'fila'; }); // 4G caiu só nos pontos: vão pra fila (não diz que já foram contados)
-        if ($('#s')) closeOverlay(); idb('readwrite', st => st.delete('rascunho-mes')).catch(() => {}); toast(n === 3 ? (ganhou === 'fila' ? t('Registrado! Os +80 pts entram quando o sinal voltar.') : ganhou ? t('Registrado! +80 pts') : t('Registrado! (os pontos de foto desse mês já foram contados)')) : n ? t('Foto trocada ✓') : t('Medidas registradas ✓'));
+        if ($('#s')) closeOverlay(); if (!parcial) idb('readwrite', st => st.delete('rascunho-mes')).catch(() => {}); toast(parcial ? t('Peso e medidas salvos ✓ Fotos: falta {x}. As que você escolheu ficam guardadas aqui.', { x: faltaF }) : n === 3 ? (ganhou === 'fila' ? t('Registrado! Os +80 pts entram quando o sinal voltar.') : ganhou ? t('Registrado! +80 pts') : t('Registrado! (os pontos de foto desse mês já foram contados)')) : n ? t('Foto trocada ✓') : t('Medidas registradas ✓'));
       } catch (er) {
         // Sem sinal ou 4G travado: guarda fotos e medidas no celular e manda sozinha depois (as fotos não se perdem)
         if (!/fetch|network|Failed|lento|timeout|offline/i.test(String(er?.message)) && navigator.onLine !== false) return erro(traduzErro(er));
         try { await guardarEvolucaoOffline({ row, fotos, pontos: n === 3, ref: mesAtual }); } catch { return erro(traduzErro(er)); }
-        if ($('#s')) closeOverlay(); idb('readwrite', st => st.delete('rascunho-mes')).catch(() => {}); toast(t('Sem sinal agora: fotos e medidas guardadas no celular. Envio sozinha quando a internet voltar.'));
+        if ($('#s')) closeOverlay(); if (!parcial) idb('readwrite', st => st.delete('rascunho-mes')).catch(() => {}); toast(t('Sem sinal agora: fotos e medidas guardadas no celular. Envio sozinha quando a internet voltar.'));
       }
       if (rotaAtual === 'evolucao' && S.perfil) routes.evolucao(); // não puxa ela de outra tela se o envio demorou
     };
@@ -1646,6 +1693,7 @@ routes.perfil = async () => {
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Indique uma amiga')}</b><b style="color:var(--accent)">${t('+{n} pts', { n: 300 })}</b></div><p class="muted">${t('Seu código:')} <b style="color:var(--fg)">${esc(p.cod_indicacao || '')}</b>. ${t('Quando ela assinar, é só ela falar seu código pro Igor no WhatsApp: os +300 entram pra você.')}</p>${amigaBtn(p, true)}</div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Cronômetro na tela de bloqueio')}</b><button class="sw ${chipOff() ? '' : 'on'}" id="chipOn" role="switch" aria-checked="${!chipOff()}" aria-label="${t('Cronômetro na tela de bloqueio')}"></button></div><p class="muted">${/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Mostra o descanso na tela de bloqueio, como o Spotify. No iPhone o apito só toca com o app aberto: no descanso, deixa a tela acesa.') : t('Mostra o descanso em cima, como o Spotify, e apita quando acaba. Pode pausar a música enquanto o descanso roda.')}</p></div>
   ${'<div class="card" id="stv"><div class="row between"><b style="font-size:0.9375rem">Strava</b></div><p class="muted">…</p></div>'}
+  <div class="card"><b style="font-size:0.9375rem">Aa ${t('Tamanho da letra')}</b><div class="row" style="gap:6px;margin-top:8px" role="radiogroup">${[['', 'Normal', 0.9375], ['g', 'Grande', 1.0625], ['gg', 'Maior', 1.1875]].map(([v, n, z]) => `<button class="btn sm ${letraAtual() === v ? '' : 'ghost'}" data-letra="${v}" role="radio" aria-checked="${letraAtual() === v}" style="flex:1;min-width:0;padding:0 6px;white-space:normal;line-height:1.1;font-size:${z}rem">${t(n)}</button>`).join('')}</div><p class="muted small mt">${t('Só nesse celular. Também segue a letra que você escolheu no celular.')}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🌐 ${t('Idioma')}</b><button class="btn ghost sm" id="idi">${infoIdioma().flag} ${infoIdioma().nome}</button></div><p class="muted">${t('O app aparece nesse idioma. Treinos, dicas e recados do Igor continuam em português.')}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteSuportado() ? `<button class="sw ${A.lembreteLigado() ? 'on' : ''}" id="notif" aria-label="${t('Lembretes')}"></button>` : ''}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Lembrete de 3 dias sem treinar: no iPhone chega em breve.') : t('Seu navegador não aceita lembrete automático. Abre o app pelo Chrome e instala na tela inicial pra ligar.') + ' ' + t('No descanso, deixa o app aberto: com a tela apagada o celular pode não apitar.'))}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🔥 ${t('Aparecer no time')}</b><button class="sw ${p.comunidade === false ? '' : 'on'}" id="swTime" aria-label="${t('Aparecer no time')}"></button></div><p class="muted">${t('Seu primeiro nome e a inicial aparecem no ranking e em "treinou agora há pouco". Nada de foto, carga ou peso.')}</p></div>
@@ -1653,13 +1701,14 @@ routes.perfil = async () => {
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Senha')}</b><button class="btn ghost sm" id="pw">${t('trocar')}</button></div><p class="muted">${p.senha_trocada === false ? t('Se ainda é o seu número de WhatsApp, troca aqui.') : t('Quer mudar sua senha? Troca aqui quando quiser.')}</p></div>
   <a class="btn ghost sm" style="width:100%" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener">${t('Chamar o Igor')}</a>
   <button class="link-fim" id="out" style="margin-top:14px">${t('Sair da minha conta')}</button></div>`, 'perfil');
+  $$('[data-letra]').forEach(b => b.onclick = () => { aplicaLetra(b.dataset.letra); routes.perfil(); });
   $('#idi').onclick = escolherIdioma; if ($('#stv')) cartaoStrava(); if ($('#chipOn')) $('#chipOn').onclick = () => { const b = $('#chipOn'), liga = !b.classList.contains('on'); b.classList.toggle('on', liga); b.setAttribute('aria-checked', liga); try { liga ? localStorage.setItem('chip_on', '1') : localStorage.removeItem('chip_on'); } catch {} };
   // Responder o Igor: vai pela função do banco (só a sessão dela, até 1000 letras) e aparece embaixo da resposta dele
   const enviarResp = async id => {
     const inp = $(`[data-rin="${id}"]`), bt = $(`[data-rsend="${id}"]`), tx = inp?.value.trim(); if (!inp || bt.disabled) return; if (!tx) { toast(t('Escreve sua resposta antes de enviar.'), true); return inp.focus(); }
     bt.disabled = true; bt.textContent = t('Enviando…');
     try { await db.responderIgor(id, tx); const r = db.LS.get('rascResp', {}); delete r[id]; db.LS.set('rascResp', r); toast(t('Enviado pro Igor ✓')); if (rotaAtual === 'perfil') routes.perfil(); }
-    catch (e) { bt.disabled = false; bt.textContent = t('Enviar pro Igor'); if (e?.codigo === 'sem_coluna') { toast(t('Por enquanto responde pelo WhatsApp: essa parte ainda tá sendo ligada.'), true); if (rotaAtual === 'perfil') routes.perfil(); } else toast(navigator.onLine === false || erroDeRede(e) ? t('Sem internet agora. Sua resposta fica guardada aqui: toca Enviar quando o sinal voltar.') : t('Não deu pra enviar agora. Tenta de novo.'), true); }
+    catch (e) { bt.disabled = false; bt.textContent = t('Enviar pro Igor'); if (e?.codigo === 'sem_coluna') { toast(t('Por enquanto responde pelo WhatsApp: essa parte ainda tá sendo ligada.'), true); if (rotaAtual === 'perfil') routes.perfil(); } else toast(navigator.onLine === false || erroDeRede(e) ? (db.LS.set('respPend', id), t('Sem internet agora. Sua resposta ficou guardada: envio sozinha quando o sinal voltar.')) : t('Não deu pra enviar agora. Tenta de novo.'), true); }
   };
   $$('[data-rsend]').forEach(b => b.onclick = () => enviarResp(b.dataset.rsend));
   // Rascunho guardado a cada letra (o Android fecha o app quando ela vai pro WhatsApp ou pra câmera); Enter pula linha, só o botão envia
@@ -1672,7 +1721,7 @@ routes.perfil = async () => {
     const falta = db.LS.get('fila', []).filter(daFila).length;
     if ((await perguntar(t('Sair do app?'), (falta ? tp(falta, 'Você tem {n} registro que ainda não subiu (falta sinal). Ele fica guardado no celular e sobe quando você entrar de novo.', 'Você tem {n} registros que ainda não subiram (falta sinal). Eles ficam guardados no celular e sobem quando você entrar de novo.') + ' ' : '') + (S.sessao ? t('Seu treino pausado continua guardado neste celular.') + ' ' : '') + t('Pra entrar de novo vai precisar do seu e-mail e da sua senha.'), t('Ficar'), t('Sair'))) !== false) return; // "Ficar" em destaque: quem enxerga mal não sai sem querer
     if (S.sessao) { db.LS.set('sessao@' + S.perfil.id, S.sessao); db.LS.del('sessao'); S.sessao = null; } // treino pausado é só dela: quem entrar depois não vê
-    A.limparLembrete(); await db.logout().catch(() => {}); ['chat', 'chatRasc', 'chatPend', 'chatRest', 'chatEm', 'cargas', 'evolucao', 'sessoes', 'rascResp'].forEach(k => db.LS.del(k)); S.perfil = null; go('entrada'); // outra pessoa no mesmo celular não vê a conversa dela
+    A.limparLembrete(); await db.logout().catch(() => {}); ['chat', 'chatRasc', 'chatOff', 'respPend', 'chatPend', 'chatRest', 'chatEm', 'cargas', 'evolucao', 'sessoes', 'rascResp'].forEach(k => db.LS.del(k)); S.perfil = null; go('entrada'); // outra pessoa no mesmo celular não vê a conversa dela
   };
   if ($('#notif')) $('#notif').onclick = async () => { if (A.lembreteLigado()) { await A.desligarLembrete(); toast(t('Lembretes desligados.')); return routes.perfil(); } const r = await A.ligarLembrete(); toast(msgLembrete(r)); routes.perfil(); };
   $('#tour').onclick = () => { A.refazerPasseio(p); go('home'); setTimeout(() => { if (rotaAtual === 'home' && !$('#overlay')?.innerHTML && !document.querySelector('.tour')) A.passeio(p); }, 700); }; // pediu: mostra (também no demo)
@@ -1715,7 +1764,7 @@ const Q = [
   { k: 'horario', t: 'Que horas você costuma treinar?', tipo: 'um', op: [['De manhã cedo (antes das 9h)', 'cedo'], ['Manhã', 'manha'], ['Hora do almoço', 'almoco'], ['Tarde', 'tarde'], ['Noite', 'noite'], ['Varia muito', 'varia']] },
   { k: 'local_treino', t: 'Onde vai treinar?', tipo: 'um', op: [['Academia', 'academia'], ['Casa', 'casa'], ['Os dois', 'ambos']], req: true },
   { k: 'academia_tipo', t: 'Como é a sua academia?', sub: 'Muda as máquinas que o Igor pode usar no seu treino.', tipo: 'um', op: [['Grande, de rede (Smart Fit, Bluefit...)', 'rede'], ['De bairro, menor', 'bairro'], ['Do prédio ou condomínio', 'condominio']], se: r => r.local_treino !== 'casa' },
-  { k: 'equipamento', t: 'O que você tem pra treinar em casa?', sub: 'Pode marcar mais de uma.', tipo: 'multi', op: ['Halteres', 'Elástico ou superband', 'Caneleira', 'Kettlebell', 'Nada, só o corpo'], excl: 'Nada, só o corpo', se: r => r.local_treino === 'casa' || r.local_treino === 'ambos' },
+  { k: 'equipamento', t: 'O que você tem pra treinar em casa?', sub: 'Pode marcar mais de uma.', tipo: 'multi', op: ['Halteres', 'Elástico ou superband', 'Caneleira', 'Kettlebell', 'Nada, só o corpo'], excl: 'Nada, só o corpo', se: r => r.local_treino === 'casa' || r.local_treino === 'ambos', req: true },
   { k: 'experiencia', t: 'Há quanto tempo treina musculação?', tipo: 'um', op: ['Nunca treinei', 'Menos de 6 meses', '6 meses a 2 anos', 'Mais de 2 anos'], req: true },
   { k: 'foco', t: 'Que partes do corpo você quer focar mais?', sub: 'Pode marcar mais de uma.', tipo: 'multi', op: PARTES, req: true },
   { k: 'cardio', t: 'Topa fazer um cardio rápido no fim do treino?', tipo: 'um', op: [['Topo, sempre', 'sim'], ['Às vezes', 'as_vezes'], ['Prefiro não', 'nao']] },
@@ -1832,7 +1881,7 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
       }
       const ok = q.tipo === 'medidas' ? (r.peso_kg && r.altura_m) : q.tipo === 'multi' ? (r[q.k] || []).length : r[q.k] != null && r[q.k] !== '';
       if (q.req && !ok) { $('#e').textContent = q.tipo === 'data' ? t('Toca no campo e escolhe o dia, o mês e o ano em que você nasceu.') : q.tipo === 'multi' || q.tipo === 'um' ? t('Toca numa das opções aqui embaixo. Essa é importante pro Igor montar seu treino.') : t('Essa é importante pro Igor montar seu treino.'); $('#e').hidden = false; try { $('#e').scrollIntoView({ block: 'center' }); } catch {} return; }
-      i = revisando ? Q.length : prox(i + 1); guarda(); tela();
+      { const nx = prox(i + 1); i = revisando ? (nx < Q.length && falta(Q[nx]) ? nx : Q.length) : nx; } guarda(); tela(); // revisão: trocou pra Casa → já pergunta o que tem em casa
     }
   }
   async function salvar() {
@@ -1853,6 +1902,10 @@ function anamneseForm(p, done, titulo = 'Me conta de você') {
 routes.admin = async () => (await import('./admin.js')).adminView(S, { render, go, anamneseForm, db });
 
 // BOOT ------------------------------------------------------------------------
+// Tamanho da letra escolhido no Perfil (Dona Márcia, 07/11): Normal / Grande (115%) / Maior (130%), guardado no celular
+function letraAtual() { try { return localStorage.getItem('isteam:letra') || ''; } catch { return ''; } }
+function aplicaLetra(v) { if (v != null) { try { localStorage.setItem('isteam:letra', v); } catch {} } const l = v ?? letraAtual(); document.documentElement.classList.remove('letra-g', 'letra-gg'); if (l) document.documentElement.classList.add('letra-' + l); }
+aplicaLetra();
 async function boot() {
   if (!(C0.DEMO || new URLSearchParams(location.search).has('demo')) && (!C.SUPABASE_URL || C.SUPABASE_URL.includes('SEU-PROJETO'))) return render(`<div class="view noTabs"><div class="logo big" style="margin-top:40px">IGOR<br>SOUSA <b>TEAM</b></div><div class="card"><b>Falta ligar o banco.</b><p class="muted">Preencha js/config.js com a URL e a anon key do projeto Supabase. O passo a passo está no README.</p></div></div>`);
   // 4G que "conecta mas não passa nada": com o perfil guardado no celular, abre em até 4 s e atualiza depois.
@@ -1883,15 +1936,15 @@ async function boot() {
     enviarSessao(s0, { esforco: fb.esf ?? null, nota: fb.nota ?? null, comentario: [String(fb.txt || '').trim(), dor].filter(Boolean).join(' · ') || null }).then(ok => { toast(ok ? t('Seu {x} foi registrado ✓ (você tinha saído antes de enviar)', { x: nomeTreino(s0.titulo) }) : t('{x} guardado no celular. Envio quando o sinal voltar.', { x: nomeCurto(s0.titulo) }), false, { fixo: true }); if (rotaAtual === 'home') routes.home(); }); // Início redesenha com o treino já contado (não manda fazer de novo)
   }
   // Treino esquecido há mais de 12h: não apaga, pergunta se ela quer registrar o que fez
-  const s = S.sessao, velho = s && Date.now() - (s.pausadoEm || s.ult || s.inicio) > 12 * 3600000;
+  const s = S.sessao, velho = s && Date.now() - (s.pausadoEm || (s.toqueEm || s.ult) || s.inicio) > 12 * 3600000;
   if (velho && !seriesFeitas(s)) { S.sessao = null; db.LS.del('sessao'); }
   else if (velho) {
     go('home');
-    const quando = dataLocal(s.pausadoEm || s.ult || s.inicio, { weekday: 'long' });
-    const o = await escolher(t('Treino pela metade'), t('Seu {x} de {dia} ficou com {n} séries marcadas. Quer registrar o que você fez?', { x: nomeTreino(s.titulo), dia: quando, n: seriesFeitas(s) }), [t('Registrar o que fiz'), t('Continuar o treino'), t('Descartar')]);
-    if (o < 0) { if (!s.pausadoEm) s.pausadoEm = s.ocultoEm || s.ult || Date.now(); salvaSessao(); return routes.home(); } // voltar: fica pausado, nada se perde
-    if (o === 0) { s.fimEm = s.registrarEm = s.pausadoEm || s.ocultoEm || s.ult || Date.now(); s.pausadoEm = null; salvaSessao(); go('fim'); } // fica no dia em que ela parou
-    else if (o === 1) { if (!s.pausadoEm) s.pausadoEm = s.ocultoEm || s.ult || Date.now(); salvaSessao(); go('sessao'); }
+    const quando = dataLocal(s.pausadoEm || (s.toqueEm || s.ult) || s.inicio, { weekday: 'long' });
+    const o = await escolher(t('Treino pela metade'), tp(seriesFeitas(s), 'Seu {x} de {dia} ficou com {n} série marcada. Quer registrar o que você fez?', 'Seu {x} de {dia} ficou com {n} séries marcadas. Quer registrar o que você fez?', { x: nomeTreino(s.titulo), dia: quando }), [t('Registrar o que fiz'), t('Continuar o treino'), t('Descartar')]);
+    if (o < 0) { if (!s.pausadoEm) s.pausadoEm = s.ocultoEm || (s.toqueEm || s.ult) || Date.now(); salvaSessao(); return routes.home(); } // voltar: fica pausado, nada se perde
+    if (o === 0) { s.fimEm = s.registrarEm = s.pausadoEm || s.ocultoEm || (s.toqueEm || s.ult) || Date.now(); s.pausadoEm = null; salvaSessao(); go('fim'); } // fica no dia em que ela parou
+    else if (o === 1) { if (!s.pausadoEm) s.pausadoEm = s.ocultoEm || (s.toqueEm || s.ult) || Date.now(); salvaSessao(); go('sessao'); }
     else { db.desfazerCargas(s.chave); S.sessao = null; db.LS.del('sessao'); toast(t('Treino descartado')); routes.home(); }
     return;
   }
@@ -1925,5 +1978,13 @@ function criarSenha() {
   };
 }
 window.addEventListener('online', sincronizarFila);
+// Voltou o sinal: pergunta do tira-dúvidas e resposta pro Igor guardadas saem sozinhas, igual ao treino (antes esperavam ela tocar de novo)
+window.addEventListener('online', () => setTimeout(async () => {
+  if (!S.perfil || navigator.onLine === false) return;
+  if (db.LS.get('chatOff') && db.LS.get('chatRasc', '') && rotaAtual === 'assistente' && $('#tx') && $('#env')) { if (!$('#tx').value.trim()) $('#tx').value = db.LS.get('chatRasc', ''); $('#env').click(); }
+  else if (db.LS.get('chatOff') && db.LS.get('chatRasc', '')) toast(t('Voltou o sinal: abre o tira-dúvidas que eu mando sua pergunta.'));
+  const id = db.LS.get('respPend', null), tx = id && db.LS.get('rascResp', {})[id];
+  if (id && tx) { try { await db.responderIgor(id, tx); const r = db.LS.get('rascResp', {}); delete r[id]; db.LS.set('rascResp', r); db.LS.del('respPend'); toast(t('Voltou o sinal: sua resposta foi pro Igor ✓')); if (rotaAtual === 'perfil') routes.perfil(); } catch {} } else if (id) db.LS.del('respPend');
+}, 1500));
 db.sb.auth.onAuthStateChange((ev) => { if (ev === 'PASSWORD_RECOVERY') { overlay(`<div class="modal" id="m"><form class="box" id="fs" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${t('Cria sua nova senha')}</h2><div class="field"><label class="l" for="n1">${t('Nova senha')}</label>${campoSenha('n1', t('6 ou mais'))}</div><div class="field"><label class="l" for="n2">${t('Repete a senha')}</label>${campoSenha('n2')}</div><p class="err" id="e" hidden></p><button class="btn sm" id="s">${t('Salvar')}</button><button type="button" class="btn ghost sm" id="c">${t('Agora não')}</button></form></div>`); $('#c').onclick = () => closeOverlay(); $('#fs').onsubmit = async ev => { ev.preventDefault(); const er = erroSenha($('#n1').value, $('#n2').value); if (er) { $('#e').textContent = er; $('#e').hidden = false; return; } if ($('#s').disabled) return; $('#e').hidden = true; $('#s').disabled = true; $('#s').textContent = t('Salvando…'); try { await db.trocarSenha($('#n1').value); await db.salvarPerfil({ senha_trocada: true }).then(p => { if (p && S.perfil?.id === p.id) S.perfil = p; }).catch(() => {}); closeOverlay(); toast(t('Senha criada ✓')); boot(); } catch (e) { $('#e').textContent = traduzErro(e); $('#e').hidden = false; $('#s').disabled = false; $('#s').textContent = t('Salvar'); } }; } }); // link do e-mail: a senha nova já vale como a dela (não pede de novo no 1º acesso)
 boot();

@@ -1,3 +1,4 @@
+import { vaiEVolta } from './_vaievolta.mjs';
 // Testes da rodada 28/10 (carga de treino descartado não fica; pirâmide na 1ª vez herda o peso; 30 → 300 pergunta e "Corrigir" em destaque;
 // "Ficar" em destaque no Sair; voltar não pula a troca de senha; aviso fixo antigo some; pausar o treino no descanso; corrigir série de treino passado;
 // IA do demo: execução, 12/10/8, descanso, saldo de pontos; aba com nome inteiro quando cabe; card "<1 min" e plural; tira-dúvidas estreito; senha atual pra trocar).
@@ -10,7 +11,7 @@ const ok = (cond, msg) => { console.log((cond ? '  ok  ' : '  FALHOU ') + msg); 
 const rota = p => p.route('**/*', r => { const u = new URL(r.request().url()); if (u.hostname === 'app.local') { const f = u.pathname === '/' ? '/index.html' : u.pathname; return r.fulfill({ path: APP + f }); } return r.abort(); });
 async function nova(w = W) {
   const ctx = await b.newContext({ locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', viewport: { width: w, height: 800 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
-  const p = await ctx.newPage(); await rota(p); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => { errs.push('DIALOG ' + d.message()); d.dismiss(); });
+  const p = vaiEVolta(await ctx.newPage()); await rota(p); p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => { errs.push('DIALOG ' + d.message()); d.dismiss(); });
   p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
   return { ctx, p };
 }
@@ -79,7 +80,7 @@ const pergunta = async (p, q) => { await p.fill('#tx', q); await p.click('#env')
 // 8) Pausar o treino direto do descanso
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'A'); const i = await idx(p, /./); const s0 = await sessao(p);
   const j = s0.exs.findIndex((e, k) => k > 0 && e.descanso_s && !/s$/.test(String(e.reps).trim())); await irPara(p, j);
-  const alvo = (await p.$(`.set[data-i="${j + 1}"][data-k="0"] .rest`)) && s0.exs[j].biset_com ? j + 1 : j; await p.fill(`.set[data-i="${j}"][data-k="0"] input[data-f="kg"]`, '20'); await p.click(`.set[data-i="${j}"][data-k="0"] .rest`); await espera(p, 400);
+  const alvo = (s0.exs[j].biset_com || s0.exs[j + 1]?.biset_com === s0.exs[j].ordem) ? j + 1 : j; /* bi-set vai e volta: o A2 só aparece depois de marcar o A1 */ await p.fill(`.set[data-i="${j}"][data-k="0"] input[data-f="kg"]`, '20'); await p.click(`.set[data-i="${j}"][data-k="0"] .rest`); await espera(p, 400);
   if (alvo !== j) { if (await p.$('#m #q-n')) await p.click('#q-n'); await p.click(`.set[data-i="${alvo}"][data-k="0"] .rest`); await espera(p, 500); }
   ok(!!(await p.$('#rest-pt')), 'descanso tem "Pausar o treino"'); await shot(p, 'descanso-pausar');
   if (await p.$('#rest-pt')) { await p.click('#rest-pt'); await espera(p, 600); ok(/#home/.test(p.url()) && !!(await sessao(p))?.pausadoEm, 'tocar pausa o treino e volta pro Início'); }
