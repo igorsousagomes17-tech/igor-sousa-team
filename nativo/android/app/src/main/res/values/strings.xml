@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Igor Sousa Team</string>
+    <string name="title_activity_main">Igor Sousa Team</string>
+    <string name="package_name">br.com.igorsousa.team</string>
+    <string name="custom_url_scheme">br.com.igorsousa.team</string>
+</resources>
