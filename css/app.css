@@ -492,3 +492,6 @@ details.mais .rapidos{margin-top:8px}
 html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
 /* 07/11: painel, selos "Personalizado" / "parou no meio" / "dor" não se encavalam */
 .r b{line-height:1.7}.r b .pill{display:inline-block;line-height:1.25;vertical-align:middle;margin:1px 0;white-space:nowrap}
+
+/* Meta de água */
+.agua-d{display:flex;flex-direction:column;align-items:center;gap:2px}.agua-d small{font-size:.625rem;color:var(--muted);text-transform:uppercase}.agua-d.hj small{color:var(--accent);font-weight:700}.agua [data-agua]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1;padding:10px 6px;white-space:nowrap}.agua [data-agua] small{display:block;font-size:.75rem;font-weight:600;opacity:.75;text-transform:none;letter-spacing:0}

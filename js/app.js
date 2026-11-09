@@ -7,6 +7,7 @@ import * as A from './acolhe.js';
 import { cargaPorNome, equivalentes } from './conteudo.js';
 import { videoDe, animDe, ehAnim } from './animacoes.js';
 import * as K from './kcal.js'; // T = t, pra quando "t" já é nome de variável
+import * as W from './agua.js'; // meta de água do dia
 
 const C = window.ISTEAM_CONFIG;
 const app = $('#app');
@@ -215,6 +216,7 @@ routes.home = async () => {
     <button class="card" data-go="pontos" style="text-align:left;border:0;color:var(--fg)"><h3>${esc(!desafio?.titulo || desafio.titulo === 'Desafio do mês' ? t('Desafio do mês') : desafio.titulo)}</h3><div class="big" style="margin:6px 0 4px">${mesCount}<small>/${tp(dmeta, '{n} treino', '{n} treinos')}</small></div><div class="bar"><i style="width:${Math.min(100, mesCount / dmeta * 100)}%"></i></div><p class="muted mt" id="desaf">${mesCount >= dmeta ? t('Batido! 🎉') : tp(dmeta - mesCount, 'Falta {n} pra +{b} pts', 'Faltam {n} pra +{b} pts', { b: desafio?.pontos_bonus || 200 })}</p></button>
     <div class="card"><h3>${t('Meta da semana')}</h3><div class="big" style="margin:6px 0 4px">${semCount}<small>/${tp(meta, '{n} treino', '{n} treinos')}</small></div><div class="row" style="gap:4px">${Array.from({ length: meta }, (_, i) => `<i class="dot ${i < semCount ? 'on' : ''}"></i>`).join('')}</div><p class="muted mt">${semCount >= meta ? t('Semana fechada 💪') : tp(meta - semCount, 'Falta {n} · você consegue', 'Faltam {n} · você consegue')}</p></div>
   </div>
+  ${p.role !== 'admin' ? W.cardHtml(p, sessoes, db.LS) : ''}
   <button class="card row home-ia" data-go="assistente" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent);display:grid;place-items:center;flex-shrink:0;color:var(--accent-ink);font-size:1.25rem">💬</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('Tira-dúvidas 24h')}</b><p class="muted">${t('Pergunta sobre seu treino, execução, carga, cardio... a IA do time responde na hora.')}</p></div></button>
   <button class="card row home-time" data-go="comunidade" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><div style="width:44px;height:44px;border-radius:50%;background:#2a2a2e;display:grid;place-items:center;flex-shrink:0;font-size:1.25rem">🔥</div><div style="flex:1;min-width:0"><b style="font-size:0.9375rem">${t('O time')}</b><p class="muted" id="timeHoje">${t('Veja quem já treinou hoje e o ranking do mês.')}</p></div></button>
   <div class="row between"><h3>${t('Programas extras')}</h3><button class="back" style="color:var(--accent)" data-go="lib">${t('ver todos')}</button></div>
@@ -224,6 +226,7 @@ routes.home = async () => {
   if ($('#desc')) $('#desc').onclick = async () => { if (await perguntar(t('Descartar treino?'), t('O que você marcou nesse treino vai ser apagado.'), t('Descartar'), t('Manter'))) { pararDescanso(); db.desfazerCargas(S.sessao?.chave); S.sessao = null; db.LS.del('sessao'); routes.home(); } };
   if ($('#resp')) $('#resp').onclick = () => { db.LS.set('respLidas', [...db.LS.get('respLidas', []), chaveResp(resp)].slice(-50)); S.rolarResp = true; go('perfil'); }; // abre já nas respostas, não no topo do Perfil
   if ($('#anam')) $('#anam').onclick = () => anamneseForm(S.perfil, () => go('home'));
+  W.ligar(p, sessoes, db.LS, { $, toast });
   if ($('#resumoSem')) $('#resumoSem').onclick = () => { A.resumoVisto(resumoAnt.semanaKey); go('semana', resumoAnt.semanaKey + '|home'); };
   if ($('.volta-x')) $('.volta-x').onclick = () => { A.voltaVisto(); $('#volta')?.remove(); };
   const ult = sessoes.find(s => s.finalizada_em); A.avisarSW({ ultimo: ult?.finalizada_em || null, nome: primeiroNome(p.nome), proximo: prox ? t('Treino {l}', { l: prox.letra }) : t('treino') });
