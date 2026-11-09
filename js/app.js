@@ -9,6 +9,9 @@ import { videoDe, animDe, ehAnim } from './animacoes.js';
 import * as K from './kcal.js'; // T = t, pra quando "t" já é nome de variável
 
 const C = window.ISTEAM_CONFIG;
+// App das lojas (Capacitor): sem link de compra (regra da Apple/Google) e sem texto de "instalar na tela inicial"
+const NATIVO = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+if (NATIVO) document.documentElement.classList.add('nativo');
 const app = $('#app');
 const S = { user: null, perfil: null, plano: null, programas: null, sessao: null };
 
@@ -127,7 +130,7 @@ function isoWeek(d) { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(),
 // ENTRADA / LOGIN ---------------------------------------------------------
 routes.entrada = () => { render(`<div class="view noTabs">${botaoIdioma()}<div class="hero-entrada"><img src="icons/igor_s.jpg" alt="Igor Sousa">
   <div class="c"><div class="logo big">IGOR<br>SOUSA <b>TEAM</b></div><p class="muted">${t('Treino, comunidade e evolução. Tudo no seu celular.')}</p>
-  <button class="btn" data-go="login">${t('Entrar')}</button><a class="btn ghost" href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener">${t('Sou nova, quero começar')}</a></div></div></div>`); $('#lang').onclick = escolherIdioma; };
+  <button class="btn" data-go="login">${t('Entrar')}</button>${NATIVO ? '' : `<a class="btn ghost" href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener">${t('Sou nova, quero começar')}</a>`}</div></div></div>`); $('#lang').onclick = escolherIdioma; };
 
 routes.login = () => {
   render(`<div class="view noTabs"><div class="topbar"><button class="back" data-go="entrada">‹ ${t('Voltar')}</button>${botaoIdioma().replace('langbtn', 'langbtn inline')}</div>
@@ -139,8 +142,8 @@ routes.login = () => {
     <p class="err" id="err" hidden></p>
     <button class="btn" id="bt">${t('Entrar')}</button>
     <button type="button" class="btn ghost sm" id="esq" style="width:100%">${t('Esqueci minha senha')}</button>
-    <p class="muted center" style="margin-top:6px">${t('Ainda não é aluna?')} <a href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 4px">${t('Assinar')}</a></p>
-    <p class="muted center small">${t('Pagamento pela Kiwify. Confirmou, recebe o acesso no WhatsApp.')}</p></form></div>`);
+    ${NATIVO ? '' : `<p class="muted center" style="margin-top:6px">${t('Ainda não é aluna?')} <a href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 4px">${t('Assinar')}</a></p>
+    <p class="muted center small">${t('Pagamento pela Kiwify. Confirmou, recebe o acesso no WhatsApp.')}</p>`}</form></div>`);
   $('#lang').onclick = escolherIdioma;
   let erros = 0;
   $('#f').onsubmit = async e => {
@@ -1695,7 +1698,7 @@ routes.perfil = async () => {
   ${'<div class="card" id="stv"><div class="row between"><b style="font-size:0.9375rem">Strava</b></div><p class="muted">…</p></div>'}
   <div class="card"><b style="font-size:0.9375rem">Aa ${t('Tamanho da letra')}</b><div class="row" style="gap:6px;margin-top:8px" role="radiogroup">${[['', 'Normal', 0.9375], ['g', 'Grande', 1.0625], ['gg', 'Maior', 1.1875]].map(([v, n, z]) => `<button class="btn sm ${letraAtual() === v ? '' : 'ghost'}" data-letra="${v}" role="radio" aria-checked="${letraAtual() === v}" style="flex:1;min-width:0;padding:0 6px;white-space:normal;line-height:1.1;font-size:${z}rem">${t(n)}</button>`).join('')}</div><p class="muted small mt">${t('Só nesse celular. Também segue a letra que você escolheu no celular.')}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🌐 ${t('Idioma')}</b><button class="btn ghost sm" id="idi">${infoIdioma().flag} ${infoIdioma().nome}</button></div><p class="muted">${t('O app aparece nesse idioma. Treinos, dicas e recados do Igor continuam em português.')}</p></div>
-  <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteSuportado() ? `<button class="sw ${A.lembreteLigado() ? 'on' : ''}" id="notif" aria-label="${t('Lembretes')}"></button>` : ''}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Lembrete de 3 dias sem treinar: no iPhone chega em breve.') : t('Seu navegador não aceita lembrete automático. Abre o app pelo Chrome e instala na tela inicial pra ligar.') + ' ' + t('No descanso, deixa o app aberto: com a tela apagada o celular pode não apitar.'))}</p></div>
+  ${NATIVO ? '' : `<div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteSuportado() ? `<button class="sw ${A.lembreteLigado() ? 'on' : ''}" id="notif" aria-label="${t('Lembretes')}"></button>` : ''}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Lembrete de 3 dias sem treinar: no iPhone chega em breve.') : t('Seu navegador não aceita lembrete automático. Abre o app pelo Chrome e instala na tela inicial pra ligar.') + ' ' + t('No descanso, deixa o app aberto: com a tela apagada o celular pode não apitar.'))}</p></div>`}
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🔥 ${t('Aparecer no time')}</b><button class="sw ${p.comunidade === false ? '' : 'on'}" id="swTime" aria-label="${t('Aparecer no time')}"></button></div><p class="muted">${t('Seu primeiro nome e a inicial aparecem no ranking e em "treinou agora há pouco". Nada de foto, carga ou peso.')}</p></div>
   <button class="btn ghost sm" id="tour" style="width:100%">🧭 ${t('Ver o passeio pelo app de novo')}</button>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Senha')}</b><button class="btn ghost sm" id="pw">${t('trocar')}</button></div><p class="muted">${p.senha_trocada === false ? t('Se ainda é o seu número de WhatsApp, troca aqui.') : t('Quer mudar sua senha? Troca aqui quando quiser.')}</p></div>
@@ -1740,7 +1743,7 @@ routes.perfil = async () => {
   if ($('#delConta')) $('#delConta').onclick = () => {
     overlay(`<div class="modal" id="m"><form class="box" id="fx" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${t('Excluir minha conta')}</h2>
       <p class="muted">${t('Isso apaga de vez seu acesso, seus treinos, cargas, fotos, medidas, pontos e conversas. Não dá pra desfazer.')}</p>
-      <p class="muted">${t('Excluir a conta não cancela a cobrança na Kiwify. Se você paga por assinatura, cancela por lá também (ou chama o Igor).')}</p>
+      <p class="muted">${t('Excluir a conta não cancela sua assinatura. Pra parar a cobrança, chama o Igor.')}</p>
       <div class="field"><label class="l" for="x0">${t('Digita sua senha pra confirmar')}</label>${campoSenha('x0', '', 'current-password')}</div>
       <p class="err" id="e" hidden></p><div class="row" style="flex-wrap:wrap;gap:8px"><button type="button" class="btn sm" id="c" style="flex:1 1 120px;min-width:0">${t('Cancelar')}</button><button class="btn ghost sm" id="s" style="flex:1 1 120px;min-width:0">${t('Excluir de vez')}</button></div></form></div>`);
     $('#c').onclick = closeOverlay;
@@ -1934,7 +1937,7 @@ async function boot() {
   if (S.perfil === ESPERA) { S.perfil = guardado; db.perfil().then(p => { if (p && S.perfil?.id === p.id) S.perfil = p; }).catch(() => {}); }
   if (!S.perfil && (semRede || navigator.onLine === false)) { render(`<div class="view noTabs"><div class="logo big" style="margin-top:40px">IGOR<br>SOUSA <b>TEAM</b></div><h2>${t('Sem internet pra carregar sua conta')}</h2><p class="muted">${t('Na 1ª vez neste celular o app precisa de sinal. Depois ele abre mesmo sem internet.')}</p><button class="btn" id="o">↻ ${t('Tentar de novo')}</button></div>`); $('#o').onclick = () => boot(); return; }
   if (!S.perfil) { render(`<div class="view noTabs"><h2>${t('Conta sem perfil')}</h2><p class="muted">${t('Chama o Igor no WhatsApp pra liberar seu acesso.')}</p><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
-  if (!S.perfil.ativa && S.perfil.role !== 'admin') { A.limparLembrete(); render(`<div class="view noTabs"><h2>${t('Acesso pausado')}</h2><p class="muted">${t('Sua assinatura tá pausada. Renovou? É só me chamar que libero na hora.')}</p><a class="btn" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}">${t('Falar com o Igor')}</a><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
+  if (!S.perfil.ativa && S.perfil.role !== 'admin') { A.limparLembrete(); render(`<div class="view noTabs"><h2>${t('Acesso pausado')}</h2><p class="muted">${NATIVO ? t('Seu acesso tá pausado. Fala comigo que eu te ajudo.') : t('Sua assinatura tá pausada. Renovou? É só me chamar que libero na hora.')}</p><a class="btn" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}">${t('Falar com o Igor')}</a><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
   sincronizarFila();
   // Igor também treina pelo app: com treino aberto no celular dele, volta pro treino (antes caía no painel e o treino parecia sumido)
   if (S.perfil.role === 'admin') { const ab = db.LS.get('sessao') || db.LS.get('sessao@' + S.perfil.id); if (!ab || (ab.dono && ab.dono !== S.perfil.id)) return go('admin'); }
