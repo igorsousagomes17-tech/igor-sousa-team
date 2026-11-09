@@ -1,7 +1,7 @@
 const C0 = window.ISTEAM_CONFIG;
 const DEMO = !!(C0.DEMO || new URLSearchParams(location.search).has('demo'));
 const db = DEMO ? await import('./db-mock.js') : await import('./db.js');
-import { ligarAvisoRemoto, beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, baixarImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho, avisoAtual, ajustaAbas } from './ui.js';
+import { ligarAvisoRemoto, beep, $, $$, esc, toast, fecharToast, overlay, closeOverlay, fmtMin, hoje, primeiroNome, fmtData, videoModal, restTimer, tabs, cardImagem, baixarImagem, pararDescanso, congelarTrabalho, descansoAtivo, minimizarDescanso, campoSenha, traduzErro, semCarga, marcarSemPeso, semPesoMarcado, trabalhoFim, abrirTimer, encerrarTrabalho, avisoAtual, ajustaAbas , nativoApp, compartilharNativo } from './ui.js';
 import { t, t as T, tp, num, dec, dataLocal, idioma, setIdioma, IDIOMAS, infoIdioma, loc, tc, tlivre, ligarTradutor } from './i18n.js';
 import * as A from './acolhe.js';
 import { cargaPorNome, equivalentes } from './conteudo.js';
@@ -9,6 +9,9 @@ import { videoDe, animDe, ehAnim } from './animacoes.js';
 import * as K from './kcal.js'; // T = t, pra quando "t" já é nome de variável
 
 const C = window.ISTEAM_CONFIG;
+// App das lojas (Capacitor): sem link de compra (regra da Apple/Google) e sem texto de "instalar na tela inicial"
+const NATIVO = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+if (NATIVO) document.documentElement.classList.add('nativo');
 const app = $('#app');
 const S = { user: null, perfil: null, plano: null, programas: null, sessao: null };
 
@@ -127,7 +130,7 @@ function isoWeek(d) { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(),
 // ENTRADA / LOGIN ---------------------------------------------------------
 routes.entrada = () => { render(`<div class="view noTabs">${botaoIdioma()}<div class="hero-entrada"><img src="icons/igor_s.jpg" alt="Igor Sousa">
   <div class="c"><div class="logo big">IGOR<br>SOUSA <b>TEAM</b></div><p class="muted">${t('Treino, comunidade e evolução. Tudo no seu celular.')}</p>
-  <button class="btn" data-go="login">${t('Entrar')}</button><a class="btn ghost" href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener">${t('Sou nova, quero começar')}</a></div></div></div>`); $('#lang').onclick = escolherIdioma; };
+  <button class="btn" data-go="login">${t('Entrar')}</button>${NATIVO ? '' : `<a class="btn ghost" href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener">${t('Sou nova, quero começar')}</a>`}</div></div></div>`); $('#lang').onclick = escolherIdioma; };
 
 routes.login = () => {
   render(`<div class="view noTabs"><div class="topbar"><button class="back" data-go="entrada">‹ ${t('Voltar')}</button>${botaoIdioma().replace('langbtn', 'langbtn inline')}</div>
@@ -139,8 +142,8 @@ routes.login = () => {
     <p class="err" id="err" hidden></p>
     <button class="btn" id="bt">${t('Entrar')}</button>
     <button type="button" class="btn ghost sm" id="esq" style="width:100%">${t('Esqueci minha senha')}</button>
-    <p class="muted center" style="margin-top:6px">${t('Ainda não é aluna?')} <a href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 4px">${t('Assinar')}</a></p>
-    <p class="muted center small">${t('Pagamento pela Kiwify. Confirmou, recebe o acesso no WhatsApp.')}</p></form></div>`);
+    ${NATIVO ? '' : `<p class="muted center" style="margin-top:6px">${t('Ainda não é aluna?')} <a href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 4px">${t('Assinar')}</a></p>
+    <p class="muted center small">${t('Pagamento pela Kiwify. Confirmou, recebe o acesso no WhatsApp.')}</p>`}</form></div>`);
   $('#lang').onclick = escolherIdioma;
   let erros = 0;
   $('#f').onsubmit = async e => {
@@ -658,7 +661,8 @@ let clockIv, wake, ultToque = 0, ultMarca = { em: 0, i: -1 }; const INATIVO = 10
 // Bi-set: exercício da última série marcada no passo (o "‹ Corrigir" abre nele, não sempre no A1)
 const ultimoMarcado = (s, g) => g.reduce((a, x) => Math.max(0, ...s.sets[x].map(z => z.feitaEm || 0)) > Math.max(0, ...s.sets[a].map(z => z.feitaEm || 0)) ? x : a, g[0]);
 ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => { ultToque = Date.now(); }, { capture: true, passive: true }));
-async function manterTelaAcesa() { try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch {} }
+const keepAwake = () => (NATIVO && window.Capacitor?.Plugins?.KeepAwake) || null; // app das lojas: o wakeLock do navegador não existe dentro do app
+async function manterTelaAcesa() { const K = keepAwake(); if (K) { if (!wake) { try { await K.keepAwake(); wake = { release: () => K.allowSleep().catch(() => {}) }; } catch {} } return; } try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch {} }
 function soltarTela() { try { wake?.release(); } catch {} wake = null; }
 // Criança chamou e o app ficou de lado: o tempo escondido não conta no treino (tolera 2 min, o tempo de uma série
 // com o celular no bolso; com descanso ou cronômetro rodando, tolera até o fim dele + 3 min).
@@ -1311,6 +1315,7 @@ function artePorCima(blob) {
   };
   $('#salvaArte').onclick = async () => {
     const file = new File([blob], 'treino-feito-sem-fundo.png', { type: 'image/png' });
+    if (nativoApp()) { const n = await compartilharNativo(blob, file.name, t('Treino feito')); if (n === 'shared') { ok('shared'); return; } if (n === 'cancel') return; } // app das lojas: abre o compartilhar do celular (dá pra mandar direto pro story)
     if (android) { baixarImagem(blob, file.name); $('#salvaArte').textContent = t('Salva ✓'); $('#abreIg').hidden = false; ok('arte'); return; } // um aviso só, que não manda escolher a imagem como fundo (deixava o story preto)
     if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); ok('shared'); return; } catch (e) { if (e?.name === 'AbortError') return; } }
     const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); ok('download');
@@ -1690,17 +1695,17 @@ routes.perfil = async () => {
   <div class="card row" style="gap:12px"><div style="width:52px;height:52px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-family:var(--display);font-size:1.375rem;font-weight:800;color:var(--accent-ink)">${esc((p.nome || '?')[0].toUpperCase())}</div><div><b style="font-size:1.0625rem">${esc(p.nome)}</b>${p.plano === 'personalizado' ? ` <span class="pill" style="vertical-align:middle">${t('Personalizado')}</span>` : ''}<p class="muted">${t('No time desde {data}', { data: dataLocal(p.created_at, { month: 'short', year: 'numeric' }) })} · ${t('{n} pts', { n: num(p.pontos) })}</p></div></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Minha ficha (anamnese)')}</b><button class="btn ghost sm" id="ed">${t('editar')}</button></div><p class="muted">${esc([rotuloAnam('objetivo', p.objetivo), p.dias_semana ? t('{n}x/semana', { n: p.dias_semana }) : null, p.tempo_treino_min ? t('{n} min', { n: p.tempo_treino_min }) : null, rotuloAnam('local_treino', p.local_treino), (p.foco || []).length ? t('foco: {x}', { x: p.foco.map(f => rotuloAnam('foco', f)).join(', ') }) : null, p.limitacoes ? t('atenção: {x}', { x: tc(p.limitacoes.replace(/^\s*aten[cç][aã]o\s*:?\s*/i, '')) }) : null].filter(Boolean).join(' · ') || t('preencha pro Igor montar seu treino'))}</p>${(() => { const m = tmb(p); return m ? `<p class="muted mt">${t('Seu corpo gasta umas <b style="color:var(--fg)">{g} calorias por dia</b> (num dia sem treino, umas {b}). É uma estimativa e atualiza quando você registra o peso.', { g: num(m.gasto), b: num(m.tmb) })}</p>` : ''; })()}</div>
   <div class="card" id="perfil-respostas"><div class="row between"><b style="font-size:0.9375rem">${t('Respostas do Igor')}</b>${novas ? `<span class="pill on">${tp(novas, '{n} nova', '{n} novas')}</span>` : ''}</div>${resp.length ? resp.slice(0, 3).map(s => `<div class="mt"><p class="muted small">${t('Seu {x}', { x: esc(s.titulo ? nomeCurto(s.titulo) : t('treino')) })} · ${fmtData(s.finalizada_em)}${s.comentario ? ': "' + esc(s.comentario) + '"' : ''}</p><p style="margin-top:2px;white-space:pre-line">↳ "${esc(tlivre(s.resposta_igor))}"</p>${s.resposta_aluna && editaR !== s.id && !igorDepoisDela(s) ? `<p class="small resp-aluna">${t('Você:')} "${esc(s.resposta_aluna)}"${podeResp && s.resposta_aluna_em && Date.now() - new Date(s.resposta_aluna_em) < 15 * 60000 ? ` <button class="back small" data-redit="${esc(s.id)}" style="min-height:44px;padding:0 6px">✎ ${t('editar')}</button>` : ''}</p>` : podeResp ? `<div class="resp-in"><textarea class="input" data-rin="${esc(s.id)}" maxlength="1000" rows="3" placeholder="${t('Escreve sua resposta pro Igor…')}" aria-label="${t('Responder o Igor…')}">${esc(rascR[s.id] ?? (editaR === s.id ? s.resposta_aluna : '') ?? '')}</textarea><button class="btn sm" data-rsend="${esc(s.id)}">${t('Enviar pro Igor')}</button></div>` : ''}</div>`).join('') + (podeResp ? '' : `<p class="muted small mt">${t('Quer responder? Escreve no recado do próximo treino ou')} <a href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:44px;padding:0 6px;margin:-12px -2px">${t('chama no WhatsApp')}</a>.</p>`) : `<p class="muted">${t('Quando você mandar feedback no fim do treino, ele responde aqui.')}</p>`}</div>
-  <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Indique uma amiga')}</b><b style="color:var(--accent)">${t('+{n} pts', { n: 300 })}</b></div><p class="muted">${t('Seu código:')} <b style="color:var(--fg)">${esc(p.cod_indicacao || '')}</b>. ${t('Quando ela assinar, é só ela falar seu código pro Igor no WhatsApp: os +300 entram pra você.')}</p>${amigaBtn(p, true)}</div>
+  <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Indique uma amiga')}</b><b style="color:var(--accent)">${t('+{n} pts', { n: 300 })}</b></div><p class="muted">${t('Seu código:')} <b style="color:var(--fg)">${esc(p.cod_indicacao || '')}</b>. ${NATIVO ? t('Quando ela entrar pro time, é só ela falar seu código pro Igor: os +300 entram pra você.') : t('Quando ela assinar, é só ela falar seu código pro Igor no WhatsApp: os +300 entram pra você.')}</p>${amigaBtn(p, true)}</div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Cronômetro na tela de bloqueio')}</b><button class="sw ${chipOff() ? '' : 'on'}" id="chipOn" role="switch" aria-checked="${!chipOff()}" aria-label="${t('Cronômetro na tela de bloqueio')}"></button></div><p class="muted">${/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Mostra o descanso na tela de bloqueio, como o Spotify. No iPhone o apito só toca com o app aberto: no descanso, deixa a tela acesa.') : t('Mostra o descanso em cima, como o Spotify, e apita quando acaba. Pode pausar a música enquanto o descanso roda.')}</p></div>
   ${'<div class="card" id="stv"><div class="row between"><b style="font-size:0.9375rem">Strava</b></div><p class="muted">…</p></div>'}
   <div class="card"><b style="font-size:0.9375rem">Aa ${t('Tamanho da letra')}</b><div class="row" style="gap:6px;margin-top:8px" role="radiogroup">${[['', 'Normal', 0.9375], ['g', 'Grande', 1.0625], ['gg', 'Maior', 1.1875]].map(([v, n, z]) => `<button class="btn sm ${letraAtual() === v ? '' : 'ghost'}" data-letra="${v}" role="radio" aria-checked="${letraAtual() === v}" style="flex:1;min-width:0;padding:0 6px;white-space:normal;line-height:1.1;font-size:${z}rem">${t(n)}</button>`).join('')}</div><p class="muted small mt">${t('Só nesse celular. Também segue a letra que você escolheu no celular.')}</p></div>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🌐 ${t('Idioma')}</b><button class="btn ghost sm" id="idi">${infoIdioma().flag} ${infoIdioma().nome}</button></div><p class="muted">${t('O app aparece nesse idioma. Treinos, dicas e recados do Igor continuam em português.')}</p></div>
-  <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteSuportado() ? `<button class="sw ${A.lembreteLigado() ? 'on' : ''}" id="notif" aria-label="${t('Lembretes')}"></button>` : ''}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Lembrete de 3 dias sem treinar: no iPhone chega em breve.') : t('Seu navegador não aceita lembrete automático. Abre o app pelo Chrome e instala na tela inicial pra ligar.') + ' ' + t('No descanso, deixa o app aberto: com a tela apagada o celular pode não apitar.'))}</p></div>
+  ${NATIVO ? '' : `<div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Lembretes')}</b>${A.lembreteSuportado() ? `<button class="sw ${A.lembreteLigado() ? 'on' : ''}" id="notif" aria-label="${t('Lembretes')}"></button>` : ''}</div><p class="muted">${A.lembreteSuportado() ? t('Aviso carinhoso se passar 3 dias sem treinar. Funciona com o app instalado na tela inicial.') : (/iPhone|iPad|iPod/.test(navigator.userAgent) ? t('Lembrete de 3 dias sem treinar: no iPhone chega em breve.') : t('Seu navegador não aceita lembrete automático. Abre o app pelo Chrome e instala na tela inicial pra ligar.') + ' ' + t('No descanso, deixa o app aberto: com a tela apagada o celular pode não apitar.'))}</p></div>`}
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">🔥 ${t('Aparecer no time')}</b><button class="sw ${p.comunidade === false ? '' : 'on'}" id="swTime" aria-label="${t('Aparecer no time')}"></button></div><p class="muted">${t('Seu primeiro nome e a inicial aparecem no ranking e em "treinou agora há pouco". Nada de foto, carga ou peso.')}</p></div>
   <button class="btn ghost sm" id="tour" style="width:100%">🧭 ${t('Ver o passeio pelo app de novo')}</button>
   <div class="card"><div class="row between"><b style="font-size:0.9375rem">${t('Senha')}</b><button class="btn ghost sm" id="pw">${t('trocar')}</button></div><p class="muted">${p.senha_trocada === false ? t('Se ainda é o seu número de WhatsApp, troca aqui.') : t('Quer mudar sua senha? Troca aqui quando quiser.')}</p></div>
   <a class="btn ghost sm" style="width:100%" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener">${t('Chamar o Igor')}</a>
-  <button class="link-fim" id="out" style="margin-top:14px">${t('Sair da minha conta')}</button></div>`, 'perfil');
+  <button class="link-fim" id="out" style="margin-top:14px">${t('Sair da minha conta')}</button>${p.role === 'admin' ? '' : `<button class="link-fim" id="delConta" style="margin-top:4px;opacity:.7">${t('Excluir minha conta')}</button>`}</div>`, 'perfil');
   $$('[data-letra]').forEach(b => b.onclick = () => { aplicaLetra(b.dataset.letra); routes.perfil(); });
   $('#idi').onclick = escolherIdioma; if ($('#stv')) cartaoStrava(); if ($('#chipOn')) $('#chipOn').onclick = () => { const b = $('#chipOn'), liga = !b.classList.contains('on'); b.classList.toggle('on', liga); b.setAttribute('aria-checked', liga); try { liga ? localStorage.setItem('chip_on', '1') : localStorage.removeItem('chip_on'); } catch {} };
   // Responder o Igor: vai pela função do banco (só a sessão dela, até 1000 letras) e aparece embaixo da resposta dele
@@ -1737,6 +1742,21 @@ routes.perfil = async () => {
       $('#e').hidden = true; $('#s').disabled = true; try { if (!(await comLimite(db.conferirSenha($('#n0').value), 12000))) { $('#e').textContent = t('A senha de agora não confere. Esqueceu? Sai do app e toca em "Esqueci minha senha".'); $('#e').hidden = false; $('#s').disabled = false; return; } await db.trocarSenha($('#n1').value); await db.salvarPerfil({ senha_trocada: true }).catch(() => {}); closeOverlay(); toast(t('Senha trocada ✓ Na próxima vez, entra com ela.')); } catch (e) { $('#e').textContent = traduzErro(e); $('#e').hidden = false; $('#s').disabled = false; } };
   };
   $('#ed').onclick = () => anamneseForm(p, () => go('perfil'));
+  if ($('#delConta')) $('#delConta').onclick = () => {
+    overlay(`<div class="modal" id="m"><form class="box" id="fx" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${t('Excluir minha conta')}</h2>
+      <p class="muted">${t('Isso apaga de vez seu acesso, seus treinos, cargas, fotos, medidas, pontos e conversas. Não dá pra desfazer.')}</p>
+      <p class="muted">${t('Excluir a conta não cancela sua assinatura. Pra parar a cobrança, chama o Igor.')}</p>
+      <div class="field"><label class="l" for="x0">${t('Digita sua senha pra confirmar')}</label>${campoSenha('x0', '', 'current-password')}</div>
+      <p class="err" id="e" hidden></p><div class="row" style="flex-wrap:wrap;gap:8px"><button type="button" class="btn sm" id="c" style="flex:1 1 120px;min-width:0">${t('Cancelar')}</button><button class="btn ghost sm" id="s" style="flex:1 1 120px;min-width:0">${t('Excluir de vez')}</button></div></form></div>`);
+    $('#c').onclick = closeOverlay;
+    $('#fx').onsubmit = async ev => { ev.preventDefault(); const sen = $('#x0').value; if (!sen.trim()) { $('#e').textContent = t('Digita a senha de agora (a que você usa pra entrar).'); $('#e').hidden = false; return; }
+      if ($('#s').disabled) return; $('#e').hidden = true; $('#s').disabled = true; $('#s').textContent = t('Excluindo…');
+      try { await comLimite(db.excluirConta(sen), 20000); }
+      catch (e) { $('#s').disabled = false; $('#s').textContent = t('Excluir de vez'); $('#e').textContent = e?.codigo === 'senha' ? t('A senha não confere. Confere e tenta de novo.') : navigator.onLine === false || erroDeRede(e) ? t('Sem internet agora. Tenta de novo com sinal.') : t('Não deu pra excluir agora. Tenta de novo ou chama o Igor.'); $('#e').hidden = false; return; }
+      closeOverlay(); S.sessao = null; db.LS.del('sessao'); db.LS.del('sessao@' + p.id); db.LS.del('fila');
+      A.limparLembrete(); await db.logout().catch(() => {}); ['chat', 'chatRasc', 'chatPend', 'chatRest', 'chatEm', 'cargas', 'evolucao', 'sessoes', 'rascResp', 'anamnese'].forEach(k => db.LS.del(k)); S.perfil = null; go('entrada'); toast(t('Sua conta foi excluída. Obrigado por ter treinado com a gente 🧡'));
+    };
+  };
 };
 // Mesmas regras de senha no 1º acesso, no Perfil e no "esqueci a senha"
 function erroSenha(a, b) {
@@ -1919,7 +1939,7 @@ async function boot() {
   if (S.perfil === ESPERA) { S.perfil = guardado; db.perfil().then(p => { if (p && S.perfil?.id === p.id) S.perfil = p; }).catch(() => {}); }
   if (!S.perfil && (semRede || navigator.onLine === false)) { render(`<div class="view noTabs"><div class="logo big" style="margin-top:40px">IGOR<br>SOUSA <b>TEAM</b></div><h2>${t('Sem internet pra carregar sua conta')}</h2><p class="muted">${t('Na 1ª vez neste celular o app precisa de sinal. Depois ele abre mesmo sem internet.')}</p><button class="btn" id="o">↻ ${t('Tentar de novo')}</button></div>`); $('#o').onclick = () => boot(); return; }
   if (!S.perfil) { render(`<div class="view noTabs"><h2>${t('Conta sem perfil')}</h2><p class="muted">${t('Chama o Igor no WhatsApp pra liberar seu acesso.')}</p><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
-  if (!S.perfil.ativa && S.perfil.role !== 'admin') { A.limparLembrete(); render(`<div class="view noTabs"><h2>${t('Acesso pausado')}</h2><p class="muted">${t('Sua assinatura tá pausada. Renovou? É só me chamar que libero na hora.')}</p><a class="btn" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}">${t('Falar com o Igor')}</a><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
+  if (!S.perfil.ativa && S.perfil.role !== 'admin') { A.limparLembrete(); render(`<div class="view noTabs"><h2>${t('Acesso pausado')}</h2><p class="muted">${NATIVO ? t('Seu acesso tá pausado. Fala comigo que eu te ajudo.') : t('Sua assinatura tá pausada. Renovou? É só me chamar que libero na hora.')}</p><a class="btn" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}">${t('Falar com o Igor')}</a><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
   sincronizarFila();
   // Igor também treina pelo app: com treino aberto no celular dele, volta pro treino (antes caía no painel e o treino parecia sumido)
   if (S.perfil.role === 'admin') { const ab = db.LS.get('sessao') || db.LS.get('sessao@' + S.perfil.id); if (!ab || (ab.dono && ab.dono !== S.perfil.id)) return go('admin'); }

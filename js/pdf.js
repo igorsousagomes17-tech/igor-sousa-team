@@ -1,7 +1,7 @@
 // PDF informativo do treino do mês. A biblioteca (jsPDF) vem junto do app e só baixa quando a aluna toca no botão;
 // depois da 1ª vez fica no cache e o PDF sai mesmo sem sinal.
 import { tl, idioma, loc, tc } from './i18n.js';
-import { semCarga } from './ui.js'; // mesma regra do app: exercício sem peso não ganha linha de carga
+import { semCarga, compartilharNativo } from './ui.js'; // mesma regra do app: exercício sem peso não ganha linha de carga
 // As fontes do PDF só têm o alfabeto latino: em chinês e hindi o PDF sai em inglês (embutir fonte custaria vários MB).
 const LP = () => ['zh', 'hi'].includes(idioma()) ? 'en' : idioma();
 const T = (pt, v) => tl(LP(), pt, v);
@@ -131,6 +131,7 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
 
   const nome = (programa ? `${limpa(programa)}.pdf` : `${limpa(T('Treino'))} ${limpa(mes).replace(/\s+(de|del)\s+/, ' ')}.pdf`).replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const blob = doc.output('blob');
+  const nat = await compartilharNativo(blob, nome, T('Meu treino do mês')); if (nat === 'shared' || nat === 'cancel') return;
   const arquivo = new File([blob], nome, { type: 'application/pdf' });
   if (navigator.canShare?.({ files: [arquivo] })) {
     try { await navigator.share({ files: [arquivo], title: T('Meu treino do mês') }); return; } catch (e) { if (e.name === 'AbortError') return; }

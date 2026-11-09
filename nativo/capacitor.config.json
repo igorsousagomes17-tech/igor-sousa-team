@@ -1,0 +1,31 @@
+{
+  "appId": "br.com.igorsousa.team",
+  "appName": "Igor Sousa Team",
+  "webDir": "www",
+  "server": {
+    "url": "https://igorsousagomes17-tech.github.io/igor-sousa-team/",
+    "errorPath": "offline.html",
+    "androidScheme": "https"
+  },
+  "backgroundColor": "#0b0b0c",
+  "android": {
+    "backgroundColor": "#0b0b0c"
+  },
+  "ios": {
+    "backgroundColor": "#0b0b0c",
+    "contentInset": "never"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": true,
+      "backgroundColor": "#0b0b0c",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0b0b0c",
+      "overlaysWebView": false
+    }
+  }
+}
