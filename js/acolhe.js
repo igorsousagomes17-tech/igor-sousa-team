@@ -1,6 +1,6 @@
 // Acolhimento e aderência: boas-vindas animada, passeio guiado, resumo da semana, lembretes e o cantinho do time.
 // Princípio do Igor: o app tem que acolher e vender pra quem tá chegando e continuar encantando quem já tá dentro.
-import { $, $$, esc, toast, primeiroNome } from './ui.js';
+import { $, $$, esc, toast, primeiroNome, compartilharNativo } from './ui.js';
 import { t, tp, num, dataLocal, loc } from './i18n.js';
 
 // Vídeo de boas-vindas do Igor (quando ele gravar): coloca o link do arquivo .mp4 aqui e ele substitui a foto.
@@ -141,6 +141,7 @@ export async function imagemResumo(r, { nome, titulo, insta }) {
   stats.forEach(([v, l], j) => { const yy = 1440 + j * 110; x.fillStyle = j === 1 ? '#ff6a00' : '#f4f2ee'; x.font = `800 86px ${DISP}`; x.fillText(v, 70, yy); const wv = x.measureText(v).width; x.fillStyle = '#9a968f'; let fz = 40; x.font = `500 ${fz}px ${BODY}`; while (fz > 26 && x.measureText(l).width > W - 160 - wv) { fz -= 2; x.font = `500 ${fz}px ${BODY}`; } x.fillText(l, 70 + wv + 20, yy); });
   x.fillStyle = '#9a968f'; x.font = `500 36px ${BODY}`; x.fillText(nome + ' · ' + t('treino com'), 70, 1790); x.fillStyle = '#ff6a00'; x.font = `700 46px ${BODY}`; x.fillText(insta, 70, 1850);
   const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.9));
+  const nat = await compartilharNativo(blob, 'minha-semana.jpg', t('Minha semana')); if (nat === 'shared' || nat === 'cancel') return nat;
   const file = new File([blob], 'minha-semana.jpg', { type: 'image/jpeg' });
   if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: t('Minha semana') }); return 'shared'; } catch (e) { if (e?.name === 'AbortError') return 'cancel'; } }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'minha-semana.jpg'; a.click(); return 'download';

@@ -8,10 +8,13 @@
     "assets": "capacitor-assets generate --iconBackgroundColor '#0b0b0c' --iconBackgroundColorDark '#0b0b0c' --splashBackgroundColor '#0b0b0c' --splashBackgroundColorDark '#0b0b0c'"
   },
   "dependencies": {
+    "@capacitor-community/keep-awake": "^8.0.1",
     "@capacitor/android": "^8.6.0",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.6.0",
+    "@capacitor/filesystem": "^8.1.5",
     "@capacitor/ios": "^8.6.0",
+    "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.4"
   },

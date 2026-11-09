@@ -325,8 +325,21 @@ export async function cardImagem({ nome, titulo, minutos, exercicios, series, st
   if (modo === 'blob') return blob;
   return entregarImagem(blob, transparente);
 }
+// App das lojas (Capacitor): dentro do app não existe o compartilhar/baixar do navegador, então usa o compartilhar nativo
+const capPlug = () => { const C = window.Capacitor; return C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.Filesystem && C.Plugins.Share ? C.Plugins : null; };
+export const nativoApp = () => !!capPlug();
+export async function compartilharNativo(blob, nomeArq, titulo) {
+  const P = capPlug(); if (!P) return null;
+  try {
+    const b64 = await new Promise((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = err; r.readAsDataURL(blob); });
+    const { uri } = await P.Filesystem.writeFile({ path: nomeArq, data: b64, directory: 'CACHE' });
+    await P.Share.share({ title: titulo || nomeArq, files: [uri], dialogTitle: titulo || '' });
+    return 'shared';
+  } catch (e) { return /cancel/i.test(String(e?.message || e?.errorMessage || e)) ? 'cancel' : 'erro'; }
+}
 async function entregarImagem(blob, transparente) {
   const tipo = transparente ? 'image/png' : 'image/jpeg', nomeArq = transparente ? 'treino-feito-sem-fundo.png' : 'treino-feito.jpg';
+  const nat = await compartilharNativo(blob, nomeArq, t('Treino feito')); if (nat === 'shared' || nat === 'cancel') return nat;
   const file = new File([blob], nomeArq, { type: tipo });
   if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title: t('Treino feito') }); return 'shared'; } catch (e) { if (e?.name === 'AbortError') return 'cancel'; } } // compartilhar falhou (não foi ela que desistiu): baixa a imagem
   baixarImagem(blob, nomeArq); return 'download';
