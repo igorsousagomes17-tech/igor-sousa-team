@@ -327,7 +327,7 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .versao button.on{background:var(--accent);color:var(--accent-ink)}
 
 /* Spinning guiado */
-.spin-filtro{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:2px -2px}
+.spin-filtro{display:flex;flex-wrap:wrap;gap:6px;margin:2px -2px} /* quebra a linha: em 360px o 25/30 min ficava escondido sem sinal de rolagem */
 .spin-filtro::-webkit-scrollbar{display:none}
 .spin-filtro button{flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-weight:700;font-size:0.875rem}
 .spin-filtro button.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
@@ -494,4 +494,4 @@ html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
 .r b{line-height:1.7}.r b .pill{display:inline-block;line-height:1.25;vertical-align:middle;margin:1px 0;white-space:nowrap}
 
 /* Meta de água */
-.agua-d{display:flex;flex-direction:column;align-items:center;gap:2px}.agua-d small{font-size:.625rem;color:var(--muted);text-transform:uppercase}.agua-d.hj small{color:var(--accent);font-weight:700}.agua [data-agua]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1;padding:10px 6px;white-space:nowrap}.agua [data-agua] small{display:block;font-size:.75rem;font-weight:600;opacity:.75;text-transform:none;letter-spacing:0}
+.agua-d{display:flex;flex-direction:column;align-items:center;gap:2px}.agua-d small{font-size:.625rem;color:var(--muted);text-transform:uppercase}.agua-d.hj small{color:var(--accent);font-weight:700}.agua [data-agua]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1;padding:10px 6px;white-space:nowrap} /* .8: com .75 o "250 ml" ficava abaixo do contraste 4.5:1 */ .agua [data-agua] small{display:block;font-size:.75rem;font-weight:600;opacity:.8;text-transform:none;letter-spacing:0}
