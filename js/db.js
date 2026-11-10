@@ -306,13 +306,15 @@ export const admin = {
   async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,sexo,horario,academia_tipo,equipamento,cardio,evita,ciclo,dias_semana,tempo_treino_min,local_treino,experiencia,foco,incomoda,limitacoes,saude,gestacao,sono_estresse,atividade,nascimento,nutri,desistiu,peso_kg,altura_m,anamnese_em,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(500); return data || []; },
   async planoDe(alunaId) {
     const { data } = await sb.from('planos').select('id,mes,titulo,inicio,fim,treinos(id,letra,nome,ordem,exercicios(*))').eq('aluna_id', alunaId).order('mes', { ascending: false }).limit(1);
-    return data?.[0] || null;
+    const p = data?.[0] || null; p?.treinos?.sort((a, b) => a.ordem - b.ordem || a.letra.localeCompare(b.letra)); // o banco não garante a ordem: o editor trocava as letras
+    return p;
   },
   async salvarPlano(alunaId, mesStr, treinos, datas = {}) {
     // treinos: [{letra,nome,duracao_min,exercicios:[{nome,series,reps,descanso_s,video_url,dica,alternativa}]}]
     const { data: plano, error } = await sb.from('planos').upsert({ aluna_id: alunaId, mes: mesStr, inicio: datas.inicio || null, fim: datas.fim || null, visto_em: null }, { onConflict: 'aluna_id,mes' }).select().single();
     if (error) throw error;
-    await sb.from('treinos').delete().eq('plano_id', plano.id);
+    // Se apagar falhar (sinal caiu) e seguisse, os treinos novos entravam junto com os velhos: aluna com A, B, A, B
+    const del = await sb.from('treinos').delete().eq('plano_id', plano.id); if (del.error) throw del.error;
     for (const [i, t] of treinos.entries()) {
       const { data: tr, error: e2 } = await sb.from('treinos').insert({ plano_id: plano.id, letra: t.letra, nome: t.nome, duracao_min: t.duracao_min || 40, ordem: i }).select().single();
       if (e2) throw e2;

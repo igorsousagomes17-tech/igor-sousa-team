@@ -198,13 +198,15 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   }
 
   async function acesso(a) {
-    const { data } = await db.sb.from('profiles').select('nome,whatsapp,ativa').eq('id', a.id).single();
-    const { data: u } = await db.sb.rpc('email_de', { uid: a.id }).catch(() => ({ data: null }));
+    // A consulta do Supabase não tem .catch (só then): antes dava erro e o "Acesso ao app" não abria. Sem sinal, usa o que a lista já tem.
+    const { data: d0 } = await Promise.resolve(db.sb.from('profiles').select('nome,whatsapp,ativa').eq('id', a.id).single()).catch(() => ({ data: null }));
+    const data = d0 || { nome: a.nome, whatsapp: a.whatsapp, ativa: a.ativa };
+    const { data: u } = await Promise.resolve(db.sb.rpc('email_de', { uid: a.id })).catch(() => ({ data: null }));
     overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${esc(data.nome)}</h2>
       <a class="btn wa sm" href="${wa(data.whatsapp, msgAcesso(data.nome, u || '(e-mail dela)'))}" target="_blank" rel="noopener">Enviar acesso no WhatsApp</a>
       <button class="btn ghost sm" id="pausa">${data.ativa ? 'Pausar acesso' : 'Reativar acesso'}</button>
       <button class="btn ghost sm" id="c">Fechar</button></div></div>`);
-    $('#c').onclick = closeOverlay; $('#pausa').onclick = async () => { await db.admin.setAtiva(a.id, !data.ativa); closeOverlay(); toast(data.ativa ? 'Acesso pausado' : 'Acesso liberado'); go('admin'); };
+    $('#c').onclick = closeOverlay; $('#pausa').onclick = async () => { try { await db.admin.setAtiva(a.id, !data.ativa); } catch (e) { return toast(e.message, true); } closeOverlay(); toast(data.ativa ? 'Acesso pausado' : 'Acesso liberado'); go('admin'); };
   }
 
   // Responder (ou editar a resposta) vendo o que ela escreveu
@@ -214,13 +216,17 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${de2 ? 'Responder ' + esc(nomeA) : b.dataset.edita ? 'Editar resposta' : 'Responder'}</h2><div class="card" style="background:#101012"><b>${esc(f.profiles?.nome || '')} · ${esc(f.titulo || '')} · ${fmtData(f.finalizada_em)}</b><p class="muted">esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${f.duracao_s < 60 ? "&lt;1" : Math.round(f.duracao_s / 60)} min` : ''}</p>${f.comentario ? `<p style="margin-top:6px">"${esc(f.comentario)}"</p>` : ''}${f.resposta_igor && (de2 || f.resposta_aluna) ? `<p class="muted small" style="margin-top:6px;white-space:pre-line">↳ você: ${esc(f.resposta_igor)}</p>` : ''}${f.resposta_aluna ? `<p style="margin-top:6px">↳ ${esc(nomeA)}: "${esc(f.resposta_aluna)}"</p>` : ''}</div><textarea class="input" id="t" placeholder="No seu jeito...">${esc(b.dataset.edita ? f.resposta_igor || '' : '')}</textarea><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Enviar</button></div></div></div>`);
     $('#c').onclick = closeOverlay; $('#s').onclick = async () => { const tx = $('#t').value.trim(); if (!tx) { toast('Escreve a resposta antes de enviar.', true); $('#t').focus(); return; } try { await db.admin.responder(id, de2 ? `${f.resposta_igor}\n\n${nomeA}: "${f.resposta_aluna}"\n\n${tx}` : tx); if (de2) await db.admin.marcarRespostaLida(id).catch(() => {}); closeOverlay(); toast('Respondido ✓ (aparece na tela inicial dela)'); go('admin'); } catch (e) { toast(e.message, true); } };
   }
-  function recado() { overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Recado da semana</h2><p class="muted small">Aparece na tela inicial de todas as alunas.</p><textarea class="input" id="t" placeholder="Essa semana é de carga. Anota tudo!"></textarea><input class="input" id="u" placeholder="Link de áudio/vídeo (opcional)"><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Publicar</button></div></div></div>`); $('#c').onclick = closeOverlay; $('#s').onclick = async () => { try { await db.admin.publicarRecado($('#t').value.trim(), $('#u').value.trim() || null); closeOverlay(); toast('Publicado pra todas ✓'); } catch (e) { toast(e.message, true); } }; }
+  function recado() { overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Recado da semana</h2><p class="muted small">Aparece na tela inicial de todas as alunas.</p><textarea class="input" id="t" placeholder="Essa semana é de carga. Anota tudo!"></textarea><input class="input" id="u" placeholder="Link de áudio/vídeo (opcional)"><div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="s" style="flex:1">Publicar</button></div></div></div>`); $('#c').onclick = closeOverlay; $('#s').onclick = async () => { const tx = $('#t').value.trim(); if (!tx) { toast('Escreve o recado antes de publicar.', true); $('#t').focus(); return; } $('#s').disabled = true; try { await db.admin.publicarRecado(tx, $('#u').value.trim() || null); closeOverlay(); toast('Publicado pra todas ✓'); } catch (e) { toast(e.message, true); $('#s').disabled = false; } }; } // vazio virava um card em branco no Início de todas; toque duplo publicava 2x
 
   desenhar();
 }
 
 // Cadastro de aluna: chama a Edge Function (cria usuário no Auth + perfil) ------------
 async function criarAlunas(rows) {
+  // Número copiado do WhatsApp vem com +55: a senha virava 5562... e ela (que digita com DDD, como diz a mensagem) não entrava.
+  // Nascimento da planilha vem 10/03/1995: o banco recusava e a conta ficava criada pela metade (não dava pra cadastrar de novo).
+  rows = rows.map(r => { const w = String(r.whatsapp || '').replace(/\D/g, ''), m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(r.nascimento || '').trim());
+    return { ...r, whatsapp: w.length >= 12 && w.startsWith('55') ? w.slice(2) : w, nascimento: m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : /^\d{4}-\d{2}-\d{2}$/.test(String(r.nascimento || '').trim()) ? String(r.nascimento).trim() : null }; });
   const { data: { session } } = await db.sb.auth.getSession();
   const r = await fetch(`${C.SUPABASE_URL}/functions/v1/criar-aluna`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: C.SUPABASE_ANON_KEY }, body: JSON.stringify({ alunas: rows }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Falha ao cadastrar'); return j;
@@ -232,7 +238,8 @@ function formAluna(_, go) {
     <p class="muted small">Ela entra com e-mail + número do WhatsApp e troca a senha no app.</p>
     <div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="ok" style="flex:1">Cadastrar</button></div></div></div>`);
   $('#c').onclick = closeOverlay;
-  $('#ok').onclick = async () => { $('#ok').disabled = true; try { const r = await criarAlunas([{ nome: $('#n').value.trim(), email: $('#e').value.trim(), whatsapp: $('#w').value.trim(), nascimento: $('#d').value || null, sexo: $('#s').value }]); closeOverlay(); toast(`Cadastrada ✓ (${r.criadas} ok, ${r.erros?.length || 0} erro)`); go('admin'); } catch (e) { toast(e.message, true); $('#ok').disabled = false; } };
+  // antes fechava com "Cadastrada ✓ (0 ok, 1 erro)" e ele perdia o que digitou
+  $('#ok').onclick = async () => { $('#ok').disabled = true; try { const r = await criarAlunas([{ nome: $('#n').value.trim(), email: $('#e').value.trim(), whatsapp: $('#w').value.trim(), nascimento: $('#d').value || null, sexo: $('#s').value }]); if (!r.criadas) throw new Error('Não cadastrou: ' + (r.erros?.[0]?.erro || 'tenta de novo')); closeOverlay(); toast('Cadastrada ✓'); go('admin'); } catch (e) { toast(e.message, true); $('#ok').disabled = false; } };
 }
 function formLote(go) {
   overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;margin-top:20px"><h2>Cadastro em lote</h2>
@@ -274,7 +281,9 @@ function parseTreinos(txt) {
     const [nome, series, reps, descanso, video, dica, alternativa, bi] = l.split('|').map(x => (x || '').trim());
     // bi-set: 8ª coluna "bi 2" (ou só o número), ou a dica "bi-set com o 2"
     const mb = String(bi || '').match(/\d+/), md = String(dica || '').match(/^bi-?set com (?:o )?(\d+)\.?$/i);
-    cur.exercicios.push({ nome, series: +series || 3, reps: reps || '12', descanso_s: descanso === '' ? 60 : +descanso, video_url: video || null, dica: md ? null : (dica || null), alternativa: alternativa || null, biset_com: mb ? +mb[0] : md ? +md[1] : null });
+    // descanso "60s" / "1 min" (comum no texto colado) virava NaN: o editor mostrava vazio e o banco recusava o treino
+    const ds = parseFloat(String(descanso).replace(',', '.')), dsS = isNaN(ds) ? 60 : Math.round(/min/i.test(descanso) ? ds * 60 : ds);
+    cur.exercicios.push({ nome, series: parseInt(series) || 3, reps: reps || '12', descanso_s: dsS, video_url: video || null, dica: md ? null : (dica || null), alternativa: alternativa || null, biset_com: mb ? +mb[0] : md ? +md[1] : null });
   });
   return treinos;
 }

@@ -349,7 +349,7 @@ const novoTreino = i => ({ letra: LETRAS[i], nome: '', duracao_min: 40, exercici
 function deSalvo(treinos) { // do banco/modelo pro editor: biset_com vira "bi com o próximo"
   return (treinos || []).map((t, i) => {
     const ex = [...(t.exercicios || [])].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0)).map((e, j) => ({ ...e, ordem: j + 1 }));
-    return { letra: LETRAS[i], nome: t.nome || '', duracao_min: t.duracao_min || 40, exercicios: ex.map((e, j) => ({ nome: e.nome, series: e.series ?? 3, reps: e.reps ?? '12', descanso_s: e.descanso_s ?? 60, video_url: e.video_url || null, dica: e.dica || null, alternativa: e.alternativa || null, bi: !!(e.biset_com && e.biset_com === j + 2 && ex[j + 1]) })) };
+    return { letra: LETRAS[i], nome: t.nome || '', duracao_min: t.duracao_min || 40, exercicios: ex.map((e, j) => ({ nome: e.nome, series: e.series ?? 3, reps: e.reps ?? '12', descanso_s: e.descanso_s ?? 60, video_url: e.video_url || null, dica: e.dica || null, alternativa: e.alternativa || null, bi: !!(ex[j + 1] && (e.biset_com === j + 2 || ex[j + 1].biset_com === j + 1)) })) }; // "bi 2" escrito só no 3º (texto colado) também vale: antes o bi-set sumia
   });
 }
 const clona = t => deSalvo(JSON.parse(JSON.stringify(t || [])).map(x => ({ ...x, exercicios: (x.exercicios || []).map((e, j, a) => ('bi' in e ? { ...e, ordem: j + 1, biset_com: e.bi ? j + 2 : a[j - 1]?.bi ? j : null } : e)) })));
