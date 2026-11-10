@@ -6,7 +6,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 Deno.serve(async (req) => {
   const token = Deno.env.get('KIWIFY_TOKEN');
   const u = new URL(req.url);
-  if (token && u.searchParams.get('token') !== token) return new Response('forbidden', { status: 403 });
+  // Sem o segredo configurado, recusa: antes qualquer pessoa na internet podia criar conta ativa ou pausar uma aluna pelo e-mail
+  if (!token || u.searchParams.get('token') !== token) return new Response('forbidden', { status: 403 });
   const body = await req.json().catch(() => ({}));
   const status = String(body.order_status || body.webhook_event_type || '').toLowerCase();
   const cust = body.Customer || body.customer || {};

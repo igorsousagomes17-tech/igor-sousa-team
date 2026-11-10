@@ -312,6 +312,9 @@ Deno.serve(async (req) => {
   if (body.acao === 'traduzir') {
     const NOMES: Record<string, string> = { en: 'English', es: 'Spanish', fr: 'French', zh: 'Simplified Chinese', hi: 'Hindi' };
     const id = String(body.idioma || ''); if (!NOMES[id]) return json({ erro: 'idioma' }, 400);
+    // Só conta ativa (ou o Igor) usa a tradução: gasta IA e grava na tabela que todas leem
+    const { data: quem } = await createClient(url, service).from('profiles').select('role,ativa').eq('id', user.id).maybeSingle();
+    if (!quem || (!quem.ativa && quem.role !== 'admin')) return json({ erro: 'pausada' }, 403);
     const textos = [...new Set((body.textos || []).map(x => String(x || '').trim()).filter(x => x && x.length <= 600))].slice(0, 40);
     if (!textos.length) return json({ traducoes: {} });
     const dbt = createClient(url, service);
