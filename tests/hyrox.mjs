@@ -8,8 +8,8 @@ for (const vw of [375,360]) {
   p.on('pageerror',e=>errs.push(vw+' '+e.message)); p.on('console',m=>{ if(m.type()==='error'&&!/Failed to load|net::/.test(m.text())) errs.push(vw+' console '+m.text()); });
   const larg=async n=>{ if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth)) errs.push(`${vw} scroll horizontal em ${n}`); };
   await p.goto('http://app.local/?demo'); await p.waitForTimeout(400); await p.click('text=ENTRAR'); await p.fill('#em','ana@demo.com'); await p.press('#pw','Enter'); await p.waitForTimeout(900);
-  if (!(await p.$('.hscroll [data-go="hyrox"]'))) errs.push(vw+' sem Hyrox no início');
-  await p.click('[data-go="lib"]'); await p.waitForTimeout(500); await p.click('.grid2 [data-go="hyrox"]'); await p.waitForTimeout(800);
+  if (!(await p.$('.catalogo [data-go="hyrox"]'))) errs.push(vw+' sem Hyrox no início');
+  await p.click('[data-go="lib"]'); await p.waitForTimeout(500); await p.click('.catalogo [data-go="hyrox"]'); await p.waitForTimeout(800);
   const nv=await p.$$eval('[data-nv]',x=>x.length); if(nv!==3) errs.push(vw+' níveis: '+nv); await p.screenshot({path:`${D}/hyrox-nivel-${vw}.png`}); await larg('nível');
   await p.click('[data-nv="int"]'); await p.waitForTimeout(600);
   const tr=await p.$$eval('[data-ht]',x=>x.length); if(tr!==3) errs.push(vw+' treinos: '+tr); await p.screenshot({path:`${D}/hyrox-mes-${vw}.png`,fullPage:true}); await larg('mês');

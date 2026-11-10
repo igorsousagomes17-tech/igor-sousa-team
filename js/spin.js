@@ -21,8 +21,8 @@ const ESTILO = { intervalado: 'Intervalado', subida: 'Subidas', piramide: 'Pirâ
 export function htmlLista(filtro, perfil) {
   const dm = aulaDoMes(), lista = AULAS.filter(a => !filtro || a.min === +filtro);
   const card = a => `<button class="card spin-aula" data-spin="${esc(a.id)}"><div class="row between" style="gap:10px"><div style="min-width:0"><b>${esc(nomeAula(a))}</b><p class="muted small">${t(ESTILO[a.estilo])} · ${t('{n} min', { n: minDe(a) })}${kc(perfil, a)} · ${t('em pé {n}%', { n: Math.round(a.blocos.filter(b => b.pe).reduce((s, b) => s + b.seg, 0) / a.blocos.reduce((s, b) => s + b.seg, 0) * 100) })}</p></div><span class="spin-int" aria-label="${t('Intensidade')}">${'🔥'.repeat(a.nivel)}</span></div>${miniTrilha(a)}</button>`;
-  return `<div class="card hero spin-mes" style="color:#1a0d00"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Aula do mês')}</span>
-    <div class="logo" style="font-size:1.9rem;margin:8px 0 2px;color:#1a0d00">${esc(nomeAula(dm))}</div><p style="font-weight:600">${t(ESTILO[dm.estilo])} · ${t('{n} min', { n: minDe(dm) })}${kc(perfil, dm)}</p>
+  return `<div class="card hero spin-mes" style="color:var(--preto)"><span class="pill" style="background:rgba(0,0,0,.18);color:var(--preto)">${t('Aula do mês')}</span>
+    <div class="logo" style="font-size:var(--t1);margin:8px 0 2px;color:var(--preto)">${esc(nomeAula(dm))}</div><p style="font-weight:600">${t(ESTILO[dm.estilo])} · ${t('{n} min', { n: minDe(dm) })}${kc(perfil, dm)}</p>
     <button class="btn dark" style="margin-top:8px" data-spin="${esc(dm.id)}">▶ ${t('Começar')}</button></div>
   <div class="spin-filtro" role="group" aria-label="${t('Duração')}">${['', ...DURACOES].map(d => `<button class="${String(filtro || '') === String(d) ? 'on' : ''}" data-dur="${d}">${d ? t('{n} min', { n: d }) : t('Todas')}</button>`).join('')}</div>
   <p class="muted small">${t('"Em pé 7%" = quanto da aula é pedalando em pé. 🔥 leve · 🔥🔥 moderada · 🔥🔥🔥 forte.')}</p>

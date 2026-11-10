@@ -36,7 +36,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   await p.click('#rest-pausa'); await espera(p, 200); await p.clock.fastForward('03:00'); await espera(p, 300);
   await p.click('#rest-x'); await espera(p, 200); await p.click('#sair'); await espera(p, 600);
   let s = await sessao(p); ok(!s.sets[0][0].done, 'Pausar com o cronômetro parado no ⏸ não marca a série como feita');
-  ok(/0 de 7/.test(await txt(p, '.card.hero')), `Início conta "0 de 7" (sem o opcional): ${(await txt(p, '.card.hero')).slice(0, 90)}`);
+  ok(/0 de 7/.test(await txt(p, '.hero')), `Início conta "0 de 7" (sem o opcional): ${(await txt(p, '.hero')).slice(0, 90)}`);
   await p.click('[data-go="sessao"]'); await espera(p, 700);
   ok(!!(await p.$('#rest')) && /Pausado/i.test(await txt(p, '#rest-t')), 'Continuar: o cronômetro volta parado onde estava');
   await p.click('#rest-pausa'); await espera(p, 300); ok(/Lado 1 de 2/i.test(await txt(p, '#rest-t')), 'retomar volta a dizer "Lado 1 de 2" (não fica "Pausado")'); await shot(p, 'cronometro-retomado');

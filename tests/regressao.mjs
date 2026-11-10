@@ -76,7 +76,7 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   await p.evaluate(() => { dispatchEvent(new Event('online')); dispatchEvent(new Event('online')); }); await espera(p, 1500);
   const depois = await p.evaluate(() => JSON.parse(localStorage.getItem('demo:state')).sessoes.filter(s => s.finalizada_em).length);
   ok(depois === antes + 1, `treino offline enviado 1 vez só (${antes}→${depois})`);
-  await p.click('.tabs [data-go="home"]'); await espera(p, 600); if (await p.$('#semPula')) { await p.click('#semPula'); await espera(p, 500); } /* segunda-feira: pergunta da semana */ ok(/Treino B/i.test(await txt(p, '.card.hero')), 'programa extra não muda o "Treino de hoje"');
+  await p.click('.tabs [data-go="home"]'); await espera(p, 600); if (await p.$('#semPula')) { await p.click('#semPula'); await espera(p, 500); } /* segunda-feira: pergunta da semana */ ok(/Treino B/i.test(await txt(p, '.hero')), 'programa extra não muda o "Treino de hoje"');
   await p.goBack(); await espera(p, 600); ok(!/Sou nova/.test(await txt(p, 'body')), 'voltar do celular logada não cai na tela de entrada');
   await ctx.close(); }
 

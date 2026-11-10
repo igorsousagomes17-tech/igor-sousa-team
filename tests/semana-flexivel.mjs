@@ -19,12 +19,12 @@ for (const vw of [375,360]) {
     console.log('  opções:', opc);
     const larg = await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth); if (larg) errs.push('scroll horizontal '+vw);
     await p.click('.semop[data-letra="C"]'); await p.waitForTimeout(700);
-    const hero = (await p.innerText('.card.hero')).replace(/\s+/g,' ');
+    const hero = (await p.innerText('.hero')).replace(/\s+/g,' ');
     console.log('  depois de escolher C:', hero.slice(0,80)); if(!/treino c/i.test(hero)) errs.push('não começou pelo C');
     if (await p.isVisible('#semana')) errs.push('card não sumiu');
     await p.reload(); await p.waitForTimeout(900);
     if (await p.isVisible('#semana')) errs.push('perguntou de novo depois de escolher');
-    if (!/treino c/i.test(await p.innerText('.card.hero'))) errs.push('escolha não ficou salva');
+    if (!/treino c/i.test(await p.innerText('.hero'))) errs.push('escolha não ficou salva');
   }
   await ctx.close();
 }

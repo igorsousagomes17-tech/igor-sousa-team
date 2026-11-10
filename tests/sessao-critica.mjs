@@ -30,7 +30,7 @@ if (g) {
   ok(g.h >= 42 && g.h <= 50, `1: altura normal (${Math.round(g.h)}px)`);
   ok(g.w >= g.bw - 30, '1: largura total do card');
   ok(/rgba\(0, 0, 0, 0\)|transparent/.test(g.bg) && /255, 106, 0|rgb\(2[45]\d, 1[01]\d/.test(g.cor), `1: contorno laranja, fundo transparente (${g.bg} / ${g.cor})`);
-  ok(/Aparelho ocupado\? Trocar/i.test(g.txt), '1: texto "Aparelho ocupado? Trocar"');
+  ok(/Máquina ocupada\? Tem substituição/i.test(g.txt), '1: texto "Máquina ocupada? Tem substituição."');
 }
 ok(!/botão laranja/i.test(await p.innerText('.view')), '1: dica não fala mais em "botão laranja"');
 await p.click('.ocup'); await p.waitForTimeout(400);

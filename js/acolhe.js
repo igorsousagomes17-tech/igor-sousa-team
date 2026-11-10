@@ -40,7 +40,7 @@ export function boasVindas(perfil) {
 // 2) PASSEIO GUIADO ------------------------------------------------------------------------
 const PASSOS = [
   ['#semana', 'Começo da semana', 'Toda segunda você escolhe por qual treino começar a semana. Na dúvida, toca em "seguir a ordem normal" e eu mostro o treino do dia.'],
-  ['.card.hero', 'Treino de hoje', 'Aqui aparece o treino do dia. Toca em abrir e é só seguir: o app mostra o exercício, a sua última carga e o cronômetro do descanso.'],
+  ['.hero', 'Treino de hoje', 'Aqui aparece o treino do dia. Toca em abrir e é só seguir: o app mostra o exercício, a sua última carga e o cronômetro do descanso.'],
   ['.home-ia', 'Tira-dúvidas 24h', 'Ficou com dúvida no meio do treino? Pergunta aqui. A IA do time responde na hora, com base no seu treino.'],
   ['.home-time', 'O time', 'Você não treina sozinha: aqui você vê quem do time já treinou hoje e o ranking do mês.'],
   ['.tabs', 'As abas', 'Aqui embaixo: Treino (todos os seus treinos), Vídeos, Pontos e prêmios, Evolução e Perfil. No Perfil tem sua anamnese, as respostas do Igor e este passeio, se quiser ver de novo.'],
@@ -97,21 +97,21 @@ export const fraseSemana = r => r.bateu ? t('Semana fechada! Você fez {n} de {m
 // Card do Início: aparece de segunda a quarta sobre a semana passada (se ela treinou), até ela abrir ou fechar.
 export function cardResumoHome(r) {
   if (!r?.treinos || LSget('resumoVisto') === r.semanaKey) return '';
-  return `<button class="card resumo-home" id="resumoSem" style="width:100%;text-align:left;color:var(--fg)"><div class="row between"><b style="font-size:1rem">📊 ${t('Sua semana passada')}</b><span class="pill on">${r.treinos}/${r.meta}</span></div><p class="muted">${fraseSemana(r)}</p><p class="small mt" style="color:var(--accent)">${t('ver o resumo')} ›</p></button>`;
+  return `<button class="card resumo-home" id="resumoSem" style="width:100%;text-align:left;color:var(--fg)"><div class="row between"><b style="font-size:var(--tx)">📊 ${t('Sua semana passada')}</b><span class="pill on">${r.treinos}/${r.meta}</span></div><p class="muted">${fraseSemana(r)}</p><p class="small mt" style="color:var(--accent)">${t('ver o resumo')} ›</p></button>`;
 }
 export const resumoVisto = key => LSset('resumoVisto', key);
 export function htmlResumo(r, { nome, titulo }) {
   const pct = Math.min(100, Math.round(r.treinos / r.meta * 100));
   return `<div class="resumo">
     <div class="row between"><div class="logo sm">IGOR SOUSA <b>TEAM</b></div><span class="pill">${esc(titulo)}</span></div>
-    <h1 style="font-size:2.25rem;margin-top:6px">${t('MINHA|SEMANA').replace('|', ' ')}</h1>
+    <h1 style="font-size:var(--t1);margin-top:6px">${t('MINHA|SEMANA').replace('|', ' ')}</h1>
     <p class="muted">${fraseSemana(r)}</p>
     <div class="resumo-anel" style="--p:${pct}%"><div><b>${r.treinos}</b><span>${t('de {m} treinos', { m: r.meta })}</span></div></div>
     <div class="grid2" style="margin-top:4px">
       <div class="card"><div class="big">${num(r.minutos)}<small> ${t('min')}</small></div><p class="muted">${t('treinando')}${r.kcal ? ` · ~${num(r.kcal)} kcal` : ''}</p></div>
       <div class="card"><div class="big" style="color:var(--accent)"><span style="font-size:.6em;vertical-align:.25em">🔥</span>${r.semanas}</div><p class="muted">${tp(r.semanas, 'semana seguida', 'semanas seguidas')}</p></div>
     </div>
-    ${r.subiu.length ? `<div class="card"><b>💪 ${tp(r.subiu.length, 'Subiu a carga em {n} exercício', 'Subiu a carga em {n} exercícios')}</b>${r.subiu.slice(0, 4).map(s => `<div class="row between" style="font-size:0.875rem;padding-top:6px;gap:8px"><span>${esc(s.nome)}</span><b style="color:var(--accent);white-space:nowrap">${num(s.de)} → ${num(s.para)} kg</b></div>`).join('')}</div>` : ''}
+    ${r.subiu.length ? `<div class="card"><b>💪 ${tp(r.subiu.length, 'Subiu a carga em {n} exercício', 'Subiu a carga em {n} exercícios')}</b>${r.subiu.slice(0, 4).map(s => `<div class="row between" style="font-size:var(--tx);padding-top:6px;gap:8px"><span>${esc(s.nome)}</span><b style="color:var(--accent);white-space:nowrap">${num(s.de)} → ${num(s.para)} kg</b></div>`).join('')}</div>` : ''}
     ${nome ? `<p class="muted small center">${esc(nome)}</p>` : ''}
   </div>`;
 }
@@ -180,7 +180,7 @@ export function cardVolta(perfil, sessoes, prox) {
   const ult = sessoes.find(s => s.finalizada_em); if (!ult) return '';
   const dias = Math.floor((Date.now() - new Date(ult.finalizada_em)) / 86400000);
   const hoje = new Date().toDateString(); if (dias < 3 || LSget('volta') === hoje) return '';
-  return `<div class="card volta" id="volta"><b style="font-size:1rem">${t('Que bom te ver de volta, {nome}! 🧡', { nome: esc(primeiroNome(perfil.nome)) })}</b><p class="muted">${t('Faz {n} dias desde o último treino. Sem culpa, sem recomeçar do zero: é só continuar.', { n: dias })}</p><div class="row mt" style="gap:8px">${prox ? `<button class="btn sm" style="flex:1" data-go="treino" data-arg="${esc(prox.letra)}">${t('Bora pro {x}', { x: esc(t('Treino {l}', { l: prox.letra })) })}</button>` : ''}<button class="btn ghost sm volta-x" aria-label="${t('Fechar')}" style="${prox ? 'width:48px;padding:0' : 'flex:1'}">${prox ? '✕' : t('ok, bora')}</button></div></div>`;
+  return `<div class="card volta" id="volta"><b style="font-size:var(--tx)">${t('Que bom te ver de volta, {nome}! 🧡', { nome: esc(primeiroNome(perfil.nome)) })}</b><p class="muted">${t('Faz {n} dias desde o último treino. Sem culpa, sem recomeçar do zero: é só continuar.', { n: dias })}</p><div class="row mt" style="gap:8px">${prox ? `<button class="btn sm" style="flex:1" data-go="treino" data-arg="${esc(prox.letra)}">${t('Bora pro {x}', { x: esc(t('Treino {l}', { l: prox.letra })) })}</button>` : ''}<button class="btn ghost sm volta-x" aria-label="${t('Fechar')}" style="${prox ? 'width:48px;padding:0' : 'flex:1'}">${prox ? '✕' : t('ok, bora')}</button></div></div>`;
 }
 export const voltaVisto = () => LSset('volta', new Date().toDateString());
 
@@ -198,12 +198,12 @@ function rankComEmpate(d) {
 const resto = d => Math.max(0, (d.ativas_mes || 0) - rankComEmpate(d).length);
 export function htmlTime(d) {
   const medalha = i => ['🥇', '🥈', '🥉'][i] || `<span class="pos">${i + 1}º</span>`;
-  return `<div class="card hero" style="color:#1a0d00"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Hoje no time')}</span>
-      <div class="logo" style="font-size:2.5rem;margin:8px 0 2px;color:#1a0d00">${num(d.hoje || 0)} 🔥</div>
+  return `<div class="card hero" style="color:var(--preto)"><span class="pill" style="background:rgba(0,0,0,.18);color:var(--preto)">${t('Hoje no time')}</span>
+      <div class="logo" style="font-size:var(--t1);margin:8px 0 2px;color:var(--preto)">${num(d.hoje || 0)} 🔥</div>
       <p style="font-weight:600">${tp(d.hoje || 0, 'menina do time já treinou hoje', 'meninas do time já treinaram hoje')}</p>
       <p class="small" style="margin-top:6px;font-weight:600;opacity:.8">${t('Juntas: {n} treinos esse mês', { n: num(d.mes || 0) })}</p></div>
     <div class="card"><h3>${t('Ranking do mês')}</h3><p class="muted small">${t('Quem mais treinou no mês. Vale presença, não carga.')}</p>
-      ${(d.ranking || []).length ? `<div class="rank">${rankComEmpate(d).map(({ r, i }) => `<div class="rk ${r.eu ? 'eu' : ''}"><span class="md">${medalha(i)}</span><span class="av">${esc(iniciais(r.nome))}</span><b>${esc(r.nome)}${r.eu ? ` <span class="pill on" style="font-size:0.6875rem">${t('você')}</span>` : ''}</b><span class="n">${tp(r.n, '{n} treino', '{n} treinos')}</span></div>`).join('')}</div>${resto(d) ? `<p class="muted small mt">${tp(resto(d), '+ {n} menina treinando firme 💪', '+ {n} meninas treinando firme 💪')}</p>` : ''}` : `<p class="muted mt">${t('O ranking começa com o primeiro treino do mês.')}</p>`}</div>
+      ${(d.ranking || []).length ? `<div class="rank">${rankComEmpate(d).map(({ r, i }) => `<div class="rk ${r.eu ? 'eu' : ''}"><span class="md">${medalha(i)}</span><span class="av">${esc(iniciais(r.nome))}</span><b>${esc(r.nome)}${r.eu ? ` <span class="pill on" style="font-size:var(--tx-s)">${t('você')}</span>` : ''}</b><span class="n">${tp(r.n, '{n} treino', '{n} treinos')}</span></div>`).join('')}</div>${resto(d) ? `<p class="muted small mt">${tp(resto(d), '+ {n} menina treinando firme 💪', '+ {n} meninas treinando firme 💪')}</p>` : ''}` : `<p class="muted mt">${t('O ranking começa com o primeiro treino do mês.')}</p>`}</div>
     <div class="card"><h3>${t('Quem treinou hoje')}</h3>
       ${(d.feed || []).length ? `<div class="feed">${d.feed.slice(0, 20).map(f => `<div class="fd"><span class="av">${esc(iniciais(f.nome))}</span><div><b>${esc(f.nome)}</b> ${t('fez {x}', { x: esc(nomeSessao(f.titulo)) })} 💪<span class="muted small" style="display:block">${quanto(f.finalizada_em)}</span></div></div>`).join('')}</div>` : `<p class="muted mt">${t('Ninguém treinou ainda hoje. Bora ser a primeira? 😉')}</p>`}</div>
     <p class="muted small center">${t('No time aparece só o primeiro nome e a inicial. Dá pra sair do ranking no seu Perfil.')}</p>`;

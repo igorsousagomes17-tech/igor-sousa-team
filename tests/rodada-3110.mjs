@@ -84,7 +84,7 @@ const fechar = async p => { if (await p.locator('#rest-skip').count()) { await p
   await ctx.close(); }
 
 // 6. Hyrox (Bia/Márcia): começa na Base, distância não vira reps, tem PDF, aviso de saúde
-{ const { ctx, p } = await nova(); await entrar(p); await p.evaluate(() => localStorage.removeItem('demo:hyroxNivel')); await p.click('[data-go="lib"]'); await w(p, 500); await p.click('.grid2 [data-go="hyrox"]'); await w(p, 1000);
+{ const { ctx, p } = await nova(); await entrar(p); await p.evaluate(() => localStorage.removeItem('demo:hyroxNivel')); await p.click('[data-go="lib"]'); await w(p, 500); await p.click('.catalogo [data-go="hyrox"]'); await w(p, 1000);
   ok(/Hyrox é uma prova/.test(await p.innerText('.view')), 'Hyrox explica o que é');
   await p.click('[data-nv="ini"]'); await w(p, 800); const v = await p.innerText('.view');
   ok(/1 de 3/i.test(v) && /Base/i.test(v), 'quem começa agora cai na Base (1 de 3)'); ok(await p.locator('#hpdf').count() === 1, 'Hyrox tem PDF');

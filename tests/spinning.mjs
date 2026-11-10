@@ -8,8 +8,8 @@ for (const vw of [375,360]) {
   p.on('pageerror',e=>errs.push(vw+' '+e.message)); p.on('console',m=>{ if(m.type()==='error'&&!/Failed to load|net::/.test(m.text())) errs.push(vw+' console '+m.text()); });
   const larg=async n=>{ if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth)) errs.push(`${vw} scroll horizontal em ${n}`); };
   await p.goto('http://app.local/?demo'); await p.waitForTimeout(400); await p.click('text=ENTRAR'); await p.fill('#em','ana@demo.com'); await p.press('#pw','Enter'); await p.waitForTimeout(900);
-  if (!(await p.$('.hscroll [data-go="spin"]'))) errs.push(vw+' sem spinning no início');
-  await p.click('[data-go="lib"]'); await p.waitForTimeout(500); await p.click('.grid2 [data-go="spin"]'); await p.waitForTimeout(800);
+  if (!(await p.$('.catalogo [data-go="spin"]'))) errs.push(vw+' sem spinning no início');
+  await p.click('[data-go="lib"]'); await p.waitForTimeout(500); await p.click('.catalogo [data-go="spin"]'); await p.waitForTimeout(800);
   const n=await p.$$eval('.spin-aula',x=>x.length); console.log(vw,'aulas',n); await p.screenshot({path:`${D}/spin-lista-${vw}.png`}); await larg('lista');
   const d10=await p.$('[data-dur="10"]'); if (d10){ await d10.click(); await p.waitForTimeout(400); const m=await p.$$eval('.spin-aula',x=>x.length); console.log(vw,'10 min:',m); await p.click('[data-dur=""]'); await p.waitForTimeout(300); }
   await p.click('.spin-mes [data-spin]'); await p.waitForTimeout(700); await larg('player');
