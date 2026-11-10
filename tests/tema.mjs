@@ -12,9 +12,9 @@ ok(await tema() === 'escuro|#0b0b0c', 'padrão é escuro mesmo com celular no cl
 await p.click('text=ENTRAR'); await p.fill('#em', 'ana@demo.com'); await p.press('#pw', 'Enter'); await p.waitForTimeout(1500);
 await p.click('.tabs [data-go="perfil"]'); await p.waitForTimeout(700);
 await p.click('#tema [data-tema="claro"]'); await p.waitForTimeout(200);
-ok(await tema() === 'claro|#f4f2ee', 'claro aplica na hora');
+ok(await tema() === 'claro|#f7f7f7', 'claro aplica na hora');
 ok(await p.$eval('#tema [data-tema="claro"]', e => !e.classList.contains('ghost') && e.getAttribute('aria-checked') === 'true'), 'botão marcado');
-const bg = await p.evaluate(() => getComputedStyle(document.body).backgroundColor); ok(bg === 'rgb(244, 242, 238)', 'fundo claro (' + bg + ')');
+const bg = await p.evaluate(() => getComputedStyle(document.body).backgroundColor); ok(bg === 'rgb(247, 247, 247)', 'fundo claro (' + bg + ')');
 await p.reload(); await p.waitForTimeout(1200); ok((await tema()).startsWith('claro'), 'continua claro depois de recarregar');
 await p.click('.tabs [data-go="perfil"]'); await p.waitForTimeout(700);
 await p.click('#tema [data-tema="auto"]'); await p.waitForTimeout(200); ok((await tema()).startsWith('claro'), 'igual ao celular (claro)');

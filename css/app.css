@@ -499,40 +499,40 @@ html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
 /* 10/11/2026: tema claro (Perfil > Aparência). Escuro continua o padrão.
    Fundo claro, letra preta, laranja da marca nos botões; laranja de TEXTO mais escuro pra dar leitura no branco. */
 :root[data-tema="claro"]{
-  --bg:#f4f2ee;--panel:#ffffff;--panel2:#ffffff;--line:#e3ded6;--fg:#161514;--muted:#69645d;
-  --accent-t:#c24d00;--n1:#fbfaf8;--n2:#ebe7e1;--good:#1f9a4c;--warn:#b7791f;--bad:#d93636;
+  --bg:#f7f7f7;--panel:#ffffff;--panel2:#ffffff;--line:#e6e6e6;--fg:#111111;--muted:#62626a;
+  --accent-t:#c24d00;--n1:#ffffff;--n2:#ececec;--good:#1f9a4c;--warn:#b7791f;--bad:#d93636;
   color-scheme:light;
 }
-:root[data-tema="claro"] .card{box-shadow:0 1px 2px rgba(20,16,10,.06),0 0 0 1px var(--line)}
-:root[data-tema="claro"] .btn.ghost{box-shadow:inset 0 0 0 1.5px #a39d94}
-:root[data-tema="claro"] .btn.dark{background:#161514;color:#fff}
+:root[data-tema="claro"] .card{box-shadow:0 0 0 1px var(--line)}
+:root[data-tema="claro"] .btn.ghost{box-shadow:inset 0 0 0 1.5px #a1a1aa}
+:root[data-tema="claro"] .btn.dark{background:#111;color:#fff}
 :root[data-tema="claro"] .pill,:root[data-tema="claro"] .ex .n,:root[data-tema="claro"] .chip,:root[data-tema="claro"] .av,
 :root[data-tema="claro"] .play.info,:root[data-tema="claro"] .scale button,:root[data-tema="claro"] .langbtn.inline,
 :root[data-tema="claro"] .spin-selo,:root[data-tema="claro"] .ov .x{background:var(--n2)}
-:root[data-tema="claro"] .sw{background:#d6d0c7;box-shadow:inset 0 0 0 1.5px #b3ada4}
-:root[data-tema="claro"] .bar,:root[data-tema="claro"] .dot,:root[data-tema="claro"] .spin-esf i,:root[data-tema="claro"] .spin-barra{background:#e3ded6}
-:root[data-tema="claro"] .input,:root[data-tema="claro"] .set input,:root[data-tema="claro"] .dl input{background:#fff;border-color:#bdb6ac}
-:root[data-tema="claro"] input::placeholder,:root[data-tema="claro"] textarea::placeholder,:root[data-tema="claro"] .set input::placeholder{color:#9b958c}
+:root[data-tema="claro"] .sw{background:#d4d4d8;box-shadow:inset 0 0 0 1.5px #a1a1aa}
+:root[data-tema="claro"] .bar,:root[data-tema="claro"] .dot,:root[data-tema="claro"] .spin-esf i,:root[data-tema="claro"] .spin-barra{background:#e4e4e7}
+:root[data-tema="claro"] .input,:root[data-tema="claro"] .set input,:root[data-tema="claro"] .dl input{background:#fff;border-color:#c4c4cc}
+:root[data-tema="claro"] input::placeholder,:root[data-tema="claro"] textarea::placeholder,:root[data-tema="claro"] .set input::placeholder{color:#9a9aa2}
 :root[data-tema="claro"] .set.done .rest{background:var(--n2)}
-:root[data-tema="claro"] .ring{background:conic-gradient(var(--accent) var(--p,100%),#e3ded6 0)}
-:root[data-tema="claro"] .ov.leve:not(.mini) .ring{background:conic-gradient(#ffb27a var(--p,100%),#e3ded6 0)}
+:root[data-tema="claro"] .ring{background:conic-gradient(var(--accent) var(--p,100%),#e4e4e7 0)}
+:root[data-tema="claro"] .ov.leve:not(.mini) .ring{background:conic-gradient(#ffb27a var(--p,100%),#e4e4e7 0)}
 :root[data-tema="claro"] .ring::after{background:var(--bg)}
 :root[data-tema="claro"] .ov{background:var(--bg)}
 :root[data-tema="claro"] .toast{color:#fff}
 :root[data-tema="claro"] .dica{background:#fff3e8}
-:root[data-tema="claro"] .opc,:root[data-tema="claro"] .semop{background:#fff;border-color:#c9c2b8}
+:root[data-tema="claro"] .opc,:root[data-tema="claro"] .semop{background:#fff;border-color:#c4c4cc}
 :root[data-tema="claro"] .tile,:root[data-tema="claro"] .linhacard,:root[data-tema="claro"] .letra,:root[data-tema="claro"] .exc{background:#fff;box-shadow:0 0 0 1px var(--line)}
 :root[data-tema="claro"] .tile{border-color:rgba(255,106,0,.55)}
 :root[data-tema="claro"] .prox,:root[data-tema="claro"] .bitab{background:#fff;border-color:var(--line)}
-:root[data-tema="claro"] .photo{background:linear-gradient(180deg,#ebe7e1,#ddd7ce)}
+:root[data-tema="claro"] .photo{background:linear-gradient(180deg,#f0f0f2,#e4e4e7)}
 :root[data-tema="claro"] .bv{background:radial-gradient(120% 80% at 50% 0%,#ffe2cc 0%,var(--bg) 60%)}
 :root[data-tema="claro"] .volta{background:linear-gradient(135deg,#ffe8d6,var(--panel))}
-:root[data-tema="claro"] .langb{background:rgba(244,242,238,.85)}
-:root[data-tema="claro"] .cta{background:linear-gradient(180deg,rgba(244,242,238,0),var(--bg) 22%)}
+:root[data-tema="claro"] .langb{background:rgba(247,247,247,.9)}
+:root[data-tema="claro"] .cta{background:linear-gradient(180deg,rgba(247,247,247,0),var(--bg) 22%)}
 /* capas com foto, card do story e palco do spinning continuam escuros (arte da marca): texto claro neles */
 :root[data-tema="claro"] .lib,:root[data-tema="claro"] .share,:root[data-tema="claro"] .spin-palco,:root[data-tema="claro"] .bigcard{color:#f4f2ee;--fg:#f4f2ee;--muted:#b9b4ac;--accent-t:var(--accent)}
 :root[data-tema="claro"] .resumo-home{background:linear-gradient(135deg,#fff,#ffe8d6)}
-:root[data-tema="claro"] .spin-trilha i{background:#d3ccc2}
+:root[data-tema="claro"] .spin-trilha i{background:#d4d4d8}
 :root[data-tema="claro"] .pill.on,:root[data-tema="claro"] .scale button.on{background:var(--accent);color:var(--accent-ink)}
 :root[data-tema="claro"] .sw.on{background:var(--accent);box-shadow:none}
 :root[data-tema="claro"] .dot.on{background:var(--accent)}
@@ -540,3 +540,10 @@ html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
 :root[data-tema="claro"] .letra.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 :root[data-tema="claro"] .bitab.on{border-color:var(--accent);background:#fff1e6}
 :root[data-tema="claro"] .spin-trilha i.pe{background:#e0782a}
+
+/* 10/11 (2): branco de verdade — prêmios e cartões sem foto também claros */
+:root[data-tema="claro"] .pontos-premios .lib{background:#fff;color:#111;--fg:#111;--muted:#62626a;--accent-t:#c24d00;box-shadow:0 0 0 1px var(--line)}
+:root[data-tema="claro"] .pontos-premios .lib::before{display:none}
+:root[data-tema="claro"] .tabs{background:#fff;border-top-color:#e4e4e7}
+:root[data-tema="claro"] .modal .box{background:#fff}
+:root[data-tema="claro"] .pontos-premios .lib span{color:#52525b}
