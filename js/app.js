@@ -719,7 +719,7 @@ async function descanso(seg, txt) {
   return r;
 }
 // Nº da série no treino completo (no Express a 2ª série da pirâmide 12/8 é a 3ª do completo)
-const serieN = (e, k) => (e.serieIdx?.[k] ?? k) + 1;
+const serieN = (e, k) => (e.serieIdx?.length && k >= e.serieIdx.length ? Math.max(...e.serieIdx) + k - e.serieIdx.length + 1 : e.serieIdx?.[k] ?? k) + 1; // "+ série" no Express: vem depois da última (antes repetia o nº de uma série da pirâmide e misturava a carga dela)
 // Cada ✓ já guarda a carga no celular (antes só ao concluir o exercício: saiu no meio, perdia)
 function marcarFeita(s, i, k) { marcaFeita0(s, i, k); try { guardaCargaDo(s, i); } catch {} }
 function marcaFeita0(s, i, k) { const st = s.sets[i][k], e = s.exs[i];
@@ -922,10 +922,10 @@ routes.sessao = () => {
   // Troca o exercício de hoje (novo = nome do equivalente; sem nome = o botão "Trocar por"/"Voltar pro" de sempre)
   const trocar = async (i, novo) => {
     const e = s.exs[i];
-    if (novo) { e.alternativa = novo; }
+    const altAntes = e.alternativa; if (novo) { e.alternativa = novo; }
     // Trocar por um exercício que já está no treino mistura as cargas dos dois (pirâmide x drop): avisa antes
     const jaTem = e.alternativa && s.exs.findIndex((x, j) => j !== i && x.nome === e.alternativa);
-    if (e.alternativa && jaTem >= 0) { const ok = await perguntar(t('Esse já está no seu treino'), t('{x} é também o exercício nº {n} de hoje. Se trocar, as cargas dos dois ficam juntas no histórico.', { x: e.alternativa, n: s.exs[jaTem].ordem ?? jaTem + 1 }), t('Trocar mesmo assim'), t('Manter o {x}', { x: e.nome })); if (!ok || S.sessao !== s) return; }
+    if (e.alternativa && jaTem >= 0) { const ok = await perguntar(t('Esse já está no seu treino'), t('{x} é também o exercício nº {n} de hoje. Se trocar, as cargas dos dois ficam juntas no histórico.', { x: e.alternativa, n: s.exs[jaTem].ordem ?? jaTem + 1 }), t('Trocar mesmo assim'), t('Manter o {x}', { x: e.nome })); if (!ok || S.sessao !== s) { e.alternativa = altAntes; return; } } // manteve: o "Trocar por" do Igor continua o mesmo
     if (e.alternativa) { e.trocadoDe = e.nome; e.nome = e.alternativa; e.alternativa = null; }
     else { e.alternativa = e.nome; e.nome = e.original; }
     e.ultima = cargaPorNome(db.LS.get('cargas', {}), e.nome); e.porSerie = null;
@@ -1155,7 +1155,7 @@ routes.fim = () => {
     const recordes = s.exs.map((e, i) => { const mx = Math.max(0, ...s.sets[i].filter((x, k) => x.done && bateuMeta(x.reps, e.reps, k)).map(x => numero(x.kg) || 0)); return !semCarga(e) && e.ultima?.kg && mx > +e.ultima.kg ? `${e.nome} ${dec(mx)} kg` : null; }).filter(Boolean).slice(0, 3);
     const pontos = await enviarSessao(s, { esforco: +$('#esf .on').textContent, nota: +$('#nota .on').textContent, comentario: [$('#fb').value.trim(), dor].filter(Boolean).join(' · ') || null });
     const esfN = +$('#esf .on').textContent;
-    go('card', JSON.stringify({ kcal: K.kcalFeito(S.perfil, Math.max(1, Math.round(dur / 60)), esfN, { hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }), titulo: s.titulo, min: Math.max(1, Math.round(dur / 60)), seg: Math.round(dur), ex: completosCount(s), total: obr.length, series: seriesFeitas(s), completo: nObr >= obr.length, quando: s.registrarEm || diaDoTreino(s, s.fimEm || Date.now()), recordes, pontos, express: !!s.express, hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }));
+    go('card', JSON.stringify({ kcal: K.kcalFeito(S.perfil, Math.max(1, Math.round(dur / 60)), esfN, { hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) }), titulo: s.titulo, min: Math.max(1, Math.round(dur / 60)), seg: Math.round(dur), ex: nObr >= obr.length ? completosCount(s) : nObr, total: obr.length, series: seriesFeitas(s), completo: nObr >= obr.length, quando: s.registrarEm || diaDoTreino(s, s.fimEm || Date.now()), recordes, pontos, express: !!s.express, hiit: s.exs.some((e, i) => /hiit|cardio/i.test(e.nome) && s.sets[i].some(x => x.done)) })); // incompleto: o opcional (HIIT) não entra no "3/7" nem nos pontos do card (antes mostrava 4/7 e +30 com 20 de verdade)
     if (!pontos) toast(navigator.onLine === false ? t('Sem internet agora, mas tá guardado no celular. Envio sozinha quando o sinal voltar.') : t('Sem conexão com o servidor agora (internet lenta ou Wi-Fi sem internet): tá guardado no celular e eu envio sozinha.'));
   };
 };
