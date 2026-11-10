@@ -1488,7 +1488,7 @@ routes.spinAula = async (id) => {
     aoTerminar: ({ seg, total }) => { pararSpin = null; db.LS.del('spinAberta'); const ok = registraSpin(a, seg, total); feitoTela(seg, total, ok); beep('fim'); },
     aoSair: async ({ seg, total, comecou, voltar }) => {
       if (!comecou) { pararSpin?.(); pararSpin = null; db.LS.del('spinAberta'); return go('spin'); }
-      const o = await escolher(t('Sair da aula?'), seg >= 60 ? t('Você pedalou {n} min dessa aula.', { n: Math.round(seg / 60) }) : t('Você pedalou menos de 1 min: isso não conta como treino.'), seg >= 60 ? [t('Continuar pedalando'), t('Registrar e sair'), t('Sair sem registrar')] : [t('Continuar pedalando'), t('Sair')]);
+      const o = await escolher(t('Sair da aula?'), seg >= 60 ? t('Você pedalou {n} min dessa aula.', { n: Math.round(seg / 60) }) : t('Você pedalou menos de 1 min: isso não conta como treino.'), seg >= 60 ? [t('Continuar pedalando'), t('Registrar e sair'), t('Sair sem registrar')] : [t('Continuar pedalando'), t('Sair da aula')]); // 'Sair' sozinho é traduzido como "sair da conta" (Log out)
       if (o <= 0 || rotaAtual !== 'spinAula') return voltar(); // voltar do celular no pop-up: continua a aula
       pararSpin?.(); pararSpin = null; db.LS.del('spinAberta');
       if (o === 1 && seg >= 60) { const ok = registraSpin(a, seg, total); return feitoTela(seg, total, ok); }
