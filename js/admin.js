@@ -328,7 +328,7 @@ async function salvarComoModelo(treinos, nomeAluna) {
   const c = document.createElement('div'); c.className = 'modal camada'; c.style.cssText = 'z-index:55';
   c.innerHTML = `<div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;max-width:420px;width:100%"><h2>Salvar na biblioteca</h2><label class="campo">Nome do treino<input class="input" id="smN" placeholder="Ex.: Full Body 3x · iniciante" value="${esc(`Treino ${pronto.length}x (de ${nomeAluna.split(' ')[0]})`)}"></label><div class="row"><button class="btn ghost sm" id="smC" style="flex:1">Cancelar</button><button class="btn sm" id="smS" style="flex:1">Salvar</button></div></div>`;
   $('#overlay').appendChild(c); $('#smC', c).onclick = () => c.remove(); $('#smN', c).select();
-  $('#smS', c).onclick = async () => { const n = $('#smN', c).value.trim(); if (!n) return toast('Dá um nome.', true); try { await db.admin.salvarModelo({ nome: n, treinos: pronto }); c.remove(); toast('Salvo na biblioteca de treinos ✓'); } catch (e) { toast(e.message, true); } };
+  $('#smS', c).onclick = async () => { const n = $('#smN', c).value.trim(); if (!n) return toast('Dá um nome.', true); const b = $('#smS', c); if (b.disabled) return; b.disabled = true; /* toque duplo salvava 2 modelos iguais na biblioteca */ try { await db.admin.salvarModelo({ nome: n, treinos: pronto }); c.remove(); toast('Salvo na biblioteca de treinos ✓'); } catch (e) { b.disabled = false; toast(e.message, true); } };
 }
 
 // Anamnese com problema de saúde ou gestação: o Igor precisa ver antes de passar HIIT/carga

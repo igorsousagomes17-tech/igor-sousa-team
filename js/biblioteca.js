@@ -329,6 +329,7 @@ export function construtor({ db, titulo, treinos, cabecalho = '', salvarTxt = 'S
       $$('[data-g]', camada).forEach(b => b.onclick = () => { g = b.dataset.g; lista(); });
       $$('[data-lx]', camada).forEach(b => b.onclick = () => { poe(lib.find(x => x.id === b.dataset.lx)); b.classList.add('feito'); });
       const nv = $('#sxNovo', camada); if (nv) nv.onclick = async () => {
+        if (nv.disabled) return; nv.disabled = true; // toque duplo criava o exercício 2x (na biblioteca e no treino)
         const row = { nome: acentua(q.trim()), grupo: grupoDe(q) };
         try { const salvo = await db.admin.salvarExercicioLib(row); lib.push(salvo || row); } catch { /* sem biblioteca: entra só no treino */ }
         poe(row); q = ''; $('#sxQ', camada).value = ''; lista();
