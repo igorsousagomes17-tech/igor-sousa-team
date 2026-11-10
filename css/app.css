@@ -318,6 +318,7 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .grid2>.field{display:flex;flex-direction:column;justify-content:flex-end}
 .hiit-explica{color:var(--fg)}
 .passos button{flex:0 0 auto;min-width:44px;padding:0 6px}
+.passos button.p-opc{position:sticky;right:0;z-index:1;box-shadow:-8px 0 8px var(--bg)} /* 8+ exercícios em 320/360px: o "+" do HIIT (opcional, sempre o último) ficava escondido fora da tela; agora fica preso na ponta */
 #ang{flex-wrap:wrap}
 
 /* Completo / Express */
@@ -364,7 +365,7 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .atalho{background:none;border:0;color:var(--fg);display:flex;flex-direction:column;align-items:center;gap:8px;font-size:.8125rem;font-weight:600;text-align:center;line-height:1.15;min-height:44px;padding:0}
 .atalho .ico,.tile .ico{position:relative;width:52px;height:52px;border-radius:50%;background:rgba(255,106,0,.14);color:var(--accent);display:grid;place-items:center}
 .atalho svg,.tile .ico svg{width:26px;height:26px}
-.badge{position:absolute;top:-6px;right:-10px;background:var(--bad);color:#fff;font-size:.75rem;font-weight:800;border-radius:999px;padding:2px 7px;min-width:22px;text-align:center}
+.badge{position:absolute;top:-6px;right:-10px;background:#d92b2b;color:#fff;font-size:.75rem;font-weight:800;border-radius:999px;padding:2px 7px;min-width:22px;text-align:center} /* vermelho um tom mais fechado: branco em 12px passa no WCAG AA (4,85:1; o --bad dava 3,3:1) */
 .bloco{background:var(--panel2);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
 .bloco h3{margin:0 0 2px}
 .tile{background:#121214;border:1.5px solid rgba(255,106,0,.45);border-radius:14px;color:var(--fg);padding:14px;display:flex;flex-direction:column;align-items:flex-start;gap:12px;text-align:left;min-height:118px;font-size:1rem}

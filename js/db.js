@@ -91,12 +91,13 @@ export async function iniciarSessao(alunaId, { id = null, treino_id = null, prog
 // id (opcional) = o mesmo em toda tentativa: foto lenta que subiu depois do limite não vira 2 treinos presenciais no mesmo dia
 export async function registrarPresencial(alunaId, foto, quando = new Date(), id = null) {
   const dia = new Date(quando.getTime() - quando.getTimezoneOffset() * 60000).toISOString().slice(0, 10), path = `${alunaId}/presencial/${dia}-${id ? id.slice(0, 8) : Date.now().toString(36)}.jpg`;
-  const up = await sb.storage.from('evolucao').upload(path, foto, { contentType: 'image/jpeg', upsert: false }); if (up.error && !(id && /exist|duplicate|409/i.test(`${up.error.message} ${up.error.statusCode || ''} ${up.error.error || ''}`))) throw up.error; // já subiu na tentativa anterior
+  // Sem foto (o iPhone apagou a foto guardada antes de subir): registra o presencial mesmo assim, só sem a prova
+  if (foto) { const up = await sb.storage.from('evolucao').upload(path, foto, { contentType: 'image/jpeg', upsert: false }); if (up.error && !(id && /exist|duplicate|409/i.test(`${up.error.message} ${up.error.statusCode || ''} ${up.error.error || ''}`))) throw up.error; } // já subiu na tentativa anterior
   const sess = await iniciarSessao(alunaId, { id, titulo: 'Treino com o Igor', total: 0 });
   const patch = { duracao_s: 3600, exercicios_feitos: 0, exercicios_total: 0 };
   const fim = q => sb.from('sessoes').update({ finalizada_em: quando.toISOString(), ...patch, ...q }).eq('id', sess.id).select().single();
-  let { data, error } = await fim({ foto_path: path });
-  if (error && semColuna(error, 'foto_path')) ({ data, error } = await fim({ comentario: '📸 ' + path }));
+  let { data, error } = await fim(foto ? { foto_path: path } : {});
+  if (error && foto && semColuna(error, 'foto_path')) ({ data, error } = await fim({ comentario: '📸 ' + path }));
   if (error) throw error; return data;
 }
 // Substitui as séries da sessão: se a 1ª tentativa chegou no banco mas a resposta não voltou (4G travado),
@@ -317,14 +318,24 @@ export const admin = {
     // treinos: [{letra,nome,duracao_min,exercicios:[{nome,series,reps,descanso_s,video_url,dica,alternativa}]}]
     const { data: plano, error } = await sb.from('planos').upsert({ aluna_id: alunaId, mes: mesStr, inicio: datas.inicio || null, fim: datas.fim || null, visto_em: null }, { onConflict: 'aluna_id,mes' }).select().single();
     if (error) throw error;
-    // Se apagar falhar (sinal caiu) e seguisse, os treinos novos entravam junto com os velhos: aluna com A, B, A, B
-    const del = await sb.from('treinos').delete().eq('plano_id', plano.id); if (del.error) throw del.error;
+    // Republicar (mesmo mês): o treino (mesma letra) e o exercício que continua (mesmo nome) ficam com o MESMO id.
+    // Antes apagava tudo e recriava: o banco zerava o exercicio_id das séries já feitas (on delete set null)
+    // e o celular dela, ainda com o id velho, levava erro ao mandar o treino. Letra reaproveitada = nunca fica A, B, A, B.
+    const { data: velhos, error: ev } = await sb.from('treinos').select('id,letra,exercicios(id,nome)').eq('plano_id', plano.id); if (ev) throw ev;
+    const chave = x => String(x || '').normalize('NFC').trim().toLowerCase(), usados = new Set();
     for (const [i, t] of treinos.entries()) {
-      const { data: tr, error: e2 } = await sb.from('treinos').insert({ plano_id: plano.id, letra: t.letra, nome: t.nome, duracao_min: t.duracao_min || 40, ordem: i }).select().single();
-      if (e2) throw e2;
-      const exs = t.exercicios.map((e, j) => ({ treino_id: tr.id, ordem: j + 1, ...e }));
-      if (exs.length) { const { error: e3 } = await sb.from('exercicios').insert(exs); if (e3) throw e3; }
+      const old = (velhos || []).find(v => v.letra === t.letra && !usados.has(v.id)), row = { plano_id: plano.id, letra: t.letra, nome: t.nome, duracao_min: t.duracao_min || 40, ordem: i };
+      const { data: tr, error: e2 } = await (old ? sb.from('treinos').update(row).eq('id', old.id) : sb.from('treinos').insert(row)).select().single();
+      if (e2) throw e2; if (old) usados.add(old.id);
+      const sobra = [...(old?.exercicios || [])];
+      const exs = t.exercicios.map(({ id: _x, ...e }, j) => { const k = sobra.findIndex(o => chave(o.nome) === chave(e.nome)), id = k >= 0 ? sobra.splice(k, 1)[0].id : null; return { treino_id: tr.id, ordem: j + 1, ...e, ...(id ? { id } : {}) }; });
+      const manter = exs.filter(x => x.id), novos = exs.filter(x => !x.id);
+      if (sobra.length) { const d = await sb.from('exercicios').delete().in('id', sobra.map(o => o.id)); if (d.error) throw d.error; } // saiu do treino
+      if (manter.length) { const { error: e3 } = await sb.from('exercicios').upsert(manter); if (e3) throw e3; }
+      if (novos.length) { const { error: e4 } = await sb.from('exercicios').insert(novos); if (e4) throw e4; }
     }
+    const resto = (velhos || []).filter(v => !usados.has(v.id)).map(v => v.id); // letra que saiu do plano (tinha D, agora só A-C)
+    if (resto.length) { const d = await sb.from('treinos').delete().in('id', resto); if (d.error) throw d.error; }
     return plano;
   },
   // Atualizações (igual ao Mfit): último treino de cada aluna com o vencimento. visto_em = "marcar como lida"

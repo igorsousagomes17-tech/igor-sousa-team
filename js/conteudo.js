@@ -66,7 +66,26 @@ export const EXATO = {
   'Prancha com toque no ombro': ['Plank shoulder taps', 'Plancha con toque de hombro', '平板支撑触肩', 'प्लैंक शोल्डर टैप', 'Gainage avec touche d’épaule'],
   'Elevação de panturrilha unilateral': ['Single-leg calf raise', 'Elevación de talón a una pierna', '单腿提踵', 'सिंगल-लेग काफ़ रेज़', 'Extension des mollets unilatérale'],
   'Ponte unilateral': ['Single-leg glute bridge', 'Puente de glúteo a una pierna', '单腿臀桥', 'सिंगल-लेग ग्लूट ब्रिज', 'Pont fessier unilatéral'],
-  'Alongamento do piriforme': ['Piriformis stretch', 'Estiramiento del piriforme', '梨状肌拉伸', 'पिरिफ़ॉर्मिस स्ट्रेच', 'Étirement du piriforme']
+  'Alongamento do piriforme': ['Piriformis stretch', 'Estiramiento del piriforme', '梨状肌拉伸', 'पिरिफ़ॉर्मिस स्ट्रेच', 'Étirement du piriforme'],
+  // Hyrox (js/hyrox.js): exercícios e as trocas (alternativa) — sem isso ficavam em português nos outros idiomas
+  'Corrida na esteira': ['Treadmill run', 'Carrera en cinta', '跑步机跑步', 'ट्रेडमिल पर दौड़', 'Course sur tapis'],
+  'Puxada em pé na polia alta (SkiErg)': ['Standing high-cable pulldown (SkiErg)', 'Jalón de pie en polea alta (SkiErg)', '站姿高位绳索下拉（SkiErg）', 'खड़े होकर हाई केबल पुलडाउन (SkiErg)', 'Tirage debout à la poulie haute (SkiErg)'],
+  'Leg press pesado (trenó)': ['Heavy leg press (sled)', 'Prensa pesada (trineo)', '大重量腿举（雪橇）', 'भारी लेग प्रेस (स्लेड)', 'Presse à cuisses lourde (traîneau)'],
+  'Remada baixa pesada (puxada do trenó)': ['Heavy seated cable row (sled pull)', 'Remo bajo pesado (arrastre de trineo)', '大重量坐姿绳索划船（拉雪橇）', 'भारी सीटेड केबल रो (स्लेड पुल)', 'Rowing assis lourd (tirage du traîneau)'],
+  'Burpee com salto à frente': ['Burpee broad jump', 'Burpee con salto hacia delante', '波比跳远', 'बर्पी ब्रॉड जंप', 'Burpee avec saut en avant'],
+  'Remo ergômetro': ['Rowing machine', 'Remoergómetro', '划船机', 'रोइंग मशीन', 'Rameur'],
+  'Farmer carry com halteres': ['Dumbbell farmer carry', 'Farmer carry con mancuernas', '哑铃农夫行走', 'डम्बल फ़ार्मर कैरी', 'Farmer carry aux haltères'],
+  'Afundo andando com halter no ombro (sandbag)': ['Walking lunge with dumbbell on shoulder (sandbag)', 'Zancada caminando con mancuerna al hombro (sandbag)', '肩扛哑铃行进弓步（沙袋）', 'कंधे पर डम्बल के साथ वॉकिंग लंज (सैंडबैग)', 'Fentes marchées haltère sur l’épaule (sandbag)'],
+  'Wall ball': ['Wall ball', 'Wall ball', '药球抛墙', 'वॉल बॉल', 'Wall ball'],
+  'Agachamento goblet': ['Goblet squat', 'Sentadilla goblet', '高脚杯深蹲', 'गॉबलेट स्क्वाट', 'Squat goblet'],
+  'Levantamento terra com halteres': ['Dumbbell deadlift', 'Peso muerto con mancuernas', '哑铃硬拉', 'डम्बल डेडलिफ़्ट', 'Soulevé de terre aux haltères'],
+  'SkiErg': ['SkiErg', 'SkiErg', 'SkiErg滑雪机', 'SkiErg', 'SkiErg'],
+  'Sled push': ['Sled push', 'Empuje de trineo', '推雪橇', 'स्लेड पुश', 'Poussée de traîneau'],
+  'Sled pull': ['Sled pull', 'Arrastre de trineo', '拉雪橇', 'स्लेड पुल', 'Tirage de traîneau'],
+  'Bike': ['Bike', 'Bici', '单车', 'बाइक', 'Vélo'],
+  'Farmer carry com kettlebell': ['Kettlebell farmer carry', 'Farmer carry con kettlebell', '壶铃农夫行走', 'केटलबेल फ़ार्मर कैरी', 'Farmer carry au kettlebell'],
+  'Afundo andando com sandbag': ['Sandbag walking lunge', 'Zancada caminando con sandbag', '沙袋行进弓步', 'सैंडबैग वॉकिंग लंज', 'Fentes marchées avec sandbag'],
+  'Thruster com halteres': ['Dumbbell thruster', 'Thruster con mancuernas', '哑铃推举深蹲', 'डम्बल थ्रस्टर', 'Thruster aux haltères']
 };
 
 // Termos de academia, do mais longo pro mais curto (o primeiro que casa vence)
