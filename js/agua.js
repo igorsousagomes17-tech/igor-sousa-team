@@ -3,7 +3,7 @@
 // Travas: nunca abaixo de 1,6 L (EFSA: água vinda de líquidos p/ mulheres) nem acima de 4 L. Sem peso: 2,0 L (EFSA mulheres).
 // Ela pode trocar a meta na mão (médico/nutri passou outro valor). Nunca tira ponto: só mostra progresso e a semana em bolinhas.
 // Fica guardado no celular (abre sem sinal); guarda só os últimos 14 dias.
-import { t, tp, dec } from './i18n.js';
+import { t, tp, dec, dataLocal } from './i18n.js';
 
 const MIN = 1600, MAX = 4000, PADRAO = 2000;
 const arred = ml => Math.round(ml / 50) * 50;
@@ -35,7 +35,7 @@ export function desfazer(LS, meta, hoje = diaDe()) { const d = ler(LS); const h 
 // Últimos 7 dias (o de hoje por último): bateu a meta daquele dia?
 export function semana(LS, metaHoje, hoje = new Date()) {
   const d = ler(LS);
-  return Array.from({ length: 7 }, (_, i) => { const dia = new Date(hoje); dia.setDate(dia.getDate() - (6 - i)); const k = diaDe(dia), r = d[k]; const tot = totalDe(r); return { k, bateu: tot > 0 && tot >= (k === diaDe(hoje) ? metaHoje : (r?.meta || metaHoje)), hoje: i === 6, letra: dia.toLocaleDateString(undefined, { weekday: 'narrow' }) }; });
+  return Array.from({ length: 7 }, (_, i) => { const dia = new Date(hoje); dia.setDate(dia.getDate() - (6 - i)); const k = diaDe(dia), r = d[k]; const tot = totalDe(r); return { k, bateu: tot > 0 && tot >= (k === diaDe(hoje) ? metaHoje : (r?.meta || metaHoje)), hoje: i === 6, letra: dataLocal(dia, { weekday: 'narrow' }) }; }); // letra no idioma do app (antes vinha do celular: "T Q Q" em inglês)
 }
 
 const L = ml => dec(Math.round(ml / 100) / 10) + ' L';
@@ -60,7 +60,7 @@ export function cardHtml(p, sessoes, LS) {
   </div>
   <div class="row" style="gap:8px;margin-top:10px"><button class="btn sm" data-agua="250" style="flex:1">+ ${t('Copo')} <small>250 ml</small></button><button class="btn sm" data-agua="500" style="flex:1">+ ${t('Garrafa')} <small>500 ml</small></button></div>
   <div class="row between" style="margin-top:10px"><div class="row" style="gap:6px" aria-label="${t('Últimos 7 dias')}">${sem.map(d => `<span class="agua-d${d.hoje ? ' hj' : ''}"><i class="dot ${d.bateu ? 'on' : ''}"></i><small>${d.letra}</small></span>`).join('')}</div>${tot ? `<button class="back small" id="aguaDesfaz">↺ ${t('desfazer')}</button>` : ''}</div>
-  <div id="aguaForm" hidden style="margin-top:10px"><p class="muted small">${t('O médico ou a nutri passou outro valor? Coloca aqui (em litros).')}</p><div class="row" style="gap:8px;margin-top:6px"><input id="aguaL" inputmode="decimal" placeholder="${dec(m.auto / 1000)}" value="${m.manual ? dec(m.ml / 1000) : ''}" aria-label="${t('Meta em litros')}" style="flex:1"><button class="btn sm" id="aguaSalva" style="width:auto">${t('Salvar')}</button></div>${m.manual ? `<button class="back small" id="aguaAuto" style="margin-top:6px;text-decoration:underline">${t('Voltar pra meta automática ({x})', { x: L(m.auto) })}</button>` : ''}</div>
+  <div id="aguaForm" hidden style="margin-top:10px"><p class="muted small">${t('O médico ou a nutri passou outro valor? Coloca aqui (em litros).')}</p><div class="row" style="gap:8px;margin-top:6px"><input id="aguaL" inputmode="decimal" placeholder="${dec(m.auto / 1000)}" value="${m.manual ? dec(m.ml / 1000) : ''}" aria-label="${t('Meta em litros')}" style="flex:1;min-width:0"><button class="btn sm" id="aguaSalva" style="width:auto">${t('Salvar')}</button></div>${m.manual ? `<button class="back small" id="aguaAuto" style="margin-top:6px;text-decoration:underline">${t('Voltar pra meta automática ({x})', { x: L(m.auto) })}</button>` : ''}</div>
 </div>`;
 }
 

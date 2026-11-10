@@ -1195,7 +1195,7 @@ function lancarNoStrava(s, patch) {
   if (DEMO && !db.strava) return; if (!db.LS.get('strava_on', false) || !db.LS.get('strava_auto', true)) return;
   const d = new Date(s.inicio), z = n => String(n).padStart(2, '0');
   const inicio = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
-  db.strava.enviar({ chave: String(s.chave || s.id), titulo: nomeTreino(s.titulo), inicio, duracao_s: patch.duracao_s, descricao: `${patch.exercicios_feitos}/${patch.exercicios_total} exercícios · Igor Sousa Team 💪` }).catch(e => { if (e?.codigo === 'reconectar' || e?.codigo === 'nao_conectado') db.LS.set('strava_on', false); });
+  db.strava.enviar({ chave: String(s.chave || s.id), titulo: nomeTreino(s.titulo), inicio, duracao_s: patch.duracao_s, descricao: `${patch.exercicios_feitos}/${patch.exercicios_total} ${tp(patch.exercicios_total, 'exercício', 'exercícios')} · Igor Sousa Team 💪` }) // no idioma dela (antes ia sempre em português).catch(e => { if (e?.codigo === 'reconectar' || e?.codigo === 'nao_conectado') db.LS.set('strava_on', false); });
 }
 const subindo = new Set(); // sessões com envio direto em andamento
 async function enviarSessao(s, fb) {

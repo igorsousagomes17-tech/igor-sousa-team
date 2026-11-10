@@ -83,7 +83,7 @@ export const refazerPasseio = perfil => { try { localStorage.removeItem('acolhe:
 // 3) RESUMO DA SEMANA ----------------------------------------------------------------------
 // Semana de segunda a domingo (igual à "Meta da semana"). sessoes: as finalizadas dela (treino do mês + programas).
 export function resumoSemana({ sessoes, cargas, perfil, semanaKey, isoWeek, semanasSeguidas, kcalDe }) {
-  const da = sessoes.filter(s => s.finalizada_em && isoWeek(new Date(s.finalizada_em)) === semanaKey && (s.exercicios_feitos ?? 1) > 0);
+  const da = sessoes.filter(s => s.finalizada_em && isoWeek(new Date(s.finalizada_em)) === semanaKey && ((s.exercicios_feitos ?? 1) > 0 || s.titulo === 'Treino com o Igor')); // presencial é salvo com 0 de 0 exercícios: antes sumia do resumo
   const minutos = Math.round(da.reduce((a, s) => a + (s.duracao_s || 0), 0) / 60);
   const exercicios = da.reduce((a, s) => a + (s.exercicios_feitos || 0), 0);
   const subiu = Object.entries(cargas || {}).filter(([, c]) => c?.kg && c.ant && +c.kg > +c.ant && c.data && isoWeek(new Date(c.data)) === semanaKey)
