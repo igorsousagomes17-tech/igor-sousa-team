@@ -50,7 +50,7 @@ export async function historicoCarga(_, nome, limit = 5) {
   demo.forEach(d => { d.sets = nome === 'Agachamento Smith' ? [{ n: 1, kg: d.kg - 6, reps: 12 }, { n: 2, kg: d.kg - 3, reps: 10 }, { n: 3, kg: d.kg, reps: d.reps }] : [1, 2, 3].map(n => ({ n, kg: d.kg, reps: d.reps })); });
   return [...mine.reverse(), ...demo].slice(0, limit);
 }
-export const escolheUltima = h => { const mx = Math.max(0, ...h.filter(x => !x.express).map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.express || x.sets.length >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; };
+export const escolheUltima = h => { const mx = Math.max(0, ...h.filter(x => !x.express).map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.express || x.sets.length * 2 >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; };
 export async function ultimaCarga(_, nome) { return escolheUltima(await historicoCarga(_, nome, 3)); }
 export async function cargasRecentes(_) { const nomes = [...new Set([...state.series.filter(x => x.kg).map(x => x.exercicio_nome), 'Agachamento Smith', 'Puxada Pronada'])], out = {}; for (const n of nomes) { const h = await historicoCarga(_, n, 2); if (h[0]) out[n] = { kg: +h[0].kg, reps: h[0].reps, data: h[0].data, ant: h[1] ? +h[1].kg : null }; } return out; }
 export function guardarCarga(nome, kg, reps, sessao, drops) { if (!kg) return; const c = LS.get('cargas', {}), v = c[nome]; const mesma = v && v.sessao && v.sessao === sessao, ant = mesma ? v.ant : v?.kg, prev = mesma ? v.prev ?? null : v ? { ...v, prev: undefined } : null; c[nome] = { kg, reps, ...(drops?.length ? { drops } : {}), prev, data: iso(new Date()), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }

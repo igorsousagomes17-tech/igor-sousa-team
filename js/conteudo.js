@@ -365,6 +365,6 @@ export function casaEx(atual, outro) {
 // Padrão do ilike no banco (pega as 2 primeiras palavras, vogais/ç soltas pra casar com ou sem acento); quem filtra de verdade é o casaEx
 export const padraoEx = n => '%' + chaveEx(n).split(' ').slice(0, 2).map(w => w.replace(/[aeiouc]/g, '_')).join('%') + '%';
 // Entre linhas com nomes parecidos: as do mesmo nome; se não tiver nenhuma, as variações
-export function filtraEx(nome, linhas, campo = 'exercicio_nome') { const m = linhas.map(r => [casaEx(nome, r[campo]), r]); const best = Math.max(0, ...m.map(x => x[0])); return best ? m.filter(x => x[0] === best).map(x => x[1]) : []; }
+export function filtraEx(nome, linhas, campo = 'exercicio_nome') { const rec = /·\s*reconhecimento$/i; if (!rec.test(nome || '')) linhas = linhas.filter(r => !rec.test(r[campo] || '')); const m = linhas.map(r => [casaEx(nome, r[campo]), r]); const best = Math.max(0, ...m.map(x => x[0])); return best ? m.filter(x => x[0] === best).map(x => x[1]) : []; }
 // Carga guardada no celular pelo nome parecido
 export function cargaPorNome(cs, nome) { if (!cs || !nome) return null; if (cs[nome]) return cs[nome]; let best = 0, v = null; for (const [k, x] of Object.entries(cs)) { const c = casaEx(nome, k); if (c > best || (c === best && c && (x?.data || '') > (v?.data || ''))) { best = c; v = x; } } return best ? v : null; }

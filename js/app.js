@@ -345,7 +345,7 @@ routes.treino = async (letra) => {
   <div class="cta">${S.sessao ? `<button class="btn" data-go="sessao">▶ ${t('Continuar {x}', { x: esc(nomeTreino(S.sessao.titulo).replace(/^(Hyrox|Spinning|Programa)\s*·.*$/, '$1')) })} (${contaObr(S.sessao).a}/${contaObr(S.sessao).b})</button><button class="btn ghost sm" id="ini" style="width:100%">${S.sessao.titulo === `Treino ${tr.letra}` ? t('Recomeçar o Treino {l} do zero', { l: esc(tr.letra) }) : t('Iniciar o Treino {l}', { l: esc(tr.letra) })}</button>` : `<button class="btn" id="ini">▶ ${t('Iniciar treino')}</button>`}</div><button class="btn ghost" id="pdf">📄 ${t('Baixar treino em PDF')}</button><button class="card row" id="presencial" style="gap:12px;text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><span style="font-size:1.5rem">🤝</span><span style="flex:1"><b style="font-size:0.9375rem">${t('Treinou presencial com o Igor?')}</b><span class="muted" style="display:block">${t('Registra aqui com uma foto: conta como treino da semana.')}</span></span></button><p class="muted center small">${t('Esse treino fica salvo no celular e abre mesmo sem sinal. Vídeo e o 1º PDF precisam de internet.')}</p></div>`, 'treino');
   // Última carga de cada exercício: mostra o que tem no celular na hora e atualiza com o banco em segundo plano.
   const mostraUlt = (nome, u) => { const el = $$('.ult').find(x => x.dataset.n === nome); if (el && u?.kg) el.innerHTML = `${t('Última:')} <b>${dec(u.kg)} kg</b>${u.reps ? ' × ' + u.reps : ''}`; };
-  const cache = db.LS.get('cargas', {}); exs.forEach(e => mostraUlt(e.nome, cache[e.nome]));
+  const cache = db.LS.get('cargas', {}); exs.forEach(e => { if (!tempo(e.reps)) mostraUlt(e.nome, ultimaValida(cargaPorNome(cache, e.nome), e.reps)); }); // nome parecido também vale (Leg Press 45° × Leg press 45)
   exs.forEach(e => { if (!tempo(e.reps)) cache3('ult@' + S.perfil.id + e.nome, () => db.ultimaCarga(S.perfil.id, e.nome)).then(u => mostraUlt(e.nome, ultimaValida(u, e.reps))).catch(() => {}); });
   $('#ini').onclick = () => { if (semPend) db.LS.set('inicioSemana', { semana: isoWeek(new Date()), letra: tr.letra }); const b = $('#ini'), rot = b.textContent; b.disabled = true; b.textContent = t('Abrindo…'); iniciarSessao({ titulo: `Treino ${tr.letra}`, treino_id: tr.id, exercicios: exs, duracao_min: dur, express: expr }).finally(() => { if (document.body.contains(b)) { b.disabled = false; b.textContent = rot; } }); };
   $$('[data-ficha]').forEach(b => b.onclick = () => abrirHistorico(exs[+b.dataset.ficha].nome, exs[+b.dataset.ficha]));
@@ -549,7 +549,7 @@ routes.programa = async (slug) => {
 const exsProg = (pr, t) => (t.exercicios || []).map((e, i) => ({ ordem: i + 1, series: 3, reps: '12', descanso_s: 45, ...(/casa|mobilidade|abd/i.test(pr.slug) ? { carga: false } : {}), ...e, video_url: e.video_url || videoDe(e.nome) || animDe(e.nome) || null })); // animação que existe aparece também nos programas (antes "vídeo em gravação")
 // SESSÃO -------------------------------------------------------------------------
 // Tudo da sessão fica salvo no celular a cada toque: se o app fechar, ela continua de onde parou.
-const tempo = r => { const m = String(r || '').match(/(\d+(?:[.,]\d+)?)\s*(s|seg|min)\b/i); return m ? Math.round(parseFloat(m[1].replace(',', '.')) * (/min/i.test(m[2]) ? 60 : 1)) : 0; };
+const tempo = r => { const m = String(r || '').replace(/\([^)]*\)/g, ' ').replace(/\d+(?:[.,]\d+)?\s*(?:s|seg)\b\s*(?:de\s+)?(?:pausa|na descida|descida|subida|no topo|parad\w*)/gi, ' ').match(/(\d+(?:[.,]\d+)?)\s*(s|seg|min)\b/i); return m ? Math.round(parseFloat(m[1].replace(',', '.')) * (/min/i.test(m[2]) ? 60 : 1)) : 0; };
 // Distância ("500 m", "1 km" no Hyrox): não é repetição; a linha mostra a distância e não grava reps
 const distancia = r => /\d\s*k?m\b/i.test(String(r || ''));
 const repsAlvo = (r, k) => { if (distancia(r)) return ''; const p = String(r || '').split('/'); const v = parseInt(p.length > 1 ? (p[k] ?? p[p.length - 1]) : r); return isNaN(v) ? '' : v; };
@@ -627,7 +627,7 @@ async function iniciarSessao({ titulo, treino_id = null, programa_treino_id = nu
     const velha = S.sessao;
     if (velha && seriesFeitas(velha)) {
       const x = nomeCurto(velha.titulo);
-      if (velha.titulo === titulo) { // "Recomeçar do zero" o mesmo treino: só zera (não grava um treino pela metade e outro igual no mesmo dia)
+      if (velha.titulo === titulo && diaLocal(Math.max(0, ...Object.values(velha.sets || {}).flat().map(x => x.feitaEm || 0)) || velha.inicio) === diaLocal()) { // "Recomeçar do zero" (mesmo dia; de outro dia cai no registrar abaixo) o mesmo treino: só zera (não grava um treino pela metade e outro igual no mesmo dia)
         const o = await escolher(t('Recomeçar do zero?'), tp(seriesFeitas(velha), 'A {n} série que você marcou no {x} vai ser apagada.', 'As {n} séries que você marcou no {x} vão ser apagadas.', { x }), [t('Voltar pra ele'), t('Apagar e recomeçar')]);
         if (o === 0) return go('sessao'); if (o !== 1) return; db.desfazerCargas(velha.chave);
       } else {
@@ -649,12 +649,11 @@ async function iniciarSessao({ titulo, treino_id = null, programa_treino_id = nu
     exs.forEach((e, i) => { S.sessao.sets[i] = Array.from({ length: e.series || 1 }, () => ({ kg: '', reps: '', done: false })); });
     salvaSessao(); go('sessao'); setTimeout(ativarPush, 60000);
     db.iniciarSessao(S.perfil.id, { treino_id, programa_treino_id, titulo, total: exs.length }).then(sess => { const s = S.sessao; if (sess?.id && s?.chave === chave && !s.enviada) { s.id = sess.id; s.local = false; salvaSessao(); } }).catch(() => {});
-    exs.forEach((e, i) => { if (piramide(e.reps)) rapido(db.ultimasSeries(S.perfil.id, e.nome), null, 8000).then(ps => { const s = S.sessao; if (ps && s?.chave === chave && s.exs[i].nome === e.nome) { s.exs[i].porSerie = ps; salvaSessao(); if (rotaAtual === 'sessao' && !document.activeElement?.matches('input')) routes.sessao(); } }); });
-    Promise.all(exs.map(e => tempo(e.reps) ? null : rapido(db.ultimaCarga(S.perfil.id, e.nome), null, 8000))).then(us => {
-      const s = S.sessao; if (s?.chave !== chave) return;
-      let mudou = false; us.forEach((u, i) => { u = ultimaValida(u, exs[i].reps); if (u && s.exs[i].nome === exs[i].nome && JSON.stringify(u) !== JSON.stringify(s.exs[i].ultima)) { s.exs[i].ultima = u; mudou = true; } });
-      if (mudou) { salvaSessao(); if (rotaAtual === 'sessao' && !document.activeElement?.matches('input')) routes.sessao(); }
-    });
+    exs.forEach((e, i) => { if (piramide(e.reps)) db.ultimasSeries(S.perfil.id, e.nome).catch(() => null).then(ps => { /* sem limite de tempo: chega quando chegar */ const s = S.sessao; if (ps && s?.chave === chave && s.exs[i].nome === e.nome) { s.exs[i].porSerie = ps; salvaSessao(); if (rotaAtual === 'sessao' && !document.activeElement?.matches('input')) routes.sessao(); } }); });
+    // Última carga do banco: cada exercício atualiza quando a resposta chegar (antes, 4G lento > 8 s deixava a "Última" vazia o treino inteiro)
+    let redesenho; const aplica = (u, i) => { const s = S.sessao; if (s?.chave !== chave) return; u = ultimaValida(u, exs[i].reps); if (!u || s.exs[i].nome !== exs[i].nome || JSON.stringify(u) === JSON.stringify(s.exs[i].ultima)) return;
+      s.exs[i].ultima = u; preencheFeitas(s, i); salvaSessao(); clearTimeout(redesenho); redesenho = setTimeout(() => { if (rotaAtual === 'sessao' && S.sessao?.chave === chave && !document.activeElement?.matches('input')) routes.sessao(); }, 300); };
+    exs.forEach((e, i) => { if (tempo(e.reps) || semCarga(e)) return; const busca = (n = 0) => db.ultimaCarga(S.perfil.id, e.nome).then(u => aplica(u, i)).catch(() => { if (n < 2) setTimeout(() => busca(n + 1), 20000); }); busca(); });
   } finally { iniciando = false; }
 }
 let clockIv, wake, ultToque = 0, ultMarca = { em: 0, i: -1 }; const INATIVO = 10 * 60000;
@@ -718,7 +717,9 @@ async function descanso(seg, txt) {
 }
 // Nº da série no treino completo (no Express a 2ª série da pirâmide 12/8 é a 3ª do completo)
 const serieN = (e, k) => (e.serieIdx?.[k] ?? k) + 1;
-function marcarFeita(s, i, k) { const st = s.sets[i][k], e = s.exs[i];
+// Cada ✓ já guarda a carga no celular (antes só ao concluir o exercício: saiu no meio, perdia)
+function marcarFeita(s, i, k) { marcaFeita0(s, i, k); try { guardaCargaDo(s, i); } catch {} }
+function marcaFeita0(s, i, k) { const st = s.sets[i][k], e = s.exs[i];
   if (!tempo(e.reps)) { if (!semCarga(e) && st.kg === '') { const sug = sugKg(s, i, k); if (sug != null) st.kg = String(sug); } if (st.reps === '') { const r = repsAlvo(e.reps, k); if (r) st.reps = String(r); } completaDrops(e, st, s.sets[i].slice(0, k).reverse().find(x => x.done && x.drops?.length)); } /* o que aparece é o que fica salvo */ st.done = true; st.feitaEm = Date.now(); st.nome = e.nome; st.eid = e.nome === e.original ? (e.id || null) : null; }
 // Enter/"próximo" do teclado: segue a ordem em que ela faz (no bi-set A1 s1 → A2 s1 → A1 s2; quedas do drop logo depois da série)
 function proxCampo(ev) { if (ev.key !== 'Enter') return; ev.preventDefault(); const inp = ev.currentTarget || ev.target, todos = $$('.set input, .dl input').map((x, d) => ({ x, d, k: +(x.closest('[data-k]')?.dataset.k ?? 0) })).sort((a, b) => a.k - b.k || a.d - b.d).map(o => o.x), j = todos.indexOf(inp);
@@ -762,7 +763,7 @@ routes.sessao = () => {
     const ocupa = !t && !sc && !aq && !ehHiit(e) && !sets.every(x => x.done) && equivalentes(e.nome, e.alternativa, e.original, s.exs.map(x => x.nome)).length > 0;
     const drop = temDrop(e), prDrop = drop ? dropsPresc(e) : [];
     if (prDrop.length) sets.forEach(st => { if (!st.done && !st.drops) st.drops = prDrop.map(() => ({ kg: '', reps: '' })); }); // quedas prescritas já aparecem (com as reps do Igor de exemplo)
-    const phKg = k => pir ? (e.porSerie?.[serieN(e, k)] != null ? dec(e.porSerie[serieN(e, k)]) : 'kg') : (e.ultima?.kg != null ? dec(e.ultima.kg) : 'kg'); // pirâmide: a carga daquela série da última vez
+    const phKg = k => pir ? (e.porSerie?.[serieN(e, k)] != null ? dec(e.porSerie[serieN(e, k)]) : (u => u?.kg != null ? dec(u.kg) : 'kg')(e.ultima?.sets?.find(x => x.n === serieN(e, k)))) : (e.ultima?.kg != null ? dec(e.ultima.kg) : 'kg'); // pirâmide: a carga daquela série da última vez
     return `<div class="bloco" data-i="${i}">
       <div class="row between" style="align-items:flex-start;gap:8px"><div style="min-width:0">${bi ? `<span class="tag">A${n + 1}</span> ` : ''}${aq ? `<span class="tag">${T('Reconhecimento')}</span>` : ''}<h1 style="font-size:${bi ? 1.625 : 2}rem">${esc(tc(nomeBase))}</h1></div></div>
       <p class="muted">${e.series > 1 ? (e.circuito ? T('{n} voltas ×', { n: e.series }) : T('{n} séries ×', { n: e.series })) + ' ' : ''}${esc(tc(e.reps))}${!bi && e.descanso_s ? ' · ' + T('descanso {n}s', { n: e.descanso_s }) : ''}</p>
@@ -1032,7 +1033,9 @@ function guardaCargaDo(s, i) {
   const x = (boas.length ? boas : ok).reduce((a, b) => (numero(b.kg) ?? 0) > (numero(a.kg) ?? 0) ? b : a); db.guardarCarga(nome, numero(x.kg), repsSerie(x, dropsDe(x).length > 0), s.chave, dropsDe(x));
 }
 // Sugestão de carga da série: pirâmide usa a da mesma série da última vez; na 1ª vez herda o peso da série anterior (não grava série sem carga)
-function sugKg(s, i, k) { const e = s.exs[i], st = s.sets[i][k]; if (!piramide(e.reps)) return e.ultima?.kg; const u = e.porSerie?.[serieN(e, k)]; if (u != null) return u; const ant = s.sets[i].slice(0, k).reverse().find(x => x.kg !== '' && (x.nome || e.nome) === (st.nome || e.nome)); return ant ? numero(ant.kg) : null; }
+// Séries já marcadas sem kg (a "Última" chegou depois do ✓): ganham a sugestão, senão vão pro banco sem peso e somem na semana seguinte
+function preencheFeitas(s, i) { const e = s.exs[i]; if (!e || tempo(e.reps) || semCarga(e) || e.aq === true) return; (s.sets[i] || []).forEach((st, k) => { if (st.done && st.kg === '' && (st.nome || e.nome) === e.nome) { const sug = sugKg(s, i, k); if (sug != null) st.kg = String(sug); } }); }
+function sugKg(s, i, k) { const e = s.exs[i], st = s.sets[i][k]; if (!piramide(e.reps)) return e.ultima?.kg; const u = e.porSerie?.[serieN(e, k)]; if (u != null) return u; const ant = s.sets[i].slice(0, k).reverse().find(x => x.kg !== '' && (x.nome || e.nome) === (st.nome || e.nome)); return ant ? numero(ant.kg) : (k === 0 && !e.porSerie && e.ultima?.sets?.[0]?.kg != null ? +e.ultima.sets[0].kg : null); }
 // Cartão do "Próximo" no descanso (Igor 30/10): exercício novo = nome grande + séries, reps e última carga; mesmo exercício = "série 2 de 3"
 function proxDescanso(s, seguinte, pi) {
   const limpa = e => tc(e.nome.replace(/\s*·\s*reconhecimento$/i, ''));
@@ -1186,11 +1189,13 @@ function lancarNoStrava(s, patch) {
   const inicio = `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}T${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`;
   db.strava.enviar({ chave: String(s.chave || s.id), titulo: nomeTreino(s.titulo), inicio, duracao_s: patch.duracao_s, descricao: `${patch.exercicios_feitos}/${patch.exercicios_total} exercícios · Igor Sousa Team 💪` }).catch(e => { if (e?.codigo === 'reconectar' || e?.codigo === 'nao_conectado') db.LS.set('strava_on', false); });
 }
+const subindo = new Set(); // sessões com envio direto em andamento
 async function enviarSessao(s, fb) {
   s.enviada = true; salvaSessao();
   const fim = s.fimEm || s.pausadoEm || s.ult || Date.now();
   const obr = obrigatorios(s), obrT = obr.length ? obr : s.exs.map((e, i) => i);
   const patch = { duracao_s: Math.max(0, Math.floor((fim - s.inicio) / 1000)), exercicios_feitos: obrT.filter(i => completo(s, i)).length, exercicios_total: obrT.length, esforco: fb.esforco ?? null, nota: fb.nota ?? null, comentario: [s.express ? '⚡ Express' : '', fb.comentario || ''].filter(Boolean).join(' · ') || null, finalizada_em: new Date(s.registrarEm || diaDoTreino(s, fim)).toISOString() };
+  s.exs.forEach((e, i) => preencheFeitas(s, i));
   const series = seriesDaSessao(s); let pontos = true, seriesOk = false;
   const item = () => ({ s: { titulo: s.titulo, treino_id: s.treino_id, programa_treino_id: s.programa_treino_id || null, total: s.exs.length }, sid: s.local ? null : s.id, seriesOk, series, patch });
   try {
@@ -1198,7 +1203,7 @@ async function enviarSessao(s, fb) {
     else {
       // 4G lento: espera no máximo 6 s; depois guarda na fila e segue pro card (antes ficava até 24 s em "Enviando…").
       // Se a chamada lenta chegar depois, o reenvio não duplica (séries substituem, finalizar atualiza a mesma sessão).
-      const envia = (async () => { await comLimite(db.salvarSeries(s.id, series), 12000); seriesOk = true; await comLimite(db.finalizarSessao(s.id, patch), 12000); })();
+      subindo.add(s.id); const envia = (async () => { await comLimite(db.salvarSeries(s.id, series), 12000); seriesOk = true; await comLimite(db.finalizarSessao(s.id, patch), 12000); })(); envia.catch(() => {}).finally(() => { subindo.delete(s.id); if (db.LS.get('fila', []).some(daFila)) setTimeout(sincronizarFila, 500); });
       const r = await Promise.race([envia.then(() => 'ok'), new Promise(res => setTimeout(() => res('lento'), 6000))]);
       if (r === 'lento') { pontos = false; novaFila(item()); envia.then(() => db.LS.set('fila', db.LS.get('fila', []).filter(x => x.sid !== s.id))).catch(() => {}); }
     }
@@ -1219,7 +1224,7 @@ async function sincronizarFila() {
     // Item sem dono (versão antiga do app) fica com quem está logado agora
     db.LS.set('fila', db.LS.get('fila', []).map((x, j) => ({ ...x, uid: x.uid || 'u' + Date.now() + j, dono: x.dono || S.perfil.id })));
     for (const it0 of db.LS.get('fila', []).filter(x => x.dono === S.perfil.id)) {
-      const it = db.LS.get('fila', []).find(x => x.uid === it0.uid); if (!it) continue;
+      const it = db.LS.get('fila', []).find(x => x.uid === it0.uid); if (!it) continue; if (it.sid && subindo.has(it.sid)) continue; // o envio direto ainda está subindo essa: espera ele
       const lim = 15000 * 2 ** Math.min(it.lentas || 0, 2); L = p => comLimite(p, lim); // 4G que conecta mas é lento: cada volta espera mais (15 → 30 → 60 s), senão nunca sobe
       try {
         if (it.tipo === 'pontos') await L(db.registrarPontos(S.perfil.id, it.motivo, it.pontos, it.ref));
@@ -1240,7 +1245,7 @@ async function sincronizarFila() {
         if (erroDeRede(er)) { if (/lento/.test(String(er?.message))) atualiza(it.uid, { lentas: (it.lentas || 0) + 1 }); break; } // sem sinal: tenta tudo de novo depois, na mesma ordem
         // Erro do banco (ex.: o Igor republicou o treino e o id antigo sumiu): reenvia sem os ids, pelo nome, e segue pros próximos
         const s0 = it.s ? { ...it.s, treino_id: null, programa_treino_id: null } : it.s, series = (it.series || []).map(r => ({ ...r, exercicio_id: null }));
-        atualiza(it.uid, { s: s0, series, sid: it.falhas ? null : it.sid, seriesOk: false, falhas: (it.falhas || 0) + 1 });
+        const sidAgora = db.LS.get('fila', []).find(x => x.uid === it.uid)?.sid ?? it.sid; atualiza(it.uid, { s: s0, series, sid: it.falhas ? null : sidAgora, seriesOk: false, falhas: (it.falhas || 0) + 1 });
       }
     }
   } finally { sincronizando = false; }

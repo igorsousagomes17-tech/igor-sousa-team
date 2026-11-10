@@ -97,6 +97,7 @@ export async function salvarSeries(sessaoId, rows) {
   const del = await sb.from('series').delete().eq('sessao_id', sessaoId);
   if (del.error) throw del.error;
   if (!rows.length) return;
+  rows = rows.map(r => r.exercicio_nome ? { ...r, exercicio_nome: String(r.exercicio_nome).normalize('NFC') } : r);
   const sem = () => rows.map(({ drops, ...r }) => ({ ...r, sessao_id: sessaoId }));
   let { error } = await sb.from('series').insert(temDrops === false ? sem() : rows.map(r => ({ ...r, sessao_id: sessaoId })));
   // banco ainda sem a migração 020 (coluna drops): grava sem as quedas, o resto do treino não se perde
@@ -125,7 +126,7 @@ export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
   // Nome parecido também vale (Leg press 45 / Leg Press 45° / com e sem acento), e treino que ela não finalizou também (a carga foi feita)
   const busca = cols => sb.from('series').select(cols + 'exercicio_nome,kg,reps,n,sessao_id,sessoes!inner(aluna_id,iniciada_em,finalizada_em,comentario)')
     .ilike('exercicio_nome', padraoEx(exercicioNome)).eq('sessoes.aluna_id', alunaId).not('kg', 'is', null)
-    .order('sessoes(iniciada_em)', { ascending: false }).limit(limit * 15);
+    .order('sessoes(iniciada_em)', { ascending: false }).limit(limit * 40);
   let { data, error } = await busca(temDrops === false ? '' : 'drops,');
   if (error && semColuna(error, 'drops')) { temDrops = false; ({ data, error } = await busca('')); }
   if (error) throw error; // sem sinal: quem chamou mostra o que tem no celular
@@ -140,10 +141,12 @@ export async function historicoCarga(alunaId, exercicioNome, limit = 5) {
 }
 // Última carga: busca no banco e guarda no celular; sem internet usa a guardada.
 // Dia em que ela parou no meio (1 de 3 séries) não vira a "Última"; "ant" = treino anterior (pro +/− kg).
-export const escolheUltima = h => { const mx = Math.max(0, ...h.filter(x => !x.express).map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.express || x.sets.length >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; };
+export const escolheUltima = h => { const mx = Math.max(0, ...h.filter(x => !x.express).map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.express || x.sets.length * 2 >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; }; // só pula o dia em que fez menos da metade das séries
 export async function ultimaCarga(alunaId, exercicioNome) {
   const cache = LS.get('cargas', {});
-  try { const u = escolheUltima(await historicoCarga(alunaId, exercicioNome, 3)); if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || cargaPorNome(cache, exercicioNome) || null; }
+  try { const u = escolheUltima(await historicoCarga(alunaId, exercicioNome, 3)), loc = cargaPorNome(cache, exercicioNome);
+    if (u && loc?.data && loc.data > u.data) return loc; // treino mais novo ainda na fila (sem sinal): o do celular vale
+    if (u) { cache[exercicioNome] = u; LS.set('cargas', cache); } return u || loc || null; }
   catch { return cargaPorNome(cache, exercicioNome) || null; }
 }
 // Minhas cargas: a carga mais pesada do último treino de cada exercício + a do anterior, direto do banco.
@@ -162,7 +165,7 @@ export async function ultimasSeries(alunaId, exercicioNome) {
   const recente = Date.now() - 4 * 3600e3;
   const { data: bruto } = await sb.from('series').select('exercicio_nome,kg,reps,n,sessao_id,sessoes!inner(aluna_id,iniciada_em,finalizada_em)')
     .ilike('exercicio_nome', padraoEx(exercicioNome)).eq('sessoes.aluna_id', alunaId).not('kg', 'is', null)
-    .order('sessoes(iniciada_em)', { ascending: false }).limit(40);
+    .order('sessoes(iniciada_em)', { ascending: false }).limit(120);
   const data = filtraEx(exercicioNome, (bruto || []).filter(r => r.sessoes.finalizada_em || new Date(r.sessoes.iniciada_em).getTime() < recente)).slice(0, 12);
   if (!data?.length) return null;
   // Último dia em que ela fez todas as séries (dia que parou no meio não apaga a sugestão das séries 2 e 3)

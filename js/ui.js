@@ -22,7 +22,7 @@ const avisoRecente = () => { const t = $('#toast'); return t && t.classList.cont
 // Exercício sem peso (peso do corpo, elástico, mobilidade): esconde a coluna de kg (vale no app e no PDF).
 // Ela também pode marcar "sem peso" num exercício (treino em casa sem halter): fica guardado no celular.
 const semPesoDela = () => { try { return JSON.parse(localStorage.getItem('semPeso') || '[]'); } catch { return []; } };
-export const semCarga = e => e.carga === false || semPesoDela().includes(e.nome) || /prancha|dead ?bug|gato|abdominal|abs |mini ?band|alongamento|mobilidade|cossaco|polichinelo|burpee|90\/90|ponte|hiit|cardio/i.test(e.nome || '');
+export const semCarga = e => e.carga === false || semPesoDela().includes(e.nome) || (/prancha|dead ?bug|gato|abdominal|abs |mini ?band|alongamento|mobilidade|cossaco|polichinelo|burpee|90\/90|ponte|hiit|cardio/i.test(e.nome || '') && !/barra|halter|anilha|polia|cabo|carga|kettle|m[aá]quina|smith|banco scott/i.test(e.nome || ''));
 export function marcarSemPeso(nome, sem) { const l = semPesoDela().filter(x => x !== nome); if (sem) l.push(nome); try { localStorage.setItem('semPeso', JSON.stringify(l.slice(-80))); } catch {} }
 export const semPesoMarcado = nome => semPesoDela().includes(nome);
 
