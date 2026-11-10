@@ -29,14 +29,18 @@ Deno.serve(async (req) => {
   if (me?.role === 'admin') return json({ erro: 'admin' }, 403);
 
   // Fotos de evolução (pasta com o id dela) — o cascade do banco não apaga arquivos do Storage
-  try {
-    for (;;) {
-      const { data: arqs } = await admin.storage.from('evolucao').list(user.id, { limit: 100 });
-      if (!arqs?.length) break;
-      await admin.storage.from('evolucao').remove(arqs.map(a => `${user.id}/${a.name}`));
-      if (arqs.length < 100) break;
-    }
-  } catch (_) { /* sem bucket ou sem fotos: segue */ }
+  // Inclui a subpasta "presencial" (foto de prova do treino com o Igor): o list não entra em subpasta sozinho e essas fotos ficavam
+  for (const pasta of [user.id, `${user.id}/presencial`]) {
+    try {
+      for (;;) {
+        const { data: arqs } = await admin.storage.from('evolucao').list(pasta, { limit: 100 });
+        const so = (arqs || []).filter(a => a.id); // pasta aparece na lista sem id: não é arquivo
+        if (!so.length) break;
+        await admin.storage.from('evolucao').remove(so.map(a => `${pasta}/${a.name}`));
+        if (arqs!.length < 100) break;
+      }
+    } catch (_) { /* sem bucket ou sem fotos: segue */ }
+  }
 
   // Quem ela indicou continua com conta, só perde a ligação com ela
   await admin.from('profiles').update({ indicada_por: null }).eq('indicada_por', user.id);

@@ -170,6 +170,8 @@ routes.login = () => {
 // Treinos feitos sem sinal entram na contagem na hora (sequência, meta, treino de hoje), antes de subir pro banco.
 // Cada item da fila tem dono: treino feito sem sinal nunca sobe na conta de outra pessoa que entrar no mesmo celular.
 const daFila = it => !it.dono || it.dono === S.perfil?.id;
+// Sair (qualquer caminho): tira do celular o que é só dela e esquece o que estava na memória (plano/treinos não aparecem pra quem entrar depois sem fechar o app)
+async function sairDaConta() { A.limparLembrete(); await db.logout().catch(() => {}); S.perfil = null; S.plano = null; S.sessoes = null; Object.keys(fresco).forEach(k => delete fresco[k]); }
 const pendentesDaFila = () => db.LS.get('fila', []).filter(it => daFila(it) && it.tipo === 'presencial').map(it => ({ titulo: 'Treino com o Igor', finalizada_em: it.quando, exercicios_feitos: 0, exercicios_total: 0, duracao_s: 3600, pendente: true, series: [] })).concat(db.LS.get('fila', []).filter(it => daFila(it) && it.tipo !== 'pontos' && it.tipo !== 'evolucao' && it.tipo !== 'presencial' && ((it.series || []).length > 0 || /^Spinning/.test(it.s?.titulo || ''))).map(it => ({ titulo: it.s.titulo, finalizada_em: it.patch.finalizada_em || new Date().toISOString(), exercicios_feitos: it.patch.exercicios_feitos, exercicios_total: it.patch.exercicios_total ?? it.s.total, duracao_s: it.patch.duracao_s, pendente: true, series: it.series || [] }))); // séries vão junto: dá pra conferir o que fez antes de subir
 async function sessoesComFila(p, lim) { const ss = await rapido(db.minhasSessoes(p.id, lim), db.LS.get('sessoes', [])); return [...pendentesDaFila(), ...ss].sort((a, b) => b.finalizada_em.localeCompare(a.finalizada_em)); }
 const seriesFeitas = s => Object.values(s.sets).flat().filter(x => x.done).length;
@@ -1734,7 +1736,7 @@ routes.perfil = async () => {
     const falta = db.LS.get('fila', []).filter(daFila).length;
     if ((await perguntar(t('Sair do app?'), (falta ? tp(falta, 'Você tem {n} registro que ainda não subiu (falta sinal). Ele fica guardado no celular e sobe quando você entrar de novo.', 'Você tem {n} registros que ainda não subiram (falta sinal). Eles ficam guardados no celular e sobem quando você entrar de novo.') + ' ' : '') + (S.sessao ? t('Seu treino pausado continua guardado neste celular.') + ' ' : '') + t('Pra entrar de novo vai precisar do seu e-mail e da sua senha.'), t('Ficar'), t('Sair'))) !== false) return; // "Ficar" em destaque: quem enxerga mal não sai sem querer
     if (S.sessao) { db.LS.set('sessao@' + S.perfil.id, S.sessao); db.LS.del('sessao'); S.sessao = null; } // treino pausado é só dela: quem entrar depois não vê
-    A.limparLembrete(); await db.logout().catch(() => {}); ['chat', 'chatRasc', 'chatOff', 'respPend', 'chatPend', 'chatRest', 'chatEm', 'cargas', 'evolucao', 'sessoes', 'rascResp'].forEach(k => db.LS.del(k)); S.perfil = null; go('entrada'); // outra pessoa no mesmo celular não vê a conversa dela
+    await sairDaConta(); go('entrada'); // outra pessoa no mesmo celular não vê a conversa dela
   };
   if ($('#notif')) $('#notif').onclick = async () => { if (A.lembreteLigado()) { await A.desligarLembrete(); toast(t('Lembretes desligados.')); return routes.perfil(); } const r = await A.ligarLembrete(); toast(msgLembrete(r)); routes.perfil(); };
   $('#tour').onclick = () => { A.refazerPasseio(p); go('home'); setTimeout(() => { if (rotaAtual === 'home' && !$('#overlay')?.innerHTML && !document.querySelector('.tour')) A.passeio(p); }, 700); }; // pediu: mostra (também no demo)
@@ -1761,8 +1763,8 @@ routes.perfil = async () => {
       if ($('#s').disabled) return; $('#e').hidden = true; $('#s').disabled = true; $('#s').textContent = t('Excluindo…');
       try { await comLimite(db.excluirConta(sen), 20000); }
       catch (e) { $('#s').disabled = false; $('#s').textContent = t('Excluir de vez'); $('#e').textContent = e?.codigo === 'senha' ? t('A senha não confere. Confere e tenta de novo.') : navigator.onLine === false || erroDeRede(e) ? t('Sem internet agora. Tenta de novo com sinal.') : t('Não deu pra excluir agora. Tenta de novo ou chama o Igor.'); $('#e').hidden = false; return; }
-      closeOverlay(); S.sessao = null; db.LS.del('sessao'); db.LS.del('sessao@' + p.id); db.LS.del('fila');
-      A.limparLembrete(); await db.logout().catch(() => {}); ['chat', 'chatRasc', 'chatPend', 'chatRest', 'chatEm', 'cargas', 'evolucao', 'sessoes', 'rascResp', 'anamnese'].forEach(k => db.LS.del(k)); S.perfil = null; go('entrada'); toast(t('Sua conta foi excluída. Obrigado por ter treinado com a gente 🧡'));
+      closeOverlay(); S.sessao = null; db.LS.del('sessao'); db.LS.del('sessao@' + p.id); db.LS.set('fila', db.LS.get('fila', []).filter(x => x.dono && x.dono !== p.id)); // só os registros dela: o de outra conta neste celular ainda sobe
+      await sairDaConta(); go('entrada'); toast(t('Sua conta foi excluída. Obrigado por ter treinado com a gente 🧡'));
     };
   };
 };
@@ -1829,14 +1831,14 @@ async function fotosDoInicio() {
 }
 function anamneseForm(p, done, titulo = 'Me conta de você') {
   const primeira = !p.anamnese_em; // lido antes de salvar (o perfil é atualizado no lugar)
-  const rasc = db.LS.get('anamnese');
+  const rasc0 = db.LS.get('anamnese'), rasc = rasc0 && (!rasc0.dono || rasc0.dono === p.id) ? rasc0 : null; // rascunho de outra conta neste celular não vira a ficha dela
   const r = rasc?.r || Object.fromEntries(CAMPOS_ANAM.map(k => [k, ['foco', 'saude', 'equipamento'].includes(k) ? (p[k] || []) : (p[k] ?? null)]));
   // -1 = boas-vindas (1ª vez); já respondeu antes = abre na revisão, ela toca só no que quer mudar
   let i = rasc ? rasc.i : (p.objetivo ? Q.length : -1), revisando = false;
   const val = o => Array.isArray(o) ? o[1] : o, lab = o => t(Array.isArray(o) ? o[0] : o);
   // O que ela digitou (dor, data, peso/altura) fica guardado também no Voltar e no Depois, não só no Próxima
   let lerAtual = () => {};
-  const guarda = () => { try { lerAtual(); } catch {} db.LS.set('anamnese', { r, i: Math.max(0, i) }); };
+  const guarda = () => { try { lerAtual(); } catch {} db.LS.set('anamnese', { r, i: Math.max(0, i), dono: p.id }); };
   const fechar = () => { guarda(); voltarOverlay = null; closeOverlay(); };
   let naRevisao = false;
   // Pergunta que não se aplica (ex. tipo de academia pra quem só treina em casa) é pulada na ida, na volta e na revisão
@@ -1946,8 +1948,8 @@ async function boot() {
   S.perfil = await pronto(db.perfil().catch(er => { semRede = erroDeRede(er); return null; }), 4000);
   if (S.perfil === ESPERA) { S.perfil = guardado; db.perfil().then(p => { if (p && S.perfil?.id === p.id) S.perfil = p; }).catch(() => {}); }
   if (!S.perfil && (semRede || navigator.onLine === false)) { render(`<div class="view noTabs"><div class="logo big" style="margin-top:40px">IGOR<br>SOUSA <b>TEAM</b></div><h2>${t('Sem internet pra carregar sua conta')}</h2><p class="muted">${t('Na 1ª vez neste celular o app precisa de sinal. Depois ele abre mesmo sem internet.')}</p><button class="btn" id="o">↻ ${t('Tentar de novo')}</button></div>`); $('#o').onclick = () => boot(); return; }
-  if (!S.perfil) { render(`<div class="view noTabs"><h2>${t('Conta sem perfil')}</h2><p class="muted">${t('Chama o Igor no WhatsApp pra liberar seu acesso.')}</p><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
-  if (!S.perfil.ativa && S.perfil.role !== 'admin') { A.limparLembrete(); render(`<div class="view noTabs"><h2>${t('Acesso pausado')}</h2><p class="muted">${NATIVO ? t('Seu acesso tá pausado. Fala comigo que eu te ajudo.') : t('Sua assinatura tá pausada. Renovou? É só me chamar que libero na hora.')}</p><a class="btn" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}">${t('Falar com o Igor')}</a><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
+  if (!S.perfil) { render(`<div class="view noTabs"><h2>${t('Conta sem perfil')}</h2><p class="muted">${t('Chama o Igor no WhatsApp pra liberar seu acesso.')}</p><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await sairDaConta(); go('entrada'); }; return; }
+  if (!S.perfil.ativa && S.perfil.role !== 'admin') { A.limparLembrete(); render(`<div class="view noTabs"><h2>${t('Acesso pausado')}</h2><p class="muted">${NATIVO ? t('Seu acesso tá pausado. Fala comigo que eu te ajudo.') : t('Sua assinatura tá pausada. Renovou? É só me chamar que libero na hora.')}</p><a class="btn" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}">${t('Falar com o Igor')}</a><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await sairDaConta(); go('entrada'); }; return; }
   sincronizarFila();
   // Igor também treina pelo app: com treino aberto no celular dele, volta pro treino (antes caía no painel e o treino parecia sumido)
   if (S.perfil.role === 'admin') { const ab = db.LS.get('sessao') || db.LS.get('sessao@' + S.perfil.id); if (!ab || (ab.dono && ab.dono !== S.perfil.id)) return go('admin'); }
@@ -1995,7 +1997,7 @@ function criarSenha() {
   <p class="err" id="e" hidden></p><button class="btn" id="s">${t('Salvar e entrar')}</button></form>
   <a class="btn ghost sm" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a>
   <button class="link-fim" id="naoSou">${t('Não é você, {nome}? Sair', { nome: esc(primeiroNome(S.perfil.nome)) })}</button></div>`);
-  $('#naoSou').onclick = async () => { await db.logout().catch(() => {}); S.perfil = null; go('entrada'); };
+  $('#naoSou').onclick = async () => { await sairDaConta(); go('entrada'); };
   $('#fs').onsubmit = async ev => {
     ev.preventDefault();
     const a = $('#n1').value, erro = erroSenha(a, $('#n2').value);

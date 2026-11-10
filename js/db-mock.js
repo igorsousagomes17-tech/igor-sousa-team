@@ -23,7 +23,8 @@ const save = () => LS.set('state', state);
 export const sb = { auth: { onAuthStateChange() {}, async getSession() { return { data: { session: null } }; } }, from() { return { select() { return this; }, eq() { return this; }, async single() { return { data: state.perfil }; } }; }, async rpc() { return { data: 'ana@gmail.com' }; } };
 export async function sessionUser() { return state.logado ? { id: 'demo' } : null; }
 export async function login(email, senha) { await wait(400); if (!email) throw new Error('x'); if (senha === 'errada') throw new Error('Invalid login credentials'); if (senha === 'limite') throw new Error('Request rate limit reached'); state.logado = true; state.perfil.role = /igor/i.test(email) ? 'admin' : 'aluna'; state.perfil.nome = /igor/i.test(email) ? 'Igor Sousa' : 'Ana Paula (demo)'; save(); return { id: 'demo' }; }
-export async function logout() { state.logado = false; save(); }
+// Igual ao db.js: o que é só da aluna sai do celular em todo caminho de sair
+export async function logout() { state.logado = false; save(); ['plano', 'perfil', 'chat', 'chatRasc', 'chatOff', 'chatPend', 'chatRest', 'chatEm', 'respPend', 'rascResp', 'respLidas', 'cargas', 'evolucao', 'sessoes', 'pontos', 'pontosLog', 'anamnese', 'agua', 'aguaMetaManual', 'inicioSemana', 'inicioSemanaPulou', 'seguirMeia', 'versaoExpress', 'casaOk', 'lembretePerg', 'pushEm', 'strava_on', 'strava_auto', 'hyroxLib'].forEach(k => LS.del(k)); }
 export async function trocarSenha() { await wait(); }
 export async function excluirConta(senha) { await wait(400); if (!String(senha || '').trim()) throw Object.assign(new Error('senha'), { codigo: 'senha' }); state.logado = false; save(); return true; }
 export async function marcarPausa() {}

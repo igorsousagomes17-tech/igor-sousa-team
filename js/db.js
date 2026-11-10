@@ -24,7 +24,11 @@ export async function login(email, senha) {
   return data.user;
 }
 // scope local: limpa a sessão do celular mesmo sem sinal (o signOut normal precisa de internet e deixava ela logada)
-export async function logout() { try { await sb.auth.signOut({ scope: 'local' }); } catch {} LS.del('plano'); LS.del('perfil'); try { await caches.delete('isteam-fotos'); } catch {} for (const k in blobs) delete blobs[k]; } // fotos dela não ficam pra quem entrar depois
+// O que é só dela e não tem o id na chave sai em TODO caminho de sair (Perfil, "Não é você?", acesso pausado, conta sem perfil):
+// antes só o Sair do Perfil limpava parte, e quem entrava depois via cargas, água, conversa e até o rascunho da anamnese dela.
+// Fica: fila/sessao/spinAberta/hyroxNivel (têm dono e sobem/voltam só pra ela), idioma, letra e chip (são do celular).
+const DELA = ['plano', 'perfil', 'chat', 'chatRasc', 'chatOff', 'chatPend', 'chatRest', 'chatEm', 'respPend', 'rascResp', 'respLidas', 'cargas', 'evolucao', 'sessoes', 'pontos', 'pontosLog', 'anamnese', 'agua', 'aguaMetaManual', 'inicioSemana', 'inicioSemanaPulou', 'seguirMeia', 'versaoExpress', 'casaOk', 'lembretePerg', 'pushEm', 'strava_on', 'strava_auto', 'hyroxLib', 'semPeso', 'acolhe:resumoVisto', 'acolhe:volta'];
+export async function logout() { try { await sb.auth.signOut({ scope: 'local' }); } catch {} DELA.forEach(k => LS.del(k)); try { await caches.delete('isteam-fotos'); } catch {} for (const k in blobs) delete blobs[k]; } // fotos dela não ficam pra quem entrar depois
 // Confere a senha de agora antes de trocar (quem pegar o celular dela aberto não troca a senha)
 export async function conferirSenha(senha) { const { data } = await sb.auth.getUser(); const email = data?.user?.email; if (!email) return true; const { error } = await sb.auth.signInWithPassword({ email, password: senha }); if (error) { if (/invalid|credentials/i.test(error.message)) return false; throw error; } return true; }
 export async function trocarSenha(nova) { const { error } = await sb.auth.updateUser({ password: nova }); if (error) throw error; }
