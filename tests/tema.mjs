@@ -1,0 +1,23 @@
+// Tema (Perfil > Aparência): escuro é o padrão, claro e "igual ao celular" funcionam, sobrevive ao recarregar, barra do celular acompanha.
+import { chromium } from 'playwright';
+import path from 'path'; const APP = process.env.APP || path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }); const errs = [];
+const ctx = await b.newContext({ locale: 'pt-BR', viewport: { width: 375, height: 812 }, serviceWorkers: 'block', colorScheme: 'light' }); const p = await ctx.newPage();
+await p.route('**/*', r => { const u = new URL(r.request().url()); if (u.hostname === 'app.local') { const f = u.pathname === '/' ? '/index.html' : u.pathname; return r.fulfill({ path: APP + decodeURIComponent(f) }); } return r.abort(); });
+p.on('pageerror', e => errs.push(e.message));
+const tema = () => p.evaluate(() => (document.documentElement.getAttribute('data-tema') || 'escuro') + '|' + document.querySelector('meta[name=theme-color]').content);
+const ok = (c, m) => { if (!c) errs.push(m); console.log((c ? 'ok   ' : 'ERRO ') + m); };
+await p.goto('http://app.local/?demo'); await p.waitForTimeout(800);
+ok(await tema() === 'escuro|#0b0b0c', 'padrão é escuro mesmo com celular no claro');
+await p.click('text=ENTRAR'); await p.fill('#em', 'ana@demo.com'); await p.press('#pw', 'Enter'); await p.waitForTimeout(1500);
+await p.click('.tabs [data-go="perfil"]'); await p.waitForTimeout(700);
+await p.click('#tema [data-tema="claro"]'); await p.waitForTimeout(200);
+ok(await tema() === 'claro|#f4f2ee', 'claro aplica na hora');
+ok(await p.$eval('#tema [data-tema="claro"]', e => !e.classList.contains('ghost') && e.getAttribute('aria-checked') === 'true'), 'botão marcado');
+const bg = await p.evaluate(() => getComputedStyle(document.body).backgroundColor); ok(bg === 'rgb(244, 242, 238)', 'fundo claro (' + bg + ')');
+await p.reload(); await p.waitForTimeout(1200); ok((await tema()).startsWith('claro'), 'continua claro depois de recarregar');
+await p.click('.tabs [data-go="perfil"]'); await p.waitForTimeout(700);
+await p.click('#tema [data-tema="auto"]'); await p.waitForTimeout(200); ok((await tema()).startsWith('claro'), 'igual ao celular (claro)');
+await p.emulateMedia({ colorScheme: 'dark' }); await p.waitForTimeout(200); ok((await tema()).startsWith('escuro'), 'igual ao celular (escuro), muda sozinho');
+await p.click('#tema [data-tema="escuro"]'); await p.waitForTimeout(200); ok(await tema() === 'escuro|#0b0b0c', 'volta pro escuro');
+console.log('erros:', JSON.stringify(errs)); await b.close(); if (errs.length) process.exit(1);

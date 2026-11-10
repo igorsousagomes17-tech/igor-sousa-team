@@ -97,7 +97,7 @@ export const fraseSemana = r => r.bateu ? t('Semana fechada! Você fez {n} de {m
 // Card do Início: aparece de segunda a quarta sobre a semana passada (se ela treinou), até ela abrir ou fechar.
 export function cardResumoHome(r) {
   if (!r?.treinos || LSget('resumoVisto') === r.semanaKey) return '';
-  return `<button class="card resumo-home" id="resumoSem" style="width:100%;text-align:left;color:var(--fg)"><div class="row between"><b style="font-size:1rem">📊 ${t('Sua semana passada')}</b><span class="pill on">${r.treinos}/${r.meta}</span></div><p class="muted">${fraseSemana(r)}</p><p class="small mt" style="color:var(--accent)">${t('ver o resumo')} ›</p></button>`;
+  return `<button class="card resumo-home" id="resumoSem" style="width:100%;text-align:left;color:var(--fg)"><div class="row between"><b style="font-size:1rem">📊 ${t('Sua semana passada')}</b><span class="pill on">${r.treinos}/${r.meta}</span></div><p class="muted">${fraseSemana(r)}</p><p class="small mt" style="color:var(--accent-t)">${t('ver o resumo')} ›</p></button>`;
 }
 export const resumoVisto = key => LSset('resumoVisto', key);
 export function htmlResumo(r, { nome, titulo }) {
@@ -109,9 +109,9 @@ export function htmlResumo(r, { nome, titulo }) {
     <div class="resumo-anel" style="--p:${pct}%"><div><b>${r.treinos}</b><span>${t('de {m} treinos', { m: r.meta })}</span></div></div>
     <div class="grid2" style="margin-top:4px">
       <div class="card"><div class="big">${num(r.minutos)}<small> ${t('min')}</small></div><p class="muted">${t('treinando')}${r.kcal ? ` · ~${num(r.kcal)} kcal` : ''}</p></div>
-      <div class="card"><div class="big" style="color:var(--accent)"><span style="font-size:.6em;vertical-align:.25em">🔥</span>${r.semanas}</div><p class="muted">${tp(r.semanas, 'semana seguida', 'semanas seguidas')}</p></div>
+      <div class="card"><div class="big" style="color:var(--accent-t)"><span style="font-size:.6em;vertical-align:.25em">🔥</span>${r.semanas}</div><p class="muted">${tp(r.semanas, 'semana seguida', 'semanas seguidas')}</p></div>
     </div>
-    ${r.subiu.length ? `<div class="card"><b>💪 ${tp(r.subiu.length, 'Subiu a carga em {n} exercício', 'Subiu a carga em {n} exercícios')}</b>${r.subiu.slice(0, 4).map(s => `<div class="row between" style="font-size:0.875rem;padding-top:6px;gap:8px"><span>${esc(s.nome)}</span><b style="color:var(--accent);white-space:nowrap">${num(s.de)} → ${num(s.para)} kg</b></div>`).join('')}</div>` : ''}
+    ${r.subiu.length ? `<div class="card"><b>💪 ${tp(r.subiu.length, 'Subiu a carga em {n} exercício', 'Subiu a carga em {n} exercícios')}</b>${r.subiu.slice(0, 4).map(s => `<div class="row between" style="font-size:0.875rem;padding-top:6px;gap:8px"><span>${esc(s.nome)}</span><b style="color:var(--accent-t);white-space:nowrap">${num(s.de)} → ${num(s.para)} kg</b></div>`).join('')}</div>` : ''}
     ${nome ? `<p class="muted small center">${esc(nome)}</p>` : ''}
   </div>`;
 }
