@@ -57,6 +57,8 @@ function go(name, arg, { hist = true } = {}) {
 // Dia/mês no fuso do celular (nunca toISOString, que é Londres: treino às 22h caía no dia/mês seguinte)
 const diaLocal = (d = new Date()) => { d = new Date(d); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const mesLocal = (d = new Date()) => diaLocal(d).slice(0, 7);
+// id de sessão criado no celular (o mesmo em toda tentativa de envio: nunca vira 2 sessões no banco)
+const novoId = () => crypto.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
 const comLimite = (p, ms) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('lento')), ms))]);
 const repoe = () => history.pushState({ name: rotaAtual, arg: argAtual }, '', '#' + rotaAtual);
 window.addEventListener('popstate', ev => {
@@ -64,7 +66,8 @@ window.addEventListener('popstate', ev => {
   if ($('#overlay').innerHTML) { closeOverlay(); const c = cancelarPopup; cancelarPopup = null; c?.(); return repoe(); } // voltar fecha pop-up primeiro (pergunta aberta = cancelada)
   if (minimizarDescanso()) return repoe(); // descanso aberto: voltar só minimiza, o tempo continua
   if (rotaAtual === 'spinAula' && $('#sPausa') && !$('#sPausa').disabled) { $('#sSair').click(); return repoe(); } // aula rodando: voltar pergunta (não perde a aula)
-  const st = ev.state || { name: S.perfil ? 'home' : 'entrada' };
+  // Sem estado = o toque numa notificação trocou só o # (ex.: "Terminou o treino?" → #sessao com o app aberto no Início): vai pra tela do aviso, como ao abrir o app (antes ficava no Início)
+  const hs = location.hash.slice(1), st = ev.state || { name: !S.perfil ? 'entrada' : (hs === 'sessao' && S.sessao) || ['treino', 'videos', 'pontos', 'evolucao', 'perfil', 'lib', 'comunidade'].includes(hs) ? hs : 'home' };
   if (!S.perfil && !['entrada', 'login'].includes(st.name)) return go('entrada', null, { hist: false });
   if (S.perfil && ['entrada', 'login'].includes(st.name)) { history.replaceState({ name: 'home', arg: null }, '', '#home'); return go('home', null, { hist: false }); }
   const avisaPausa = rotaAtual === 'sessao' && S.sessao && st.name !== 'sessao' && st.name !== 'fim';
@@ -319,10 +322,10 @@ async function registrarPresencial() {
     const b = $('#pOk'); b.disabled = true; b.textContent = t('Enviando…');
     const quando = ontem ? new Date(Date.now() - 86400e3) : new Date();
     // Sem sinal na academia: a foto fica guardada no celular e vai sozinha quando a internet voltar (antes perdia a foto e o dia)
-    const guarda = async () => { const uid = 'pr' + Date.now(); await idb('readwrite', st => st.put(foto, uid)); novaFila({ tipo: 'presencial', idb: uid, quando: quando.toISOString() }); };
+    const sid = novoId(), guarda = async () => { const uid = 'pr' + Date.now(); await idb('readwrite', st => st.put(foto, uid)); novaFila({ tipo: 'presencial', idb: uid, quando: quando.toISOString(), pid: sid }); };
     let fila = false;
     if (navigator.onLine === false) { try { await guarda(); fila = true; } catch { b.disabled = false; b.textContent = t('Registrar treino'); $('#pAviso').textContent = t('Precisa de internet pra enviar a foto. Tenta de novo quando tiver sinal.'); return; } }
-    else try { await comLimite(db.registrarPresencial(S.perfil.id, foto, quando), 30000); }
+    else try { await comLimite(db.registrarPresencial(S.perfil.id, foto, quando, sid), 30000); }
     catch (er) { if (erroDeRede(er)) { try { await guarda(); fila = true; } catch {} } if (!fila) { b.disabled = false; b.textContent = t('Registrar treino'); $('#pAviso').textContent = t('Não consegui enviar agora. Confere a internet e tenta de novo.'); return; } }
     closeOverlay(); S.sessoes = null;
     go('card', JSON.stringify({ presencial: true, titulo: 'Treino com o Igor', min: 60, seg: 3600, ex: 0, series: 0, total: 0, completo: true, quando: quando.toISOString(), ...(fila ? { pontos: false } : {}) }));
@@ -649,11 +652,11 @@ async function iniciarSessao({ titulo, treino_id = null, programa_treino_id = nu
     pararDescanso();
     const cargas = db.LS.get('cargas', {});
     const exs = comReconhecimento(structuredClone(exercicios).sort((a, b) => a.ordem - b.ordem)).map(e => ({ ...e, original: e.nome, ultima: cargaPorNome(cargas, e.nome) }));
-    const chave = 'local-' + Date.now();
-    S.sessao = { id: chave, chave, local: true, dono: S.perfil.id, titulo, treino_id, programa_treino_id, express, exs, passos: montarPassos(exs), p: 0, feito: {}, sets: {}, inicio: Date.now() };
+    const chave = 'local-' + Date.now(), uuid = novoId();
+    S.sessao = { id: chave, chave, uuid, local: true, dono: S.perfil.id, titulo, treino_id, programa_treino_id, express, exs, passos: montarPassos(exs), p: 0, feito: {}, sets: {}, inicio: Date.now() };
     exs.forEach((e, i) => { S.sessao.sets[i] = Array.from({ length: e.series || 1 }, () => ({ kg: '', reps: '', done: false })); });
     salvaSessao(); go('sessao'); setTimeout(ativarPush, 60000);
-    db.iniciarSessao(S.perfil.id, { treino_id, programa_treino_id, titulo, total: exs.length }).then(sess => { const s = S.sessao; if (sess?.id && s?.chave === chave && !s.enviada) { s.id = sess.id; s.local = false; salvaSessao(); } }).catch(() => {});
+    db.iniciarSessao(S.perfil.id, { id: uuid, treino_id, programa_treino_id, titulo, total: exs.length }).then(sess => { const s = S.sessao; if (sess?.id && s?.chave === chave && !s.enviada) { s.id = sess.id; s.local = false; salvaSessao(); } }).catch(() => {});
     exs.forEach((e, i) => { if (piramide(e.reps)) db.ultimasSeries(S.perfil.id, e.nome).catch(() => null).then(ps => { /* sem limite de tempo: chega quando chegar */ const s = S.sessao; if (ps && s?.chave === chave && s.exs[i].nome === e.nome) { s.exs[i].porSerie = ps; salvaSessao(); if (rotaAtual === 'sessao' && !document.activeElement?.matches('input')) routes.sessao(); } }); });
     // Última carga do banco: cada exercício atualiza quando a resposta chegar (antes, 4G lento > 8 s deixava a "Última" vazia o treino inteiro)
     let redesenho; const aplica = (u, i) => { const s = S.sessao; if (s?.chave !== chave) return; u = ultimaValida(u, exs[i].reps); if (!u || s.exs[i].nome !== exs[i].nome || JSON.stringify(u) === JSON.stringify(s.exs[i].ultima)) return;
@@ -1202,7 +1205,7 @@ async function enviarSessao(s, fb) {
   const patch = { duracao_s: Math.max(0, Math.floor((fim - s.inicio) / 1000)), exercicios_feitos: obrT.filter(i => completo(s, i)).length, exercicios_total: obrT.length, esforco: fb.esforco ?? null, nota: fb.nota ?? null, comentario: [s.express ? '⚡ Express' : '', fb.comentario || ''].filter(Boolean).join(' · ') || null, finalizada_em: new Date(s.registrarEm || diaDoTreino(s, fim)).toISOString() };
   s.exs.forEach((e, i) => preencheFeitas(s, i));
   const series = seriesDaSessao(s); let pontos = true, seriesOk = false;
-  const item = () => ({ s: { titulo: s.titulo, treino_id: s.treino_id, programa_treino_id: s.programa_treino_id || null, total: s.exs.length }, sid: s.local ? null : s.id, seriesOk, series, patch });
+  const item = () => ({ s: { titulo: s.titulo, treino_id: s.treino_id, programa_treino_id: s.programa_treino_id || null, total: s.exs.length }, sid: s.local ? null : s.id, ...(s.local && s.uuid ? { novoId: s.uuid } : {}), seriesOk, series, patch });
   try {
     if (s.local) { novaFila(item()); pontos = false; }
     else {
@@ -1233,7 +1236,7 @@ async function sincronizarFila() {
       const lim = 15000 * 2 ** Math.min(it.lentas || 0, 2); L = p => comLimite(p, lim); // 4G que conecta mas é lento: cada volta espera mais (15 → 30 → 60 s), senão nunca sobe
       try {
         if (it.tipo === 'pontos') await L(db.registrarPontos(S.perfil.id, it.motivo, it.pontos, it.ref));
-        else if (it.tipo === 'presencial') { const f = await idb('readonly', st => st.get(it.idb)).catch(() => null); if (f) await L(db.registrarPresencial(S.perfil.id, f, new Date(it.quando))); idb('readwrite', st => st.delete(it.idb)).catch(() => {}); enviados++; }
+        else if (it.tipo === 'presencial') { const f = await idb('readonly', st => st.get(it.idb)); if (f) { await L(db.registrarPresencial(S.perfil.id, f, new Date(it.quando), it.pid || null)); enviados++; } idb('readwrite', st => st.delete(it.idb)).catch(() => {}); } // falha ao ler a foto = tenta de novo depois (antes apagava o registro e ainda dizia "Registrado ✓")
         else if (it.tipo === 'evolucao') {
           const fotos = (await idb('readonly', st => st.get(it.idb)).catch(() => null)) || {};
           await L(db.salvarEvolucao(S.perfil.id, it.row, fotos));
@@ -1241,13 +1244,14 @@ async function sincronizarFila() {
           idb('readwrite', st => st.delete(it.idb)).catch(() => {}); evs++;
         } else {
           let sid = it.sid;
-          if (!sid) { const sess = await L(db.iniciarSessao(S.perfil.id, { treino_id: it.s.treino_id || null, programa_treino_id: it.s.programa_treino_id || null, titulo: it.s.titulo, total: it.s.total || 0 })); sid = sess.id; atualiza(it.uid, { sid }); }
+          if (!sid) { const nid = it.novoId || novoId(); if (!it.novoId) atualiza(it.uid, { novoId: nid }); const sess = await L(db.iniciarSessao(S.perfil.id, { id: nid, treino_id: it.s.treino_id || null, programa_treino_id: it.s.programa_treino_id || null, titulo: it.s.titulo, total: it.s.total || 0 })); sid = sess.id; atualiza(it.uid, { sid }); }
           if (!it.seriesOk) { await L(db.salvarSeries(sid, it.series || it.s.series || [])); atualiza(it.uid, { seriesOk: true }); }
           await L(db.finalizarSessao(sid, it.patch)); enviados++; if (!it.em || Date.now() - it.em > 90000) velhos++;
         }
         db.LS.set('fila', db.LS.get('fila', []).filter(x => x.uid !== it.uid));
       } catch (er) {
         if (erroDeRede(er)) { if (/lento/.test(String(er?.message))) atualiza(it.uid, { lentas: (it.lentas || 0) + 1 }); break; } // sem sinal: tenta tudo de novo depois, na mesma ordem
+        if (it.tipo === 'pontos' && (it.falhas || 0) >= 2) { db.LS.set('fila', db.LS.get('fila', []).filter(x => x.uid !== it.uid)); continue; } // pontos que o banco recusou 3 vezes (ex.: story de mais de 7 dias sem sinal): saem da fila em vez de ficar pra sempre como "falta sinal" no Sair
         // Erro do banco (ex.: o Igor republicou o treino e o id antigo sumiu): reenvia sem os ids, pelo nome, e segue pros próximos
         const s0 = it.s ? { ...it.s, treino_id: null, programa_treino_id: null } : it.s, series = (it.series || []).map(r => ({ ...r, exercicio_id: null }));
         const sidAgora = db.LS.get('fila', []).find(x => x.uid === it.uid)?.sid ?? it.sid; atualiza(it.uid, { s: s0, series, sid: it.falhas ? null : sidAgora, seriesOk: false, falhas: (it.falhas || 0) + 1 });

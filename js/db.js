@@ -79,16 +79,20 @@ export async function desafioAtual() {
 }
 
 // Sessões -------------------------------------------------------------
-export async function iniciarSessao(alunaId, { treino_id = null, programa_treino_id = null, titulo, total }) {
-  const { data, error } = await sb.from('sessoes').insert({ aluna_id: alunaId, treino_id, programa_treino_id, titulo, exercicios_total: total }).select().single();
+// id criado no celular: se a 1ª tentativa chegou no banco mas a resposta não voltou (4G travado), a próxima acha a mesma sessão
+// em vez de criar outra (antes ficava uma sessão aberta sobrando e o servidor mandava "Terminou o treino?" de um treino já enviado)
+export async function iniciarSessao(alunaId, { id = null, treino_id = null, programa_treino_id = null, titulo, total }) {
+  const { data, error } = await sb.from('sessoes').insert({ ...(id ? { id } : {}), aluna_id: alunaId, treino_id, programa_treino_id, titulo, exercicios_total: total }).select().single();
+  if (error && id && error.code === '23505') { const ja = await sb.from('sessoes').select().eq('id', id).single(); if (ja.error) throw ja.error; return ja.data; }
   if (error) throw error; return data;
 }
 // Treino presencial com o Igor (plano misto): foto de prova na pasta dela (bucket "evolucao") + treino completo (vale +50 e conta na semana).
 // Sem a migração 023 (coluna foto_path), o caminho da foto vai no comentário pra não perder a prova.
-export async function registrarPresencial(alunaId, foto, quando = new Date()) {
-  const dia = new Date(quando.getTime() - quando.getTimezoneOffset() * 60000).toISOString().slice(0, 10), path = `${alunaId}/presencial/${dia}-${Date.now().toString(36)}.jpg`;
-  const up = await sb.storage.from('evolucao').upload(path, foto, { contentType: 'image/jpeg', upsert: false }); if (up.error) throw up.error;
-  const sess = await iniciarSessao(alunaId, { titulo: 'Treino com o Igor', total: 0 });
+// id (opcional) = o mesmo em toda tentativa: foto lenta que subiu depois do limite não vira 2 treinos presenciais no mesmo dia
+export async function registrarPresencial(alunaId, foto, quando = new Date(), id = null) {
+  const dia = new Date(quando.getTime() - quando.getTimezoneOffset() * 60000).toISOString().slice(0, 10), path = `${alunaId}/presencial/${dia}-${id ? id.slice(0, 8) : Date.now().toString(36)}.jpg`;
+  const up = await sb.storage.from('evolucao').upload(path, foto, { contentType: 'image/jpeg', upsert: false }); if (up.error && !(id && /exist|duplicate|409/i.test(`${up.error.message} ${up.error.statusCode || ''} ${up.error.error || ''}`))) throw up.error; // já subiu na tentativa anterior
+  const sess = await iniciarSessao(alunaId, { id, titulo: 'Treino com o Igor', total: 0 });
   const patch = { duracao_s: 3600, exercicios_feitos: 0, exercicios_total: 0 };
   const fim = q => sb.from('sessoes').update({ finalizada_em: quando.toISOString(), ...patch, ...q }).eq('id', sess.id).select().single();
   let { data, error } = await fim({ foto_path: path });
