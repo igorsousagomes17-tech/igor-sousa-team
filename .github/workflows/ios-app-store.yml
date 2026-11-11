@@ -1,0 +1,83 @@
+# Gera o app do iPhone na nuvem (Mac do GitHub, Xcode 26) e envia pro App Store Connect.
+# Roda só quando alguém manda (aba Actions › "App do iPhone" › Run workflow). Não mexe no app das alunas.
+# Segredos usados (Settings › Secrets › Actions): ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (conteúdo do arquivo .p8).
+name: App do iPhone (App Store)
+
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: 'Versão que aparece na loja (ex. 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      TEAM_ID: A9M38XZN7L
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Escolher o Xcode 26
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          echo "Usando $XC"
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+
+      - name: Preparar a casca nativa
+        working-directory: nativo
+        run: |
+          npm ci
+          npx cap sync ios
+
+      - name: Chave do App Store Connect
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
+
+      - name: Compilar (archive)
+        working-directory: nativo/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${{ secrets.ASC_KEY_ID }}.p8" \
+            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            DEVELOPMENT_TEAM=$TEAM_ID CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION=${{ inputs.versao }} CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            archive
+
+      - name: Enviar pro App Store Connect
+        run: |
+          cat > "$RUNNER_TEMP/export.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${{ secrets.ASC_KEY_ID }}.p8" \
+            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
+            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}"
+
+      - name: Apagar a chave
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc"
