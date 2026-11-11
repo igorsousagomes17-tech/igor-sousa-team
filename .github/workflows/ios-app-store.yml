@@ -55,6 +55,29 @@ jobs:
             MARKETING_VERSION=${{ inputs.versao }} CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             archive
 
+      - name: Certificado e perfil de loja (pela API)
+        env:
+          ASC_KEY_PATH: ${{ runner.temp }}/asc/AuthKey_${{ env.ASC_KEY_ID }}.p8
+          SAIDA: ${{ runner.temp }}/assin
+        run: |
+          python3 -m pip install --quiet --break-system-packages pyjwt cryptography || python3 -m pip install --quiet pyjwt cryptography
+          python3 nativo/scripts/assinatura_ios.py
+          cd "$SAIDA"
+          openssl x509 -inform DER -in dist.cer -out dist.pem
+          SENHA=$(openssl rand -hex 12)
+          openssl pkcs12 -export -legacy -inkey dist.key -in dist.pem -out dist.p12 -passout pass:$SENHA 2>/dev/null || openssl pkcs12 -export -inkey dist.key -in dist.pem -out dist.p12 -passout pass:$SENHA
+          KC="$RUNNER_TEMP/assin.keychain-db"
+          security create-keychain -p "$SENHA" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$SENHA" "$KC"
+          security import dist.p12 -k "$KC" -P "$SENHA" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$SENHA" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          UUID=$(security cms -D -i perfil.mobileprovision | plutil -extract UUID raw -)
+          cp perfil.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          echo "PERFIL=$(cat perfil.txt)" >> $GITHUB_ENV
+
       - name: Enviar pro App Store Connect
         run: |
           cat > "$RUNNER_TEMP/export.plist" <<EOF
@@ -64,17 +87,18 @@ jobs:
             <key>method</key><string>app-store-connect</string>
             <key>destination</key><string>upload</string>
             <key>teamID</key><string>${TEAM_ID}</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key><dict><key>br.com.igorsousa.team</key><string>${PERFIL}</string></dict>
             <key>manageAppVersionAndBuildNumber</key><false/>
           </dict></plist>
           EOF
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" \
-            -allowProvisioningUpdates \
             -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
             -authenticationKeyID "${ASC_KEY_ID}" \
             -authenticationKeyIssuerID "${ASC_ISSUER_ID}"
 
       - name: Apagar a chave
         if: always()
-        run: rm -rf "$RUNNER_TEMP/asc"
+        run: rm -rf "$RUNNER_TEMP/asc" "$RUNNER_TEMP/assin"; security delete-keychain "$RUNNER_TEMP/assin.keychain-db" 2>/dev/null || true
