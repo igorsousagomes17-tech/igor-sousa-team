@@ -1,6 +1,6 @@
 # Gera o app do iPhone na nuvem (Mac do GitHub, Xcode 26) e envia pro App Store Connect.
 # Roda só quando alguém manda (aba Actions › "App do iPhone" › Run workflow). Não mexe no app das alunas.
-# Segredos usados (Settings › Secrets › Actions): ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8 (conteúdo do arquivo .p8).
+# Segredo usado (Settings › Secrets › Actions): ASC_KEY_P8 = conteúdo do arquivo AuthKey_MWY235RM47.p8. ID da chave e Issuer não são segredo.
 name: App do iPhone (App Store)
 
 on:
@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 60
     env:
       TEAM_ID: A9M38XZN7L
+      ASC_KEY_ID: MWY235RM47
+      ASC_ISSUER_ID: a313878e-b8b7-415d-b21f-6b5bdce0856e
     steps:
       - uses: actions/checkout@v4
 
@@ -40,7 +42,6 @@ jobs:
       - name: Chave do App Store Connect
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
         run: |
           mkdir -p "$RUNNER_TEMP/asc"
           printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8"
@@ -51,9 +52,9 @@ jobs:
           xcodebuild -project App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${{ secrets.ASC_KEY_ID }}.p8" \
-            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}" \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "${ASC_KEY_ID}" \
+            -authenticationKeyIssuerID "${ASC_ISSUER_ID}" \
             DEVELOPMENT_TEAM=$TEAM_ID CODE_SIGN_STYLE=Automatic \
             MARKETING_VERSION=${{ inputs.versao }} CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             archive
@@ -74,9 +75,9 @@ jobs:
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" \
             -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${{ secrets.ASC_KEY_ID }}.p8" \
-            -authenticationKeyID "${{ secrets.ASC_KEY_ID }}" \
-            -authenticationKeyIssuerID "${{ secrets.ASC_ISSUER_ID }}"
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "${ASC_KEY_ID}" \
+            -authenticationKeyIssuerID "${ASC_ISSUER_ID}"
 
       - name: Apagar a chave
         if: always()
