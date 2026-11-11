@@ -15,6 +15,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="css/app.css">
+<script>/* tema: escuro (padrão), claro ou igual ao celular — aplica antes de pintar pra não piscar */
+(function(){var m=window.matchMedia&&matchMedia('(prefers-color-scheme: light)');
+window.aplicarTema=function(){var p='escuro';try{p=JSON.parse(localStorage.getItem('tema'))||'escuro'}catch(e){}
+var claro=p==='claro'||(p==='auto'&&m&&m.matches);var r=document.documentElement;if(claro)r.setAttribute('data-tema','claro');else r.removeAttribute('data-tema');
+var mt=document.querySelector('meta[name="theme-color"]');if(mt)mt.setAttribute('content',claro?'#f7f7f7':'#0b0b0c');return p;};
+aplicarTema();if(m&&m.addEventListener)m.addEventListener('change',aplicarTema);})();</script>
 </head>
 <body>
 <div id="app" class="app"><div class="splash"><div style="display:flex;flex-direction:column;align-items:center;gap:18px"><div class="logo big">IGOR<br>SOUSA <b>TEAM</b></div><p id="lento" class="muted" style="text-align:center;max-width:260px;visibility:hidden"></p></div></div></div>
