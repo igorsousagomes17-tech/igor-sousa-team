@@ -19,7 +19,7 @@
 (function(){var m=window.matchMedia&&matchMedia('(prefers-color-scheme: light)');
 window.aplicarTema=function(){var p='escuro';try{p=JSON.parse(localStorage.getItem('tema'))||'escuro'}catch(e){}
 var claro=p==='claro'||(p==='auto'&&m&&m.matches);var r=document.documentElement;if(claro)r.setAttribute('data-tema','claro');else r.removeAttribute('data-tema');
-var mt=document.querySelector('meta[name="theme-color"]');if(mt)mt.setAttribute('content',claro?'#f7f7f7':'#0b0b0c');return p;};
+var cs=document.querySelector('meta[name="color-scheme"]');if(!cs){cs=document.createElement('meta');cs.name='color-scheme';document.head.appendChild(cs);}cs.content=claro?'only light':'dark';var mt=document.querySelector('meta[name="theme-color"]');if(mt)mt.setAttribute('content',claro?'#f7f7f7':'#0b0b0c');return p;};
 aplicarTema();if(m&&m.addEventListener)m.addEventListener('change',aplicarTema);})();</script>
 </head>
 <body>
