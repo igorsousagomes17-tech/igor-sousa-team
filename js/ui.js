@@ -38,6 +38,7 @@ export function traduzErro(e) {
   if (/different from the old|same as/i.test(m)) return t('A senha nova precisa ser diferente da atual.');
   if (/fetch|network|Failed|timeout|offline/i.test(m)) return t('Sem internet agora. Tenta de novo quando o sinal voltar.');
   if (/invalid login|credentials/i.test(m)) return t('E-mail ou senha não conferem.');
+  if (/rate limit|over_email|too many|security purposes/i.test(m)) return t('Muitos pedidos de senha agora. Chama o Igor no WhatsApp que ele zera sua senha na hora.');
   if (/expired|jwt/i.test(m)) return t('Sua sessão expirou. Sai e entra de novo.');
   const geral = t('Não deu certo agora. Tenta de novo ou chama o Igor no WhatsApp.');
   if (!m || !/[ãçéíóú]/i.test(m)) return geral;

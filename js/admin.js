@@ -1,5 +1,5 @@
 // Painel do Igor
-import { $, $$, esc, toast, overlay, closeOverlay, fmtData } from './ui.js';
+import { $, $$, esc, toast, overlay, closeOverlay, fmtData, campoSenha, traduzErro } from './ui.js';
 import { construtor, montarExercicios, montarModelos, hojeStr as hojeIso, somaFim, somaDias, brDia, camposDatas, ligarDatas } from './biblioteca.js';
 
 const C = window.ISTEAM_CONFIG;
@@ -92,6 +92,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
       </div>
       ${semTreino.length ? `<button class="linhacard mt" id="ir-semplano"><span>${svg('alerta')}<b>${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino</b></span><span class="muted">montar ${svg('seta')}</span></button>` : ''}
     </section>
+    <button class="btn ghost sm" id="minhaSenha" style="margin:8px 0 0">Trocar minha senha</button>
     <button class="btn ghost sm" id="out" style="margin:8px 0 24px">Sair do painel</button>`;
   }
 
@@ -148,6 +149,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     $$('[data-fa]').forEach(b => b.onclick = () => { filtroA = b.dataset.fa; const q = $('#busca')?.value || ''; desenhar(); const bu = $('#busca'); if (bu && q) { bu.value = q; bu.oninput(); } });
     on('#ir-semplano', () => { filtroA = 'semplano'; abrir('alunas', 'treino'); });
     on('#out', async () => { await db.logout(); S.perfil = null; secao = 'inicio'; go('entrada'); });
+    on('#minhaSenha', trocarMinhaSenha);
     on('#a-fb', () => abrir('feedbacks')); on('#t-fb', () => abrir('feedbacks'));
     on('#a-duv', () => abrir('duvidas')); on('#a-upd', () => abrir('atualizacoes'));
     $$('[data-vtab]').forEach(b => b.onclick = () => { vtab = b.dataset.vtab; desenhar(); });
@@ -197,13 +199,34 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     box.querySelector('[data-ac]').onclick = () => { closeOverlay(); acesso(a); };
   }
 
+  function trocarMinhaSenha() {
+    overlay(`<div class="modal" id="m"><form class="box" id="fs" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Trocar minha senha</h2>
+      <div class="field"><label class="l" for="n0">Senha de agora</label>${campoSenha('n0', '', 'current-password')}</div>
+      <div class="field"><label class="l" for="n1">Nova senha</label>${campoSenha('n1', '6 ou mais')}</div><div class="field"><label class="l" for="n2">Repete a senha</label>${campoSenha('n2', 'repete')}</div>
+      <p class="err" id="e" hidden></p><div class="row" style="flex-wrap:wrap;gap:8px"><button type="button" class="btn ghost sm" id="c" style="flex:1 1 120px;min-width:0">Cancelar</button><button class="btn sm" id="s" style="flex:1 1 120px;min-width:0">Salvar</button></div></form></div>`);
+    $('#c').onclick = closeOverlay;
+    $('#fs').onsubmit = async ev => { ev.preventDefault(); const e = $('#e'), n0 = $('#n0').value, n1 = $('#n1').value, n2 = $('#n2').value;
+      const er = !n0.trim() ? 'Digita a senha de agora (a que você usa pra entrar).' : n1.length < 6 ? 'A senha precisa ter pelo menos 6 caracteres.' : n1 !== n1.trim() ? 'A senha não pode começar nem terminar com espaço.' : n1 !== n2 ? 'As duas senhas não estão iguais.' : '';
+      if (er) { e.textContent = er; e.hidden = false; return; } if ($('#s').disabled) return; e.hidden = true; $('#s').disabled = true; $('#s').textContent = 'Salvando…';
+      try { if (!(await db.conferirSenha(n0))) { e.textContent = 'A senha de agora não confere.'; e.hidden = false; $('#s').disabled = false; $('#s').textContent = 'Salvar'; return; }
+        await db.trocarSenha(n1); closeOverlay(); toast('Senha trocada ✓ Na próxima vez, entra com ela.'); }
+      catch (x) { e.textContent = traduzErro(x); e.hidden = false; $('#s').disabled = false; $('#s').textContent = 'Salvar'; } };
+  }
+
   async function acesso(a) {
     const { data } = await db.sb.from('profiles').select('nome,whatsapp,ativa').eq('id', a.id).single();
     const { data: u } = await db.sb.rpc('email_de', { uid: a.id }).catch(() => ({ data: null }));
     overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${esc(data.nome)}</h2>
       <a class="btn wa sm" href="${wa(data.whatsapp, msgAcesso(data.nome, u || '(e-mail dela)'))}" target="_blank" rel="noopener">Enviar acesso no WhatsApp</a>
+      <button class="btn ghost sm" id="zera">Zerar senha (volta a ser o WhatsApp)</button>
       <button class="btn ghost sm" id="pausa">${data.ativa ? 'Pausar acesso' : 'Reativar acesso'}</button>
       <button class="btn ghost sm" id="c">Fechar</button></div></div>`);
+    $('#zera').onclick = async () => { const b = $('#zera'); if (b.disabled) return; if (b.dataset.ok !== '1') { b.dataset.ok = '1'; b.textContent = 'Toca de novo pra confirmar'; return; } b.disabled = true; b.textContent = 'Zerando…';
+      const { data: w, error } = await db.sb.rpc('zerar_senha', { uid: a.id }); if (error) { b.disabled = false; b.dataset.ok = ''; b.textContent = 'Zerar senha (volta a ser o WhatsApp)'; toast(traduzErro(error), true); return; }
+      closeOverlay(); const pn = String(data.nome || '').split(' ')[0];
+      overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Senha zerada ✓</h2><p class="muted">A senha de ${esc(pn)} agora é o WhatsApp dela: <b>${esc(w)}</b>. Quando ela entrar, o app pede pra criar uma nova.</p>
+        <a class="btn wa sm" href="${wa(data.whatsapp, `Oi ${pn}! Zerei sua senha do app 🔑\n\nLogin: ${u || '(seu e-mail)'}\nSenha: seu número de WhatsApp (só números, com DDD)\n\nQuando entrar, o app pede pra você criar uma senha nova.`)}" target="_blank" rel="noopener">Avisar no WhatsApp</a>
+        <button class="btn ghost sm" id="c">Fechar</button></div></div>`); $('#c').onclick = closeOverlay; };
     $('#c').onclick = closeOverlay; $('#pausa').onclick = async () => { await db.admin.setAtiva(a.id, !data.ativa); closeOverlay(); toast(data.ativa ? 'Acesso pausado' : 'Acesso liberado'); go('admin'); };
   }
 
