@@ -192,5 +192,5 @@ window.quadro = function (i, n) {
   aplica(mistura(P[seq[k]], P[seq[k + 1]], ease(f))); dinamicos.forEach(fn => fn()); render();
   return out.toDataURL('image/jpeg', .9);
 };
-window.probe = function (p) { aplica(completa(p)); const r = {}; for (const n of ["toeL","toeR","heelL","heelR","shR","elR","maoR","hpR"]) { const v = wp(n); r[n] = [+v.x.toFixed(3), +v.y.toFixed(3)]; } return JSON.stringify(r); };
+window.probe = function (p) { aplica(completa(p)); const r = {}; for (const n of ["shR","elR","maoR","maoL"]) { const v = wp(n); r[n] = [+v.x.toFixed(3), +v.y.toFixed(3), +v.z.toFixed(3)]; } return JSON.stringify(r); };
 window.pronto = true;
