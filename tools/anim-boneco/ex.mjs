@@ -115,9 +115,9 @@ export const EX = [
   { id: 'stiff-kettlebell', nome: 'Stiff com kettlebell', cena: [['kettle']],
     A: m({ root: PE(0) }, ambos('hp', [0, 8, 0]), ambos('kn', 8), braco([2, 2, 0], 0)), B: m({ root: PE(72) }, ambos('hp', [74, 8, 0]), ambos('kn', 18), braco([68, 2, 0], 0)) },
   // ---------------- QUADRÍCEPS ----------------
-  { id: 'afundo-alternado-step', nome: 'Afundo alternado no Step', cena: [['stepSob', 'L'], ['stepSob', 'R']],
-    poses: [m(braco([4, 12, 0], 10)), m({ root: { p: [.3, null, 0], r: [0, 0, 0] }, apoio: ['toeL'] }, { hpR: [88, 4, 0], knR: 92, hpL: [-28, 4, 0], knL: 55, anL: -55 }, braco([4, 12, 0], 10)),
-      m(braco([4, 12, 0], 10)), m({ root: { p: [.3, null, 0], r: [0, 0, 0] }, apoio: ['toeR'] }, { hpL: [88, 4, 0], knL: 92, hpR: [-28, 4, 0], knR: 55, anR: -55 }, braco([4, 12, 0], 10))] },
+  { id: 'afundo-alternado-step', nome: 'Afundo alternado no Step', cena: [['caixa', [.77, .1, 0], [.45, .2, .6]]],
+    poses: [m(braco([4, 12, 0], 10)), m({ root: { p: [.3, null, 0], r: [0, 0, 0] }, apoio: ['heelR', 'toeR'], alt: .2 }, { hpR: [92, 4, 0], knR: 96, hpL: [-27, 4, 0], knL: 43, anL: -46 }, braco([4, 12, 0], 10)),
+      m(braco([4, 12, 0], 10)), m({ root: { p: [.3, null, 0], r: [0, 0, 0] }, apoio: ['heelL', 'toeL'], alt: .2 }, { hpL: [92, 4, 0], knL: 96, hpR: [-27, 4, 0], knR: 43, anR: -46 }, braco([4, 12, 0], 10))] },
   { id: 'agachamento-remada-alta-kb', nome: 'Agachamento com Remada Alta Kettlebell', cena: [['kettle']],
     poses: [m({ shOrd: 'XYZ' }, ambos('hp', [0, 18, 15]), braco([0, 3, -90], 0)), m({ root: PE(20), shOrd: 'XYZ' }, ambos('hp', [110, 22, 15]), ambos('kn', 115), ambos('an', 25), braco([0, 3, -90], 0)),
       m({ shOrd: 'XYZ' }, ambos('hp', [0, 18, 15]), braco([0, 3, -90], 0)), m({ shOrd: 'XYZ' }, ambos('hp', [0, 18, 15]), braco([0, 80, -90], 130))] },

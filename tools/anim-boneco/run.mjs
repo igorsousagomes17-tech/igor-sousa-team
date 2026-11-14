@@ -1,5 +1,5 @@
 import { chromium } from 'playwright'; import fs from 'fs'; import path from 'path'; import { execFileSync } from 'child_process';
-const DIR = path.dirname(new URL(import.meta.url).pathname), OUT = process.env.OUT || DIR + '/out', N = 79;
+const DIR = '/home/claude/gen', OUT = process.env.OUT || DIR + '/out', N = 79;
 const { EX } = await import(DIR + '/ex.mjs?' + Date.now());
 const so = process.argv.slice(2); fs.mkdirSync(OUT, { recursive: true });
 const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
