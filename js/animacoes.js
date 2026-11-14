@@ -253,6 +253,7 @@ const VIDEOS = [
   [/^rosca (direta )?(com |c\/ )?(halter|halteres).*rotac/, 'rosca-direta-halter-rotacao'],
   [/^desenvolvimento(?!.*(arnold|em pe|unilateral)).*halter/, 'desenvolvimento-sentado-halter'],
   [/^desenvolvimento(?!.*(em pe|smith|maquina|arnold|halter)).*barra/, 'desenvolvimento-sentado-barra'],
+  [/^leg press 45$/, 'leg-press-45'],
 ];
 export function videoDe(nome) { const n = sem(nome); const m = VIDEOS.find(([rx]) => rx.test(n)); return m ? `./videos/${m[1]}.mp4` : null; }
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m && m[1] ? `./anim/${m[1]}.mp4` : null; }
