@@ -88,6 +88,18 @@ function aplica(p) {
     B.root.position.y = 1 - min + (p.alt || 0);
   } else B.root.position.y = p.root.p[1];
   scene.updateMatrixWorld(true);
+  for (const s of ['L', 'R']) if (p['ik' + s]) ik(s, p['ik' + s], p);
+}
+// IK simples do braço: acha flexão do ombro e do cotovelo pra mão (punho) chegar no alvo
+function ik(s, alvo, p) {
+  const T = new THREE.Vector3(...alvo), z = s === 'R' ? 1 : -1, sh = p['sh' + s], S = B['sh' + s], E = B['el' + s], livreAbd = p.ikAbd;
+  const err = (f, a, e) => { S.rotation.set(-z * a * D, -z * (sh[2] || 0) * D, f * D, p.shOrd || 'YXZ'); E.rotation.set(0, 0, e * D); S.updateMatrixWorld(true); return wp('mao' + s).distanceTo(T); };
+  let bf = 0, ba = sh[1], be = 0, best = Infinity;
+  const [fmin, fmax] = p.ikFaixa || [-160, 220];
+  for (let f = fmin; f <= fmax; f += 12) for (let e = 0; e <= 160; e += 10) { const d = err(f, ba, e); if (d < best) { best = d; bf = f; be = e; } }
+  const passos = livreAbd ? [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]] : [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1]];
+  for (let st = 6; st > .2; st /= 2) { let mud = true, n = 0; while (mud && n++ < 200) { mud = false; for (const [df, da, de] of passos) { const f = Math.max(fmin, Math.min(fmax, bf + df * st)), a = Math.max(-40, Math.min(90, ba + da * st)), e = Math.max(0, Math.min(165, be + de * st)); const d = err(f, a, e); if (d < best - 1e-6) { best = d; bf = f; ba = a; be = e; mud = true; } } } }
+  err(bf, ba, be);
 }
 const wp = n => { const v = new THREE.Vector3(); B[n].getWorldPosition(v); return v; };
 
@@ -97,7 +109,9 @@ function caixa(pos, tam, cor = CINZA, rot = [0, 0, 0]) { const m = new THREE.Mes
 function cil(r, h, cor = METAL) { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 20), mat(cor)); m.castShadow = true; return m; }
 function haltere() { const g = new THREE.Group(); const c = cil(.018, .16); c.rotation.x = Math.PI / 2; g.add(c); for (const z of [-.09, .09]) { const p = cil(.055, .05, ESCURO); p.rotation.x = Math.PI / 2; p.position.z = z; g.add(p); } return g; }
 function barra(len = 1.5, anilha = .2) { const g = new THREE.Group(); const c = cil(.016, len); c.rotation.x = Math.PI / 2; g.add(c); if (anilha) for (const z of [-len / 2 + .12, len / 2 - .12]) { const p = cil(anilha, .05, ESCURO); p.rotation.x = Math.PI / 2; p.position.z = z; g.add(p); } return g; }
-function barraW(len = 1.2) { return barra(len, .14); }
+function barraW(len = 1.2) { const g = new THREE.Group(), a = .035, pts = [[-len / 2, 0], [-.3, 0], [-.22, a], [-.13, -a * .3], [-.06, a], [0, a * .6], [.06, a], [.13, -a * .3], [.22, a], [.3, 0], [len / 2, 0]].map(([zz, x]) => new THREE.Vector3(x, 0, zz));
+  const tubo = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, false, 'catmullrom', .1), 80, .016, 10), mat(METAL)); tubo.castShadow = true; g.add(tubo);
+  for (const zz of [-len / 2 + .1, len / 2 - .1]) { const p = cil(.12, .045, ESCURO); p.rotation.x = Math.PI / 2; p.position.z = zz; g.add(p); } return g; }
 function kettle() { const g = new THREE.Group(); const c = bola(.11, mat(ESCURO)); c.position.y = -.14; g.add(c); const al = new THREE.Mesh(new THREE.TorusGeometry(.07, .015, 8, 20, Math.PI), mat(ESCURO)); al.position.y = -.05; g.add(al); return g; }
 function anilha(r = .2) { const p = cil(r, .04, ESCURO); return p; }
 function corda() { const g = new THREE.Group(); for (const z of [-.05, .05]) { const c = cil(.015, .28, 0x2a2a2a); c.position.set(0, -.12, z); g.add(c); } return g; }
@@ -112,6 +126,8 @@ const SEGUE = {
   barraFixa: () => {},
   halteres: () => { for (const s of ['L', 'R']) addDin(haltere(), o => { o.position.copy(wp('mao' + s)); o.position.y -= .03; }); },
   halteresMartelo: () => { for (const s of ['L', 'R']) addDin(haltere(), o => { const h = wp('mao' + s), d = h.clone().sub(wp('el' + s)).normalize(); const ax = new THREE.Vector3(-d.y, d.x, 0).normalize(); o.position.copy(h).addScaledVector(d, .03); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), ax); }); },
+  alavanca: (piv, s) => addDin(new THREE.Mesh(new THREE.BoxGeometry(.05, 1, .05), mat(CINZA)), o => { const P = new THREE.Vector3(...piv), H = wp('mao' + s); H.z = P.z; o.scale.y = P.distanceTo(H); o.position.copy(P).add(H).multiplyScalar(.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), H.clone().sub(P).normalize()); o.castShadow = true; }),
+  pegador: s => addDin((() => { const c = cil(.02, .2, ESCURO); c.rotation.z = Math.PI / 2; const g = new THREE.Group(); g.add(c); return g; })(), o => { o.position.copy(wp('mao' + s)); o.position.y -= .04; o.position.z += (s === 'R' ? .05 : -.05); }),
   halter1: (s = 'R') => addDin(haltere(), o => { o.position.copy(wp('mao' + s)); o.position.y -= .03; }),
   halterPe: () => addDin(haltere(), o => { o.position.copy(meio()); o.position.y -= .04; o.rotation.set(Math.PI / 2, 0, 0); }),
   barra: (len, an) => addDin(barra(len, an), o => { o.position.copy(meio()); o.position.y -= .03; }),
