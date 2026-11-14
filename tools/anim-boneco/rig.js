@@ -91,15 +91,17 @@ function aplica(p) {
   for (const s of ['L', 'R']) if (p['ik' + s]) ik(s, p['ik' + s], p);
 }
 // IK simples do braço: acha flexão do ombro e do cotovelo pra mão (punho) chegar no alvo
+let ikPrev = {};
 function ik(s, alvo, p) {
   const T = new THREE.Vector3(...alvo), z = s === 'R' ? 1 : -1, sh = p['sh' + s], S = B['sh' + s], E = B['el' + s], livreAbd = p.ikAbd;
   const err = (f, a, e) => { S.rotation.set(-z * a * D, -z * (sh[2] || 0) * D, f * D, p.shOrd || 'YXZ'); E.rotation.set(0, 0, e * D); S.updateMatrixWorld(true); return wp('mao' + s).distanceTo(T); };
   let bf = 0, ba = sh[1], be = 0, best = Infinity;
   const [fmin, fmax] = p.ikFaixa || [-160, 220];
-  for (let f = fmin; f <= fmax; f += 12) for (let e = 0; e <= 160; e += 10) { const d = err(f, ba, e); if (d < best) { best = d; bf = f; be = e; } }
+  const prev = ikPrev[s]; if (prev) { [bf, ba, be] = prev; best = err(bf, ba, be); }
+  if (!prev) for (let f = fmin; f <= fmax; f += 12) for (let e = 0; e <= 160; e += 10) { const d = err(f, ba, e); if (d < best) { best = d; bf = f; be = e; } }
   const passos = livreAbd ? [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]] : [[1, 0, 0], [-1, 0, 0], [0, 0, 1], [0, 0, -1]];
   for (let st = 6; st > .2; st /= 2) { let mud = true, n = 0; while (mud && n++ < 200) { mud = false; for (const [df, da, de] of passos) { const f = Math.max(fmin, Math.min(fmax, bf + df * st)), a = Math.max(-40, Math.min(90, ba + da * st)), e = Math.max(0, Math.min(165, be + de * st)); const d = err(f, a, e); if (d < best - 1e-6) { best = d; bf = f; ba = a; be = e; mud = true; } } } }
-  err(bf, ba, be);
+  err(bf, ba, be); ikPrev[s] = [bf, ba, be];
 }
 const wp = n => { const v = new THREE.Vector3(); B[n].getWorldPosition(v); return v; };
 
@@ -128,6 +130,11 @@ const SEGUE = {
   halteresMartelo: () => { for (const s of ['L', 'R']) addDin(haltere(), o => { const h = wp('mao' + s), d = h.clone().sub(wp('el' + s)).normalize(); const ax = new THREE.Vector3(-d.y, d.x, 0).normalize(); o.position.copy(h).addScaledVector(d, .03); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), ax); }); },
   alavanca: (piv, s) => addDin(new THREE.Mesh(new THREE.BoxGeometry(.05, 1, .05), mat(CINZA)), o => { const P = new THREE.Vector3(...piv), H = wp('mao' + s); H.z = P.z; o.scale.y = P.distanceTo(H); o.position.copy(P).add(H).multiplyScalar(.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), H.clone().sub(P).normalize()); o.castShadow = true; }),
   pegador: s => addDin((() => { const c = cil(.02, .2, ESCURO); c.rotation.z = Math.PI / 2; const g = new THREE.Group(); g.add(c); return g; })(), o => { o.position.copy(wp('mao' + s)); o.position.y -= .04; o.position.z += (s === 'R' ? .05 : -.05); }),
+  padOsso: (osso, off, tam, cor = 0x5a5a62) => addDin(new THREE.Mesh(new THREE.BoxGeometry(...tam), mat(cor)), o => { const b = B[osso]; o.position.copy(b.localToWorld(new THREE.Vector3(...off))); b.getWorldQuaternion(o.quaternion); o.castShadow = true; }),
+  alavancaOsso: (piv, osso, off) => addDin(new THREE.Mesh(new THREE.BoxGeometry(.05, 1, .05), mat(CINZA)), o => { const P = new THREE.Vector3(...piv), H = B[osso].localToWorld(new THREE.Vector3(...off)); H.z = P.z; o.scale.y = P.distanceTo(H); o.position.copy(P).add(H).multiplyScalar(.5); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), H.clone().sub(P).normalize()); o.castShadow = true; }),
+  corda2: (anc) => { const g = new THREE.Group(), C = 0x2a2a2a; const fios = [cil(.016, 1, C), cil(.016, 1, C)], nos = [cil(.03, .05, 0x111111), cil(.03, .05, 0x111111)], argola = bola(.025); argola.material = mat(METAL); fios.forEach(f => g.add(f)); nos.forEach(n => g.add(n)); g.add(argola); scene.add(g); props.push(g);
+    dinamicos.push(() => { const A = new THREE.Vector3(...anc), M = meio(), dir = A.clone().sub(M).normalize(), topo = M.clone().addScaledVector(dir, .13); argola.position.copy(topo);
+      ['L', 'R'].forEach((s, i) => { const h = wp('mao' + s); h.y -= .03; const pta = h.clone().addScaledVector(h.clone().sub(topo).normalize(), .05); const f = fios[i]; f.scale.y = topo.distanceTo(pta); f.position.copy(topo).add(pta).multiplyScalar(.5); f.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pta.clone().sub(topo).normalize()); nos[i].position.copy(pta); nos[i].quaternion.copy(f.quaternion); }); }); },
   halter1: (s = 'R') => addDin(haltere(), o => { o.position.copy(wp('mao' + s)); o.position.y -= .03; }),
   halterPe: () => addDin(haltere(), o => { o.position.copy(meio()); o.position.y -= .04; o.rotation.set(Math.PI / 2, 0, 0); }),
   barra: (len, an) => addDin(barra(len, an), o => { o.position.copy(meio()); o.position.y -= .03; }),
@@ -173,18 +180,20 @@ function render() {
 // ---------- Monta um exercício e devolve os quadros ----------
 const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 window.preparar = function (ex) {
+  ikPrev = {};
   for (const p of props) scene.remove(p); props = []; dinamicos = [];
   (ex.cena || []).forEach(c => { const [tipo, ...args] = c; if (tipo === 'caixa') caixa(...args); else if (tipo === 'coluna') coluna(...args); else if (tipo === 'cabo') cabo(...args); else SEGUE[tipo](...args); });
   const poses = (ex.poses || [ex.A, ex.B]).map(completa);
   window._poses = poses; window._ex = ex;
   const bb = new THREE.Box3();
-  for (const p of poses) { aplica(p); dinamicos.forEach(f => f()); bb.expandByObject(B.root); for (const o of props) if (o.isMesh || o.isGroup) bb.expandByObject(o); }
+  for (const p of poses) { ikPrev = {}; aplica(p); dinamicos.forEach(f => f()); bb.expandByObject(B.root); for (const o of props) if (o.isMesh || o.isGroup) bb.expandByObject(o); }
   bb.max.y = Math.max(bb.max.y, .3); bb.min.y = Math.min(bb.min.y, 0);
   enquadra(bb, ex.cam || {});
   return true;
 };
 // quadro i de n: ida e volta entre as poses (A→B→A, ou A→B→C→A ...), com pausas curtas
 window.quadro = function (i, n) {
+  if (i === 0) ikPrev = {};
   const P = window._poses, seq = P.length === 2 ? [0, 1, 0] : [...P.keys(), 0];
   const segs = seq.length - 1, t = i / n, pausa = .08;
   let k = Math.min(segs - 1, Math.floor(t * segs)), f = t * segs - k;

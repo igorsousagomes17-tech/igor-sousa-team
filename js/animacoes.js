@@ -23,7 +23,6 @@ const MAPA = [
   [/^triceps testa com barra w/, 'triceps-testa-barra-w'],
   [/^abdominal barra/, 'abdominal-barra'],
   [/^abdominal canivete$/, 'abdominal-canivete'],
-  [/^abdominal flexao lateral solo/, 'abdominal-flexao-lateral'],
   [/^abdominal infra solo/, 'abdominal-infra-solo'],
   [/^abdominal maquina/, 'abdominal-maquina'],
   [/^abdominal remador/, 'abdominal-remador'],
