@@ -27,11 +27,11 @@ const L = { coxa: .44, canela: .43, pe: .2, lomb: .22, peito: .26, pesc: .09, br
 function montar() {
   const b = {};
   b.root = O(); scene.add(b.root);
-  const pelv = capsula(.11, .16); pelv.rotation.x = Math.PI / 2; pelv.position.z = -.08; pelv.position.y = 0; b.root.add(pelv);
+  const pelv = capsula(.11, .16); pelv.rotation.x = Math.PI / 2; pelv.position.z = .08; pelv.position.y = 0; b.root.add(pelv);
   b.sp = O(); b.sp.position.y = .05; b.root.add(b.sp);
   const lomb = capsula(.1, L.lomb); lomb.rotation.z = Math.PI; b.sp.add(lomb);
   b.ch = O(); b.ch.position.y = L.lomb; b.sp.add(b.ch);
-  const tor = capsula(.13, .2); tor.rotation.x = Math.PI / 2; tor.position.set(0, .14, -.1); tor.scale.set(1, 1, .85); b.ch.add(tor);
+  const tor = capsula(.13, .2); tor.rotation.x = Math.PI / 2; tor.position.set(0, .14, .1); tor.scale.set(1, 1, .85); b.ch.add(tor);
   const tor2 = capsula(.12, .1); tor2.rotation.z = Math.PI; tor2.position.y = .02; b.ch.add(tor2);
   b.nk = O(); b.nk.position.y = L.peito; b.ch.add(b.nk);
   const pesc = capsula(.045, L.pesc); pesc.rotation.z = Math.PI; b.nk.add(pesc);
