@@ -248,6 +248,7 @@ const VIDEOS = [
   [/^(ativacao (de |do )?gluteo|coice (de |do )?gluteo|gluteo coice).*em pe.*(elastico|band|miniband)|^(ativacao (de |do )?gluteo|coice (de |do )?gluteo|gluteo coice).*(elastico|band|miniband).*em pe/, 'ativacao-gluteo-em-pe-elastico'],
   [/^rosca (direta )?(com |c\/ )?(halter|halteres).*rotac/, 'rosca-direta-halter-rotacao'],
   [/^desenvolvimento(?!.*(arnold|em pe|unilateral)).*halter/, 'desenvolvimento-sentado-halter'],
+  [/^desenvolvimento(?!.*(em pe|smith|maquina|arnold|halter)).*barra/, 'desenvolvimento-sentado-barra'],
 ];
 export function videoDe(nome) { const n = sem(nome); const m = VIDEOS.find(([rx]) => rx.test(n)); return m ? `./videos/${m[1]}.mp4` : null; }
 export function animDe(nome) { const n = sem(nome); const m = MAPA.find(([rx]) => rx.test(n)); return m && m[1] ? `./anim/${m[1]}.mp4` : null; }
