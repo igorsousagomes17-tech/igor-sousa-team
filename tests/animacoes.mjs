@@ -41,6 +41,7 @@ const casos2 = { 'Leg press 45 unilateral': 'lp45-uni', 'Leg Press Horizontal Un
   'Tríceps na polia com barra reta': 'triceps-polia-barra', 'Tríceps Pulley': 'triceps-polia-barra', 'Tríceps na polia com corda': 'triceps-polia-corda', 'Tríceps corda': 'triceps-polia-corda', 'Tríceps na polia unilateral': 'triceps-polia-unilateral',
   'Tríceps francês na polia': 'triceps-frances-polia', 'Tríceps testa na polia com barra': 'triceps-testa-polia', 'Tríceps testa com halter': 'triceps-testa-halter',
   'Rosca direta na polia com barra': 'rosca-polia-barra', 'Rosca invertida na polia com barra': 'rosca-invertida-polia', 'Rosca direta na polia com corda': 'rosca-polia-corda', 'Rosca martelo': 'rosca-martelo-halter', 'Rosca martelo com halter': 'rosca-martelo-halter', 'Rosca direta com halter': 'rosca-direta-halter',
+  'Rosca Martelo Sentado com Halteres': 'rosca-martelo-sentado',
   'Supino reto com halter': 'supino-reto-halter', 'Supino reto máquina': 'supino-reto-maquina', 'Supino reto máquina articulada': 'supino-reto-articulado', 'Crucifixo máquina': 'crucifixo-maquina', 'Voador': 'crucifixo-maquina',
   'Crucifixo inverso com máquina': 'crucifixo-inverso-maquina', 'Crucifixo na polia': 'crucifixo-polia', 'Crucifixo com halter': 'crucifixo-halter', 'Crucifixo inclinado com halter': null };
 Object.assign(casos, casos2, { 'Abdominal na paralela com perna estendida': 'abdominal-paralela-estendida', 'Abdominal na paralela': 'abdominal-paralela', 'Crucifixo na polia baixa': 'crucifixo-polia-baixa',

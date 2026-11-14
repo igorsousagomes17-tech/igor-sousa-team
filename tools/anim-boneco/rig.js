@@ -111,6 +111,7 @@ const SEGUE = {
   placaPes: (s = 'R') => addDin(new THREE.Mesh(new THREE.BoxGeometry(.05, .5, .6), mat(CINZA)), o => { const t = wp('toe' + s); o.position.set(t.x + .04, t.y + .05, 0); o.castShadow = true; }),
   barraFixa: () => {},
   halteres: () => { for (const s of ['L', 'R']) addDin(haltere(), o => { o.position.copy(wp('mao' + s)); o.position.y -= .03; }); },
+  halteresMartelo: () => { for (const s of ['L', 'R']) addDin(haltere(), o => { const h = wp('mao' + s), d = h.clone().sub(wp('el' + s)).normalize(); const ax = new THREE.Vector3(-d.y, d.x, 0).normalize(); o.position.copy(h).addScaledVector(d, .03); o.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), ax); }); },
   halter1: (s = 'R') => addDin(haltere(), o => { o.position.copy(wp('mao' + s)); o.position.y -= .03; }),
   halterPe: () => addDin(haltere(), o => { o.position.copy(meio()); o.position.y -= .04; o.rotation.set(Math.PI / 2, 0, 0); }),
   barra: (len, an) => addDin(barra(len, an), o => { o.position.copy(meio()); o.position.y -= .03; }),
@@ -175,5 +176,5 @@ window.quadro = function (i, n) {
   aplica(mistura(P[seq[k]], P[seq[k + 1]], ease(f))); dinamicos.forEach(fn => fn()); render();
   return out.toDataURL('image/jpeg', .9);
 };
-window.probe = function (p) { aplica(completa(p)); const r = {}; for (const n of ["toeL","toeR","heelL","heelR"]) { const v = wp(n); r[n] = [+v.x.toFixed(3), +v.y.toFixed(3)]; } return JSON.stringify(r); };
+window.probe = function (p) { aplica(completa(p)); const r = {}; for (const n of ["toeL","toeR","heelL","heelR","shR","elR","maoR","hpR"]) { const v = wp(n); r[n] = [+v.x.toFixed(3), +v.y.toFixed(3)]; } return JSON.stringify(r); };
 window.pronto = true;

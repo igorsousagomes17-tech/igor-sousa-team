@@ -21,8 +21,10 @@ export const EX = [
   // ---------------- BRAÇOS ----------------
   { id: 'rosca-direta-barra', nome: 'Rosca Direta Barra Reta', cena: [['barra', 1.2, .12]],
     A: m(braco([4, 10, 0], 8)), B: m(braco([14, 10, 0], 140)) },
-  { id: 'rosca-scott-maquina', nome: 'Rosca Scott máquina', cena: [assento(.48), ['caixa', [.36, .92, 0], [.42, .05, .55], 0x6a6a70, [0, 0, -40]], ['barraCurta']],
+  { id: 'rosca-scott-maquina', nome: 'Rosca Scott máquina', cena: [assento(.48), ['caixa', [.175, .865, 0], [.36, .05, .5], 0x6a6a70, [0, 0, -59.5]], ['caixa', [.03, .6, 0], [.05, .5, .05]], ['barraCurta']],
     A: m({ root: sent(.6), sp: [0, 0, 18] }, pernasSent, braco([48, 10, 0], 12)), B: m({ root: sent(.6), sp: [0, 0, 18] }, pernasSent, braco([48, 10, 0], 125)) },
+  { id: 'rosca-martelo-sentado', nome: 'Rosca Martelo Sentado com Halteres', cena: [assento(.48), encosto(-.19, .48, .75, -6), ['halteresMartelo']],
+    A: m({ root: sent(.6) }, pernasSent, braco([2, 16, 0], 8)), B: m({ root: sent(.6) }, pernasSent, braco([12, 16, 0], 135)) },
   { id: 'triceps-banco', nome: 'Tríceps Banco com Pernas Esticadas', cena: [['caixa', [-.42, .22, 0], [.4, .44, .9]]],
     A: m({ root: { p: [0, .5, 0], r: [0, 0, 0] } }, ambos('hp', [62, 6, 0]), braco([-45, 12, 0], 5)),
     B: m({ root: { p: [0, .26, 0], r: [0, 0, 0] } }, ambos('hp', [78, 6, 0]), braco([-80, 12, 0], 90)) },

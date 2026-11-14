@@ -131,6 +131,7 @@ const MAPA = [
   [/^rosca invertida.*polia/, 'rosca-invertida-polia'],
   [/^rosca (direta )?(na )?polia.*corda/, 'rosca-polia-corda'],
   [/^rosca direta (na )?polia|^rosca (na )?polia( (com )?barra)?$/, 'rosca-polia-barra'],
+  [/^rosca martelo sentad/, 'rosca-martelo-sentado'],
   [/^rosca martelo(?!.*(polia|corda|banco))/, 'rosca-martelo-halter'],
   [/^supino reto.*articulad/, 'supino-reto-articulado'],
   [/^supino reto.*maquina|^supino (na )?maquina( reto)?$/, 'supino-reto-maquina'],
