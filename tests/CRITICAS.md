@@ -547,3 +547,62 @@ Antes de começar: o bi-set "vai e volta" de 04/11 tinha quebrado 6 testes antig
 - [ ] Foto do presencial aceita "no aparelho" (sem o Igor): regra do Igor.
 - [ ] Treino em casa sem treinos e "Aparelho ocupado" sem opção de casa: conteúdo/regra de treino do Igor.
 - [ ] SUSPEITA não confirmada: compartilhar story no iPhone; seguem os pendentes de antes (migrações 021/022/023 se ainda não rodaram, WhatsApp, vídeos, fotos dos prêmios, capa do PDF clara, link definitivo da Kiwify, aviso no celular quando o Igor responde).
+
+## 2026-11-14 (rodada automática, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~47 únicos)
+Base antes de mexer: fluxo-treino ok; rodada-2810 caiu 1 vez só por rodar junto com outros (passou sozinho e no fim). idiomas já falhava em francês ("COMME LE TÉLÉPHONE" estourando no Perfil, desde o tema claro): corrigido.
+
+**Júlia (23, iniciante, iPhone):** Perfil chamava a basal de "dia sem treino" (1.367 em vez de 1.880 kcal); dica do ⏱ sumia depois do bi-set e o ✓ do A2 parecia cronômetro; Goblet com anilha no calcanhar mandava "somar as anilhas"; depois do "Aparelho ocupado" o voltar ficava escondido; IA do demo errava ("tem perna" → Spinning, "quanto peso no goblet", botão de 90s, "Pular" no lugar errado); "⏸ Parar" x "⏸ Pausar treino"; revisão da ficha com "—" e um "Confere" que não é botão; "? Dúvida" sem atalho; aviso cobrindo o topo quando vira bi-set; "o Igor monta seu treino" com o treino já na tela.
+**Carla (34, Android lento, veio do Mfit):** sem sinal a pirâmide perdia a carga de cada série; faixa 10-12 gravava sempre 10 no ✓; "Descartar" em destaque; kg aceitava "22,5,5"/"22,,5" e perdia o número; chip "+" parecia "adicionar" e a barra passava da tela; "Pausar treino" no canto do voltar do Android; aviso tapando as abas A1/A2; a carga da última vez sumia ao digitar; card do fim travava ~0,5 s; demo com datas diferentes entre Meus treinos e o histórico e pirâmide fixa 22/25/28.
+**Márcia (52, letra grande):** no tema claro o erro ficava rosa-claro (2,4:1); aviso de saúde da anamnese sumia atrás das fotos em 2,6 s; 4 opções de saúde escondidas atrás do rodapé; "Tamanho da letra" só no fim do Perfil; aviso do "esqueci" tapando ENTRAR; água com letras de 10 px e sem "hoje"; "+2 kg" laranja-claro no tema claro; "Boa! 0 de 7"; erro de senha falando "caracteres"; botões do Perfil quebrando em 3 linhas e topo do treino espremido com letra Maior.
+**Renata (29, mãe, Personalizado):** Igor respondia sem ver as cargas; a resposta dele não aparecia no treino em que vale; "Descartar" em destaque; dica técnica quase invisível no tema claro; descanso pausado 25 min voltava e apitava; cronômetro na tela de bloqueio escondido no Perfil; HIIT de 35 s contava como feito (e no story/kcal); 1ª foto da Evolução no lado errado com "+ tirar foto"; pausa de 10 min jogava pro Início; Igor pede vídeo e só tinha caixa de texto. Menores: aviso da volta cobrindo 1–7; "Você ficou 25 min fora" depois de pausa dela.
+**Bia (19, celular velho, sinal ruim):** sem sinal nem a animação do app abria; 1ª abertura em cascata (db.js só aos 9 s); cada versão rebaixava ~150 KB de traduções; Evolução/Resumo baixavam 200 treinos + 1500 séries a cada toque; busca "casa" trazia máquina primeiro; story sem sinal prometia +30 já contados; HIIT de casa mandando pra esteira (PDF e cardio); PDF sem aviso de onde foi parar e título "Meu treino do mês" no programa; capas sem sinal viravam blocos pretos; Vídeos falando de academia pra quem treina em casa.
+
+### Corrigido
+- [x] Pirâmide sem sinal: a carga de cada série vem das séries do último treino guardadas no celular (antes ficava "kg" e o ✓ gravava série sem carga). O celular agora guarda as séries de cada exercício. Demo lê as séries salvas (não fica mais fixo 22/25/28).
+- [x] Faixa "10-12": o ✓ sem digitar grava as reps da mesma série da última vez (se estiverem na faixa) e avisa uma vez "Gravei 10 reps. Fez mais? Toca no número e corrige."
+- [x] kg aceita uma vírgula/ponto só e até 2 casas ("22,5,5" → "22,5").
+- [x] "Descartar treino?": "Manter" em destaque, "Descartar" embaixo; o link fica mais longe do "Continuar".
+- [x] Perfil: "Num dia sem treino, seu corpo gasta umas 1.880 calorias. No dia de treino, um pouco mais." (sem a basal com rótulo errado).
+- [x] HIIT/cardio de 3 min ou mais dentro do treino só conta como feito com 80% do tempo (os minutos ficam registrados; aviso diz quanto falta). Sessão só de cardio continua registrando os minutos ao finalizar.
+- [x] Story sem sinal não promete +30 se o do dia já foi contado.
+- [x] Anamnese: aviso de saúde num pop-up com "Entendi" antes das fotos; "↓ mais opções" quando tem opção atrás do rodapé; revisão sem "Confere" (mostra "N pra responder") e opcional vazia diz "opcional · toca pra responder". Com treino já publicado: "Enquanto o Igor ajusta, já pode começar".
+- [x] Fim do treino: "Boa! X de 7" só com exercício completo; com 0, "Treino registrado (0 de 7)".
+- [x] Pausa de 3 min ou mais no meio do descanso volta sem descanso ("o descanso já deu, bora a próxima série"); pausa dela fala "Pausa de N min" (não "você ficou fora").
+- [x] Pausa sozinha de 10 min fica na tela do treino com véu "Pausei seu treino · Continuar de onde parei / Ir pro Início".
+- [x] "⏸ Pausar treino" foi pro canto direito (o relógio pro esquerdo): não fica no lugar do voltar do Android.
+- [x] Dica do ⏱ some só depois que ela usa aquele tipo de botão num exercício sozinho (o bi-set não "ensina" o Leg Press); dica do bi-set diz que o botão laranja marca a série.
+- [x] Goblet com anilha no calcanhar não pede "soma das anilhas" (halter). Trocou de exercício: "⇄ Trocado só hoje · ↺ Voltar pro…" à vista, fora do Dica e opções.
+- [x] Timer de exercício: "⏸ Pausar tempo" / "▶ Continuar" e "Sair e pausar o treino" (antes "Parar" x "Pausar treino").
+- [x] IA do demo: "tem perna" não cai mais no Spinning; "quanto peso no goblet" e "posso fazer com halter" têm resposta; botão de 90s explicado; "Pular exercício" no lugar certo.
+- [x] "? Dúvida" no exercício: atalhos "como faço?", "quanto peso na 1ª vez?", "era pra sentir onde?" que completam a frase.
+- [x] Avisos na tela do treino: mais curtos (2,8 s) e menores; o aviso fixo da volta vai pra baixo (não cobre 1–7 nem as abas A1/A2). No login o aviso fica em cima (não tapa ENTRAR/ESQUECI).
+- [x] Chips dos exercícios: opcional com ♥ (HIIT) e contorno tracejado (antes "+"); dividem a largura e cabem numa linha em 360 px (até 8).
+- [x] "última vez: 25 kg × 10" embaixo da série quando ela digita (a referência não some).
+- [x] Card do fim: a arte do story é desenhada depois que a tela aparece (sem travar ~0,5 s no celular lento).
+- [x] Demo: datas do histórico do Smith/Puxada iguais às de Meus treinos.
+- [x] Painel: "Ver as cargas dela nesse treino" no Responder (kg × reps de cada exercício; ⚠️ no exercício citado no comentário).
+- [x] Treino: "💬 Do Igor sobre o último Treino B: …" no topo do treino em que o recado vale (fecha no ✕).
+- [x] Nos 3 primeiros descansos: "Vai bloquear a tela? Ligar o cronômetro na tela de bloqueio" ali mesmo.
+- [x] Evolução: a 1ª foto fica no lado do "Antes" com a data; o outro quadro diz "Próxima foto: dezembro" (sem "+ tirar foto").
+- [x] Respostas do Igor: quando ele pede vídeo/foto, botão "📎 Mandar vídeo/foto no WhatsApp" com a mensagem pronta.
+- [x] Tema claro: erro em vermelho escuro (6:1), dica técnica e dica do próximo em laranja escuro, "+2 kg" com a cor de texto do tema.
+- [x] "Aa" na entrada, no login e na troca de senha do 1º acesso (Normal → Grande → Maior).
+- [x] Senha: "pelo menos 6 letras ou números (você digitou 5)" (app e painel).
+- [x] Água: anel cresce com a letra, "de 2,3 L" maior, bolinhas e dias maiores, "hoje" escrito.
+- [x] Letra Grande/Maior: Normal/Grande/Maior e Escuro/Claro/Igual ao celular em lista; topo do treino quebra em linhas inteiras; abas "Treino" e "Vídeos" não grudam mais (pendente de 07/11).
+- [x] Animações do app abrem sem sinal depois da 1ª vez (guardadas no celular); aviso de sem sinal dos Vídeos explica isso.
+- [x] 1ª abertura: banco, supabase e textos começam a baixar juntos (modulepreload); foto da entrada com prioridade baixa.
+- [x] Traduções separadas por idioma (`js/i18n/<id>.js`, gerado de `js/i18n-fonte.js`): quem usa português deixa de baixar ~150 KB a cada versão; inglês baixa só o en.js (~40 KB).
+- [x] Evolução/Resumo: treinos, cargas, pontos e medidas com 3 min de cache (limpa quando ela registra treino, foto ou pontos); Início continua sempre fresco.
+- [x] Busca "casa" nos Vídeos sem máquina/banco/polia; Vídeos diz "antes de treinar" pra quem treina em casa.
+- [x] HIIT de casa: PDF com corrida parada/polichinelo/degrau; cardio de 20 min começa pela opção de casa.
+- [x] PDF: aviso "PDF salvo em Arquivos › Downloads" (iPhone) / "na pasta Downloads" (Android); título do compartilhar com o nome do programa.
+- [x] Capas dos programas sem sinal: degradê laranja em vez de bloco preto.
+- [x] Francês: "Igual ao celular" = "Système" (não estoura mais o botão).
+- [x] SW v70. Teste novo `tests/rodada-1411.mjs`; ajustados rodada-2610b (véu da pausa), rodada-2810 (Manter/Descartar), rodada-3110 (pausa de 2 min volta com o descanso).
+
+### Pendente
+- [ ] Animação própria pro "Goblet com anilha no calcanhar": a do agachamento goblet não mostra o calcanhar na anilha e o teste de animações (decisão das animações do Igor) pede "sem animação" até ter uma certa.
+- [ ] SUSPEITA (sem Android de verdade): "Baixar em PDF" pode abrir o compartilhar em vez de baixar quando o gerador já está guardado.
+- [ ] SUSPEITA (sem celular de verdade): apito do descanso com a tela bloqueada; agora o app oferece o cronômetro na tela de bloqueio no próprio descanso.
+- [ ] Seguem: publicar de novo a função `assistente`, campo de plano misto pro "Treinou presencial", foto do presencial "no aparelho", treinos em casa e "Aparelho ocupado" em casa (conteúdo do Igor), migrações 021/022/023 se ainda não rodaram, WhatsApp, vídeos, fotos dos prêmios, capa do PDF clara, link definitivo da Kiwify, aviso no celular quando o Igor responde. Nada de banco novo nesta rodada.

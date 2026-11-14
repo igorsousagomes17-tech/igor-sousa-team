@@ -57,3 +57,9 @@ Hyrox começando na Base, distância sem reps, voltas e PDF; registro do mês se
 Pontos "Treino (4 de 7)"; Início sem "feito ✓" pela metade; presencial sem sinal na fila; login com senha errada/muitas tentativas; letra grande no Perfil; vídeo acompanha a troca;
 registro do mês com 1 foto salva o peso; aviso da arte do story no Android): `W=360 OUT=/tmp/shots node tests/rodada-0711.mjs`.
 `tests/_vaievolta.mjs` não é teste: ajuda os testes antigos a abrir a aba A1/A2 antes de clicar numa série (bi-set vai e volta de 04/11).
+
+`tests/rodada-1411.mjs` testa a rodada 14/11 (pirâmide sem sinal com as séries guardadas, "22,5,5" → "22,5", "última vez" da série ao digitar, faixa 10-12 avisa o que gravou,
+"Manter" em destaque no Descartar, dica do Goblet sem anilhas, dica do ⏱ volta no Leg Press, "Trocado só hoje · Voltar" à vista, timer "Pausar tempo", HIIT de 35 s não conta, chips numa linha com ♥,
+"Boa!" só com exercício completo, recado do Igor no treino certo, pausa longa sem descanso pendurado, "Aa" na entrada/login, erro de senha em "letras ou números", erro legível no tema claro,
+"↓ mais opções" na pergunta de saúde, cargas da aluna no Responder do painel, busca "casa" sem aparelho, Vídeos de casa, água com "hoje", só baixa o arquivo do idioma dela):
+`W=360 OUT=/tmp/shots node tests/rodada-1411.mjs`. Traduções novas: edite `js/i18n-fonte.js` e rode `node tools/i18n-gerar.mjs`.

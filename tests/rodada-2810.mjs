@@ -34,7 +34,7 @@ const pergunta = async (p, q) => { await p.fill('#tx', q); await p.click('#env')
   for (let k = 0; k < s0.exs[i].series; k++) { if (!(await p.$(`.set[data-i="${i}"][data-k="${k}"] input[data-f="kg"]`))) break; await p.fill(`.set[data-i="${i}"][data-k="${k}"] input[data-f="kg"]`, '77'); await p.click(`.set[data-i="${i}"][data-k="${k}"] .rest`); await espera(p, 400); if (await p.$('#m #q-n')) { await p.click('#q-n'); await espera(p, 300); } await fechaDescanso(p); }
   if (await p.$('#sw:not(.on)')) { await p.click('#sw'); await espera(p, 500); } if (await p.$('#m #q-s')) { await p.click('#q-s'); await espera(p, 400); } await fechaDescanso(p);
   ok(+(await cargas(p))[nome]?.kg === 77, 'carga do treino aberto fica guardada (' + nome + ')');
-  await p.click('#sair'); await espera(p, 600); await p.click('#desc'); await espera(p, 300); await p.click('#q-s'); await espera(p, 600);
+  await p.click('#sair'); await espera(p, 600); await p.click('#desc'); await espera(p, 300); await p.click('#q-n'); /* 14/11: Manter em destaque, Descartar embaixo */ await espera(p, 600);
   const depois = (await cargas(p))[nome]?.kg ?? null; ok(depois === antes, `descartar volta a "Última" pra de antes (${antes} → ${depois})`); await ctx.close(); }
 
 // 2) Pirâmide na 1ª vez herda o peso da série anterior; 3) 30 → 300 pergunta com "Corrigir" em destaque

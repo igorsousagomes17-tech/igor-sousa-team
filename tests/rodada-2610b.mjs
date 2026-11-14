@@ -103,8 +103,8 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
 // 5. Celular largado 10 min sem toque: pausa sozinho e o tempo parado não conta
 { const T = new Date('2026-10-26T09:00:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p); await abrirTreino(p, 'C');
   await p.clock.fastForward('12:00'); await espera(p, 1500);
-  ok(/Pausei seu treino/i.test(await txt(p, '#toast')) && /BORA/i.test(await txt(p, '.view')), '10 min parado: pausa sozinho e avisa');
-  await p.click('[data-go="sessao"]'); await espera(p, 600); const rel = await txt(p, '#clock'); ok(+rel.split(':')[0] <= 3, `tempo parado não conta (${rel})`);
+  ok(/Pausei seu treino/i.test(await txt(p, '#overlay')) && /#sessao/.test(p.url()), '10 min parado: pausa sozinho, avisa e fica no treino (14/11: véu com Continuar)');
+  await p.click('#veu-c'); await espera(p, 600); const rel = await txt(p, '#clock'); ok(+rel.split(':')[0] <= 3, `tempo parado não conta (${rel})`);
   // app escondido 4 min sem descanso: desconta o que passou de 2 min
   await vis(p, false); await p.clock.fastForward('04:00'); await vis(p, true); await espera(p, 400);
   ok(/tirei 2 min/i.test(await txt(p, '#toast')), `escondido 4 min: tira 2 min (${await txt(p, '#toast')})`);

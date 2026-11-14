@@ -1,6 +1,6 @@
 // PDF informativo do treino do mês. A biblioteca (jsPDF) vem junto do app e só baixa quando a aluna toca no botão;
 // depois da 1ª vez fica no cache e o PDF sai mesmo sem sinal.
-import { tl, idioma, loc, tc } from './i18n.js';
+import { tl, idioma, loc, tc, carregarIdioma } from './i18n.js';
 import { semCarga, compartilharNativo } from './ui.js'; // mesma regra do app: exercício sem peso não ganha linha de carga
 // As fontes do PDF só têm o alfabeto latino: em chinês e hindi o PDF sai em inglês (embutir fonte custaria vários MB).
 const LP = () => ['zh', 'hi'].includes(idioma()) ? 'en' : idioma();
@@ -41,6 +41,7 @@ const limpa = s => String(s ?? '').replace(/[–—]/g, '-').replace(/[‘’]/g
 
 // programa: título do programa extra (o PDF vira o do programa, sem a ordem A/B/C/D)
 export async function gerarPdfTreino(plano, perfil, programa = null) {
+  await carregarIdioma(LP()); // chinês/hindi: o PDF sai em inglês (carrega o dicionário dele)
   const { jsPDF } = await carregar();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = 210, H = 297, M = 16;
@@ -92,7 +93,8 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
     doc.setTextColor(...CLARO); doc.setFontSize(13); doc.text(limpa(tc(programa || t.nome)), M, 31);
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(limpa(T('~{d} min  ·  {n} exercícios', { n: t.exercicios.length, d: t.duracao_min || 40 })), W - M, 31, { align: 'right' });
     let y = 52;
-    const exs = [...t.exercicios].sort((a, b) => a.ordem - b.ordem);
+    const casa = /casa/.test(perfil?.local_treino || ''); // treina em casa: o HIIT do PDF não manda pra esteira
+    const exs = [...t.exercicios].sort((a, b) => a.ordem - b.ordem).map(e => casa && /hiit/i.test(e.nome) ? { ...e, dica: 'HIIT = cardio em tiros: forte (quase sem conseguir falar) e leve. Em casa: corrida parada, polichinelo ou subir e descer um degrau.' } : e);
     // Só o último (HIIT opcional) não cabe na folha: aperta o espaço entre os exercícios e tira a dica dele (não gasta uma folha só com ele)
     const altura = (e, semDica) => { const d = e.dica && !semDica ? doc.splitTextToSize(limpa(tc(e.dica)), W - 2 * M - 16).length : 0, an = !/hiit|cardio/i.test(e.nome) && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || ''); return 13 + d * 4.4 + (e.alternativa && !semDica ? 5 : 0) + (an ? 6 : 0); };
     const ultOpc = exs.length > 1 && /hiit|cardio|opcional/i.test(exs[exs.length - 1].nome);
@@ -131,10 +133,11 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
 
   const nome = (programa ? `${limpa(programa)}.pdf` : `${limpa(T('Treino'))} ${limpa(mes).replace(/\s+(de|del)\s+/, ' ')}.pdf`).replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const blob = doc.output('blob');
-  const nat = await compartilharNativo(blob, nome, T('Meu treino do mês')); if (nat === 'shared' || nat === 'cancel') return;
+  const titulo = programa ? limpa(programa) : T('Meu treino do mês'); // programa extra: com o nome dele (antes "Meu treino do mês")
+  const nat = await compartilharNativo(blob, nome, titulo); if (nat === 'shared' || nat === 'cancel') return nat;
   const arquivo = new File([blob], nome, { type: 'application/pdf' });
   if (navigator.canShare?.({ files: [arquivo] })) {
-    try { await navigator.share({ files: [arquivo], title: T('Meu treino do mês') }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.share({ files: [arquivo], title: titulo }); return 'shared'; } catch (e) { if (e.name === 'AbortError') return 'cancel'; }
   }
-  doc.save(nome);
+  doc.save(nome); return 'download';
 }

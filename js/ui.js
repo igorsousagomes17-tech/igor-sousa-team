@@ -8,9 +8,9 @@ let tt, ttEm = 0;
 // Aviso embaixo (não cobre o título), fica mais tempo e fecha com um toque.
 // fixo: fica até ela tocar (ex.: "descanso acabou há 2 min" quando ela volta pro app).
 export function toast(msg, err = false, { fixo = false, curto = false } = {}) {
-  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + ($('#overlay')?.innerHTML && fixo ? ' atras' : '') + (err ? ' err' : '') + (fixo ? ' fixo' : '') + ((location.hash === '#fim' || location.hash === '#sessao' || $('#overlay')?.innerHTML) && !$('#overlay #salvaArte') ? ' topo' : '') + (location.hash === '#sessao' && !$('#overlay')?.innerHTML ? ' sess' : ''); // na sessão: abaixo do "‹ Pausar" e do relógio // no feedback do fim e com pop-up aberto fica em cima (não cobre o "Enviar" nem o "Fechar")
+  const t = $('#toast'); t.textContent = msg; ttEm = Date.now(); t.className = 'toast on' + ($('#overlay')?.innerHTML && fixo ? ' atras' : '') + (err ? ' err' : '') + (fixo ? ' fixo' : '') + ((location.hash === '#fim' || location.hash === '#sessao' || location.hash === '#login' || $('#overlay')?.innerHTML) && !$('#overlay #salvaArte') ? ' topo' : '') + (location.hash === '#sessao' && !$('#overlay')?.innerHTML ? ' sess' : ''); // na sessão: abaixo do "‹ Pausar" e do relógio // no feedback do fim e com pop-up aberto fica em cima (não cobre o "Enviar" nem o "Fechar")
   t.onclick = () => t.classList.remove('on');
-  clearTimeout(tt); if (!fixo) tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : curto ? 2500 : 4500);
+  clearTimeout(tt); if (!fixo) tt = setTimeout(() => t.classList.remove('on'), err ? 6500 : curto || t.classList.contains('sess') ? 2800 : 4500); // na sessão: aviso curto (não fica tapando as abas A1/A2 e a barra de progresso)
 }
 // Troca de tela ou descanso abrindo: o aviso antigo some (não fica cobrindo a tela nova)
 // (aviso de menos de 0,7 s fica: "Treino pausado" logo antes de trocar de tela precisa aparecer)
@@ -61,9 +61,12 @@ export function youtubeEmbed(url) {
     : `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&playsinline=1${navigator.connection ? `&loop=1&playlist=${m[1]}` : ''}&controls=1&modestbranding=1&rel=0`; // com controle pra pausar; sem saber a rede (iPhone), não fica repetindo e gastando dados
 }
 
-export function videoModal(nome, url, dica) {
-  const yt = youtubeEmbed(url);
-  if (url && navigator.onLine === false) { // sem sinal: explica e mostra a dica, em vez da tela cinza do navegador
+export function videoModal(nome, url, dica, temCache = false) {
+  const yt = youtubeEmbed(url), animApp = /(^|\/)anim\/[^/]+\.mp4$/.test(String(url || ''));
+  // Animação do app (30–100 KB): fica guardada depois da 1ª vez e abre sem sinal (antes "o vídeo precisa de sinal" até pra ela)
+  if (animApp && navigator.onLine === false && !temCache && 'caches' in window) { caches.match(new URL(url, location.href).href).then(r => r ? videoModal(nome, url, dica, true) : videoModal(nome, url, dica, 'nao')).catch(() => videoModal(nome, url, dica, 'nao')); return; }
+  if (animApp && navigator.onLine !== false) { try { fetch(url).catch(() => {}); } catch {} } // pedido normal (200): o service worker guarda pra abrir sem sinal
+  if (url && navigator.onLine === false && temCache !== true) { // sem sinal: explica e mostra a dica, em vez da tela cinza do navegador
     overlay(`<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">📶 ${t('sem internet')}</span><h2>${esc(tc(nome))}</h2><p>${t('O vídeo precisa de sinal. Assim que a internet voltar, toca de novo.')}</p>
       ${dica ? `<div class="card" style="background:var(--n1)"><b style="font-size:0.875rem;color:var(--accent-t)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(tc(dica))}</p></div>` : ''}<button class="btn sm" id="vm-close">${t('Entendi')}</button></div></div>`);
     $('#vm-close').onclick = closeOverlay; $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });
@@ -207,6 +210,8 @@ export const chipDescanso = (() => {
     para() { if (!ativo) return; ativo = false; ult = ''; alvo = null; try { au.onended = null; au?.pause(); navigator.mediaSession.playbackState = 'none'; navigator.mediaSession.metadata = null; } catch {} }
   };
 })();
+// Nos 3 primeiros descansos, oferece o cronômetro na tela de bloqueio (vem desligado porque pausa a música): antes só existia no fim do Perfil
+const ofereceChip = () => { try { if (!chipDescanso.suportado() || localStorage.getItem('chip_on') === '1') return false; const n = +(localStorage.getItem('chipPerg') || 0); if (n >= 3) return false; localStorage.setItem('chipPerg', String(n + 1)); return true; } catch { return false; } };
 export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false, aoMudar, aoMinimizar, intervalos = null, jaFeito = 0, pausadoIni = false, pausarTreino = null } = {}) {
   pararDescanso();
   return new Promise(resolve => {
@@ -226,13 +231,14 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       <p class="muted ${intervalos ? 'fase' : ''}" id="rest-t" style="letter-spacing:1px;text-transform:uppercase">${meio ? (trocou ? t('Lado 2 de 2') : t('Lado 1 de 2')) : esc(t(titulo))}</p>
       <div class="ring" id="ring"><b id="rest-n"></b></div>
       ${cartao}
-      <div class="row rest-bts">${trabalho ? `<button class="btn sm" id="rest-skip" style="flex:2">✓ ${t('Já fiz')}</button><button class="btn ghost sm" id="rest-pausa" style="flex:1">⏸ ${t('Parar')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>` : `<button class="btn sm" id="rest-skip" style="flex:2">${t('Pular descanso')}</button><button class="btn ghost sm" id="rest-menos" style="flex:1" aria-label="${t('Tirar 15 segundos')}">−15s</button><button class="btn ghost sm" id="rest-add" style="flex:1" aria-label="${t('Mais 15 segundos')}">+15s</button>`}</div>${pausarTreino ? `<button class="link-fim" id="rest-pt">⏸ ${t('Pausar treino')}</button>` : ''}</div>`; // "Parar" = só a contagem; "Pausar treino" = o treino todo (antes eram 3 "Pausar") // criança chamou no meio do descanso: pausa daqui mesmo
+      <div class="row rest-bts">${trabalho ? `<button class="btn sm" id="rest-skip" style="flex:2">✓ ${t('Já fiz')}</button><button class="btn ghost sm" id="rest-pausa" style="flex:1.3">⏸ ${t('Pausar tempo')}</button><button class="btn ghost sm" id="rest-add" style="flex:1">+15s</button>` : `<button class="btn sm" id="rest-skip" style="flex:2">${t('Pular descanso')}</button><button class="btn ghost sm" id="rest-menos" style="flex:1" aria-label="${t('Tirar 15 segundos')}">−15s</button><button class="btn ghost sm" id="rest-add" style="flex:1" aria-label="${t('Mais 15 segundos')}">+15s</button>`}</div>${!trabalho && ofereceChip() ? `<p class="rest-lock small">🔒 ${t('Vai bloquear a tela?')} <button class="back small" id="rest-lock">${t('Ligar o cronômetro na tela de bloqueio')}</button></p>` : ''}${pausarTreino ? `<button class="link-fim" id="rest-pt">${t('Sair e pausar o treino')}</button>` : ''}</div>`; // "Parar" = só a contagem; "Pausar treino" = o treino todo (antes eram 3 "Pausar") // criança chamou no meio do descanso: pausa daqui mesmo
     const q = s => L.querySelector(s);
     let idRemoto = null; // alarme no servidor: garante tocar/vibrar no iPhone com a tela apagada
     const avisar = () => { try { if (remoto) { if (idRemoto) remoto.cancelar(idRemoto); idRemoto = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); remoto.agendar({ id: idRemoto, em: fim + 1500, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (pxTxt || t('Bora a próxima série.')) }).catch(() => {}); } } catch {} try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'agendar', em: fim, titulo: trabalho ? t('Tempo! ⏱') : t('Descanso acabou! 💪'), corpo: trabalho ? t('Série feita, volta pro app.') : (pxTxt || t('Bora a próxima série.')) }); } catch {} };
     const cancelarAviso = (acabou = false) => { try { navigator.serviceWorker?.controller?.postMessage({ tipo: 'cancelar' }); } catch {} if (idRemoto && !acabou) { try { remoto?.cancelar(idRemoto); } catch {} } idRemoto = null; };
     pedirAviso(); avisar(); fecharToast();
     if (pausarTreino) q('#rest-pt').onclick = () => pausarTreino();
+    if (q('#rest-lock')) q('#rest-lock').onclick = e => { e.stopPropagation(); try { localStorage.setItem('chip_on', '1'); localStorage.setItem('chipPerg', '9'); } catch {} q('.rest-lock')?.remove(); toast(t('Ligado ✓ O tempo aparece na tela de bloqueio (pode pausar sua música). Desliga no Perfil.')); };
     const left = () => Math.max(0, Math.ceil((fim - (pausado || Date.now())) / 1000)); // parado no ⏸: o tempo que falta não cai
     me.feito = () => total - left();
     // "1 min cada lado": mostra o tempo do lado (1:00 → 0:00 e de novo 1:00 → 0:00), não o total
@@ -265,7 +271,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
     // −15s: descanso mais curto, nunca abaixo de 5 s (o toque não encerra o descanso sem querer)
     if (q('#rest-menos')) q('#rest-menos').onclick = e => { e.stopPropagation(); if (cedo(e)) return; const novo = Math.max(Date.now() + 5000, fim - 15000), tira = Math.round((fim - novo) / 1000); if (tira <= 0) return; fim = novo; total = Math.max(1, total - tira); me.ultTic = null; avisar(); aoMudar?.(fim); tick(); };
     // Pausar o cronômetro de exercício (criança chamou no meio da prancha/cardio)
-    const retoma = () => { fim += Date.now() - pausado; pausado = 0; avisar(); aoMudar?.(fim); iv = setInterval(tick, 250); const b = q('#rest-pausa'); if (b) b.textContent = '⏸ ' + t('Parar'); const r = q('#rest-t'); if (r && !intervalos) r.textContent = rotulo(); tick(); };
+    const retoma = () => { fim += Date.now() - pausado; pausado = 0; avisar(); aoMudar?.(fim); iv = setInterval(tick, 250); const b = q('#rest-pausa'); if (b) b.textContent = '⏸ ' + t('Pausar tempo'); const r = q('#rest-t'); if (r && !intervalos) r.textContent = rotulo(); tick(); };
     const pausa = () => { pausado = Date.now(); clearInterval(iv); cancelarAviso(); chipDescanso.para(); const b = q('#rest-pausa'); if (b) b.textContent = '▶ ' + t('Continuar'); q('#rest-t').textContent = t('Pausado') + (meio && rotulo() ? ' · ' + rotulo() : ''); tick(); }; // "cada lado": diz de que lado parou
     if (q('#rest-pausa')) q('#rest-pausa').onclick = e => { e.stopPropagation(); if (cedo(e)) return; if (pausado) return retoma(); pausa(); };
     q('#rest-x').onclick = e => { e.stopPropagation(); me.minimizar(); };

@@ -85,7 +85,7 @@ input::placeholder,textarea::placeholder{color:#8f8b84;opacity:1}
 .bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .3s}
 .big{font-family:var(--display);font-size:2.75rem;font-weight:800;line-height:.95;font-variant-numeric:tabular-nums}
 .big small{font-size:0.875rem;font-family:var(--body);font-weight:500;color:var(--muted)}
-.lib{aspect-ratio:1/1.15;border-radius:14px;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(160deg,#2a2a2e,#151517);box-shadow:inset 0 0 0 1px var(--line);text-align:left;border:0;color:var(--fg);background-size:cover;background-position:center 30%;position:relative;overflow:hidden}
+.lib{aspect-ratio:1/1.15;border-radius:14px;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(160deg,#5c2a08,#1a1a1d 70%);box-shadow:inset 0 0 0 1px var(--line);text-align:left;border:0;color:var(--fg);background-size:cover;background-position:center 30%;position:relative;overflow:hidden}
 .lib::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.92) 100%)}
 .lib b,.lib span{position:relative}
 .lib b{overflow-wrap:break-word;hyphens:manual;font-family:var(--display);font-size:1.0625rem;font-weight:700;text-transform:uppercase;line-height:1}
@@ -200,6 +200,8 @@ body:has(.cta) .toast:not(.topo){bottom:calc(var(--tabsH,64px) + 150px)} /* aba 
 .opcoes.multi .opc{padding-left:46px;position:relative}
 .opcoes.multi .opc::before{content:"";position:absolute;left:14px;top:50%;width:20px;height:20px;margin-top:-10px;border-radius:5px;box-shadow:inset 0 0 0 2px #8f8b84}
 .opcoes.multi .opc.on::before{box-shadow:none;background:var(--accent-ink);content:"✓";color:var(--accent-t);display:grid;place-items:center;font-size:.875rem;font-weight:800}
+.modal .rodape .maisops{position:absolute;left:50%;transform:translateX(-50%);top:-46px;background:var(--accent);color:#1a0d00;border:0;border-radius:99px;padding:8px 16px;font-weight:700;font-size:.875rem;min-height:36px;box-shadow:0 4px 12px rgba(0,0,0,.35);white-space:nowrap}
+.modal .rodape .maisops[hidden]{display:none}
 .modal .rodape{position:sticky;bottom:-16px;background:var(--panel);margin:0 -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--line)}
 @media (max-width:340px){.tabs .tab span{font-size:.8125rem}.tab svg{width:20px;height:20px}.scale{grid-template-columns:repeat(4,1fr)}.set{grid-template-columns:40px 1fr 1fr 74px;gap:6px}}
 details>summary{list-style:none}details>summary::-webkit-details-marker{display:none}
@@ -494,7 +496,7 @@ html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
 .r b{line-height:1.7}.r b .pill{display:inline-block;line-height:1.25;vertical-align:middle;margin:1px 0;white-space:nowrap}
 
 /* Meta de água */
-.agua-d{display:flex;flex-direction:column;align-items:center;gap:2px}.agua-d small{font-size:.625rem;color:var(--muted);text-transform:uppercase}.agua-d.hj small{color:var(--accent-t);font-weight:700}.agua [data-agua]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1;padding:10px 6px;white-space:nowrap}.agua [data-agua] small{display:block;font-size:.75rem;font-weight:600;opacity:.75;text-transform:none;letter-spacing:0}
+.agua-d{display:flex;flex-direction:column;align-items:center;gap:2px}.agua-d small{font-size:.75rem;color:var(--muted);text-transform:uppercase}.agua-d.hj small{color:var(--accent-t);font-weight:700}.agua [data-agua]{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1;padding:10px 6px;white-space:nowrap}.agua [data-agua] small{display:block;font-size:.75rem;font-weight:600;opacity:.75;text-transform:none;letter-spacing:0}
 
 /* 10/11/2026: tema claro (Perfil > Aparência). Escuro continua o padrão.
    Fundo claro, letra preta, laranja da marca nos botões; laranja de TEXTO mais escuro pra dar leitura no branco. */
@@ -547,3 +549,20 @@ html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
 :root[data-tema="claro"] .tabs{background:#fff;border-top-color:#e4e4e7}
 :root[data-tema="claro"] .modal .box{background:#fff}
 :root[data-tema="claro"] .pontos-premios .lib span{color:#52525b}
+
+.trocado-hoje{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 2px}.trocado-hoje .small{color:var(--accent-t);font-weight:700}
+.toast.topo.sess:not(.fixo){padding:9px 12px;font-size:.875rem;opacity:.94}
+.toast.topo.sess.fixo{top:auto;bottom:calc(16px + env(safe-area-inset-bottom,0px))} /* aviso da volta (fica até tocar): embaixo, não cobre os quadradinhos 1–7 */
+.passos{flex-wrap:wrap;gap:4px;overflow:visible}.passos button{flex:1 1 0;min-width:34px;max-width:52px;padding:0 2px}.passos button.chopc{border-style:dashed} /* opcional (HIIT) com contorno tracejado e ♥ (antes "+" parecia "adicionar"); 7 cabem em 360 px */
+.ult-serie{margin:-2px 0 6px 34px;font-size:.75rem;color:var(--muted)}
+.recado-igor{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--accent);margin:6px 0 8px;padding:10px 12px}
+.sess-info{flex-wrap:wrap;gap:0 10px}
+.rest-lock{text-align:center;margin-top:10px;color:var(--muted)}.rest-lock .back{color:var(--accent-t);text-decoration:underline;display:inline;min-height:40px}
+:root[data-tema="claro"] .err{color:#b3261e}
+:root[data-tema="claro"] .tecnica,:root[data-tema="claro"] .prox-t{color:#a84300}
+:root[data-tema="claro"] .tecnica{background:rgba(255,106,0,.1)}
+.topo-bts{position:absolute;top:calc(12px + var(--sat));right:16px;z-index:3;display:flex;gap:8px}.topo-bts .langbtn.inline{background:rgba(11,11,12,.72);color:var(--fg)}.aabtn{font-weight:800;font-size:1rem;min-width:52px;justify-content:center}
+.agua .dot{width:.75rem;height:.75rem}
+@media (max-width:420px){html.letra-gg .opts3,html.letra-g .opts3{flex-direction:column}html.letra-gg .opts3 .btn,html.letra-g .opts3 .btn{width:100%}} /* letra grande: Normal/Grande/Maior e Escuro/Claro/Igual ao celular em lista (antes quebravam em 3 linhas) */
+html.letra-g .tabs .tab span.l,html.letra-gg .tabs .tab span.l,html.letra-g .tabs .tab.curto span.c,html.letra-gg .tabs .tab.curto span.c{font-size:min(.8125rem,15px)!important;letter-spacing:-.2px} /* letra grande: "Treino" e "Vídeos" não grudam (pendente de 07/11) */
+.opts3 .btn{white-space:normal;line-height:1.15;min-width:0;flex:1 1 0;padding-left:6px;padding-right:6px}

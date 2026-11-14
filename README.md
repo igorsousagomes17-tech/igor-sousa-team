@@ -60,3 +60,9 @@ icons/
 supabase/schema.sql  supabase/functions/criar-aluna  supabase/functions/kiwify-webhook  supabase/functions/excluir-conta
 supabase/conta-revisor.sql (conta de teste pros revisores das lojas; a senha não fica no repositório)
 ```
+
+## Traduções (6 idiomas)
+O texto em português é a chave (`t('Iniciar treino')`). As traduções ficam em `js/i18n-fonte.js`
+(`'português': [inglês, espanhol, chinês, hindi, francês]`). Depois de mexer nele, rode
+`node tools/i18n-gerar.mjs`: ele gera `js/i18n/en.js`, `es.js`, `zh.js`, `hi.js`, `fr.js` e o app baixa só o idioma
+em uso (quem usa português não baixa nenhum). `tests/idiomas.mjs` acusa texto sem tradução.

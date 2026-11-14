@@ -171,7 +171,7 @@ export async function ultimasSeries(alunaId, exercicioNome) {
   return por;
 }
 // Guarda a última carga no celular; "ant" = a carga do treino anterior (pra mostrar ↑/↓ em Minhas cargas)
-export function guardarCarga(exercicioNome, kg, reps, sessao, drops) { if (!kg) return; const c = LS.get('cargas', {}), v = c[exercicioNome]; const mesma = v && v.sessao && v.sessao === sessao, ant = mesma ? v.ant : v?.kg, prev = mesma ? v.prev ?? null : v ? { ...v, prev: undefined } : null; c[exercicioNome] = { kg, reps, ...(drops?.length ? { drops } : {}), prev, data: new Date().toISOString(), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
+export function guardarCarga(exercicioNome, kg, reps, sessao, drops, sets) { if (!kg) return; const c = LS.get('cargas', {}), v = c[exercicioNome]; const mesma = v && v.sessao && v.sessao === sessao, ant = mesma ? v.ant : v?.kg, prev = mesma ? v.prev ?? null : v ? { ...v, prev: undefined } : null; c[exercicioNome] = { kg, reps, ...(drops?.length ? { drops } : {}), ...(sets?.length ? { sets } : {}), prev, data: new Date().toISOString(), sessao: sessao || null, ant: ant ?? null }; LS.set('cargas', c); }
 // Treino descartado: a carga que ele gravou no celular volta pra de antes (não fica "Última: 80 kg" de um treino que não existiu)
 export function desfazerCargas(sessao) { if (!sessao) return; const c = LS.get('cargas', {}); let mudou = false; for (const [n, v] of Object.entries(c)) if (v?.sessao === sessao) { mudou = true; if (v.prev) { const { prev, ...r } = v.prev; c[n] = r; } else delete c[n]; } if (mudou) LS.set('cargas', c); }
 // Séries de um treino (Evolução › Meus treinos)

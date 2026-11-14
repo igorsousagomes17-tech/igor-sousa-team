@@ -31,6 +31,9 @@ setTimeout(function(){var e=document.getElementById('lento');if(!e)return;if(nav
 <div id="overlay"></div>
 <div id="toast" class="toast"></div>
 <script src="js/config.js"></script>
+<link rel="modulepreload" href="js/i18n.js"><link rel="modulepreload" href="js/ui.js"><link rel="modulepreload" href="js/conteudo.js">
+<script>/* 1ª abertura no 4G: o banco e o supabase começam a baixar junto com o app (antes só depois do i18n terminar) */
+(function(){var demo=/[?&]demo\b/.test(location.search)||(window.ISTEAM_CONFIG&&ISTEAM_CONFIG.DEMO);(demo?['js/db-mock.js']:['js/db.js','js/vendor/supabase.js']).forEach(function(h){var l=document.createElement('link');l.rel='modulepreload';l.href=h;document.head.appendChild(l);});})();</script>
 <script type="module" src="js/app.js" onerror="semSinal()"></script>
 </body>
 </html>

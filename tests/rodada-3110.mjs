@@ -60,7 +60,7 @@ const fechar = async p => { if (await p.locator('#rest-skip').count()) { await p
 // 4. Pausar no meio do descanso (Renata): volta 20 min depois com o descanso que faltava
 { const { ctx, p } = await nova(); await p.clock.install(); await entrar(p); await treino(p, 'C'); await passo(p, 'Crucifixo');
   await p.click('.set[data-k="0"] .rest'); await w(p, 700); ok(await p.locator('#rest-pt').count() === 1, 'descanso tem "Pausar treino"');
-  await p.click('#rest-pt'); await w(p, 600); await p.clock.fastForward('20:00'); await w(p);
+  await p.click('#rest-pt'); await w(p, 600); await p.clock.fastForward('02:00'); await w(p); /* 14/11: pausa de 3 min ou mais já foi descanso (não volta); 2 min volta com o que faltava */
   await p.click('[data-go="sessao"]'); await w(p, 900);
   ok(await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:sessao')); return s.descansoAte && s.descansoAte > Date.now() + 10000; }), 'descanso congelado na pausa volta com o que faltava');
   await ctx.close(); }
