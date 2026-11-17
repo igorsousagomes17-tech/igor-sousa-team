@@ -276,6 +276,16 @@ export const admin = {
     if (error && semColuna(error, 'foto_path')) ({ data, error } = await busca('id,finalizada_em,comentario,profiles!sessoes_aluna_id_fkey(nome)'));
     if (error) throw error; return (data || []).map(x => ({ ...x, foto_path: x.foto_path || (/^📸 (\S+)/.exec(x.comentario || '') || [])[1] || null }));
   },
+  // Volume (kg × reps das séries com peso) por semana, últimas 6 semanas
+  async volumeSemanal(alunaId) {
+    const desde = new Date(Date.now() - 42 * 86400e3).toISOString();
+    const { data, error } = await sb.from('series').select('kg,reps,sessoes!inner(aluna_id,finalizada_em)').eq('sessoes.aluna_id', alunaId).not('sessoes.finalizada_em', 'is', null).gte('sessoes.finalizada_em', desde).limit(5000);
+    if (error) throw error;
+    const n = v => { const m = String(v ?? '').match(/\d+(?:[.,]\d+)?/); return m ? parseFloat(m[0].replace(',', '.')) : 0; };
+    const seg = d => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x.toISOString().slice(0, 10); };
+    const sem = {}; (data || []).forEach(r => { const v = n(r.kg) * n(r.reps); if (v > 0) { const k = seg(r.sessoes.finalizada_em); sem[k] = (sem[k] || 0) + v; } });
+    const out = []; for (let i = 5; i >= 0; i--) { const k = seg(Date.now() - i * 7 * 86400e3); out.push({ semana: k, kg: Math.round(sem[k] || 0) }); } return out;
+  },
   async alunas() { const { data, error } = await sb.from('v_alunas_status').select('*').order('nome'); if (error) throw error; return data; },
   // Treinos com comentário dela OU nota baixa (≤ 4) / esforço no limite (≥ 9) sem texto: sem tempo de escrever,
   // a nota é o sinal. Os sem resposta vêm primeiro (nenhum some da lista por ser antigo).

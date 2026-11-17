@@ -218,6 +218,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     const { data: u } = await db.sb.rpc('email_de', { uid: a.id }).catch(() => ({ data: null }));
     overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${esc(data.nome)}</h2>
       <a class="btn wa sm" href="${wa(data.whatsapp, msgAcesso(data.nome, u || '(e-mail dela)'))}" target="_blank" rel="noopener">Enviar acesso no WhatsApp</a>
+      <div class="card" id="vol"><b>🏋️ Volume por semana</b><p class="muted small">Carregando…</p></div>
       <button class="btn ghost sm" id="zera">Zerar senha (volta a ser o WhatsApp)</button>
       <button class="btn ghost sm" id="pausa">${data.ativa ? 'Pausar acesso' : 'Reativar acesso'}</button>
       <button class="btn ghost sm" id="c">Fechar</button></div></div>`);
@@ -227,6 +228,9 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
       overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>Senha zerada ✓</h2><p class="muted">A senha de ${esc(pn)} agora é o WhatsApp dela: <b>${esc(w)}</b>. Quando ela entrar, o app pede pra criar uma nova.</p>
         <a class="btn wa sm" href="${wa(data.whatsapp, `Oi ${pn}! Zerei sua senha do app 🔑\n\nLogin: ${u || '(seu e-mail)'}\nSenha: seu número de WhatsApp (só números, com DDD)\n\nQuando entrar, o app pede pra você criar uma senha nova.`)}" target="_blank" rel="noopener">Avisar no WhatsApp</a>
         <button class="btn ghost sm" id="c">Fechar</button></div></div>`); $('#c').onclick = closeOverlay; };
+    db.admin.volumeSemanal(a.id).then(v => { const el = $('#vol'); if (!el) return; const mx = Math.max(1, ...v.map(x => x.kg)), ult = v[v.length - 1].kg, ant = v[v.length - 2].kg;
+      el.innerHTML = `<b>🏋️ Volume por semana</b><p class="muted small">Peso × repetições de todas as séries com carga (últimas 6 semanas)</p>` + v.map(x => `<div class="row" style="gap:8px;align-items:center;margin-top:4px"><span class="small muted" style="width:44px">${x.semana.slice(8, 10)}/${x.semana.slice(5, 7)}</span><span style="flex:1;height:10px;border-radius:5px;background:var(--line);overflow:hidden"><i style="display:block;height:100%;width:${Math.round(x.kg / mx * 100)}%;background:var(--accent)"></i></span><span class="small" style="width:76px;text-align:right">${x.kg.toLocaleString('pt-BR')} kg</span></div>`).join('') + (ant ? `<p class="small mt">${ult >= ant ? '↑' : '↓'} ${Math.abs(Math.round((ult - ant) / ant * 100))}% em relação à semana passada</p>` : ''); })
+      .catch(() => { const el = $('#vol'); if (el) el.innerHTML = '<b>🏋️ Volume por semana</b><p class="muted small">Não deu pra carregar agora.</p>'; });
     $('#c').onclick = closeOverlay; $('#pausa').onclick = async () => { await db.admin.setAtiva(a.id, !data.ativa); closeOverlay(); toast(data.ativa ? 'Acesso pausado' : 'Acesso liberado'); go('admin'); };
   }
 
