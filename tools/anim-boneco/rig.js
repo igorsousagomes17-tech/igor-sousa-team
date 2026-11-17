@@ -62,8 +62,8 @@ const B = montar();
 // pose: { root:{p:[x,y,z] (y:null = pés no chão), r:[x,y,z]}, sp:[x,y,z], nk, shL/shR:[flex,abd,rot], elL/elR, hpL/hpR:[flex,abd,rot], knL/knR, anL/anR }
 const PADRAO = { alt: 0,  root: { p: [0, null, 0], r: [0, 0, 0] }, sp: [0, 0, 0], nk: 0, shL: [0, 8, 0], shR: [0, 8, 0], elL: 10, elR: 10, hpL: [0, 4, 0], hpR: [0, 4, 0], knL: 0, knR: 0, anL: 0, anR: 0 };
 function completa(p) { const o = JSON.parse(JSON.stringify(PADRAO)); for (const k in p) o[k] = k === 'root' ? { ...o.root, ...p.root } : p[k]; return o; }
-function lerp(a, b, t) { if (typeof a === 'string' || (Array.isArray(a) && typeof a[0] === 'string')) return t < .5 ? a : b; if (Array.isArray(a)) return a.map((v, i) => (v == null || b[i] == null) ? (t < .5 ? v : b[i]) : v + (b[i] - v) * t); if (typeof a === 'number') return a + (b - a) * t; return a; }
-function mistura(A, Bp, t) { const o = {}; for (const k in A) o[k] = k === 'root' ? { p: lerp(A.root.p, Bp.root.p, t), r: lerp(A.root.r, Bp.root.r, t), q: A.root.q && A.root.q.map((x, i) => [x[0], x[1] + (Bp.root.q[i][1] - x[1]) * t]) } : lerp(A[k], Bp[k], t); return o; }
+function lerp(a, b, t) { if (a == null || b == null) return t < .5 ? a : b; if (typeof a === 'string' || (Array.isArray(a) && typeof a[0] === 'string')) return t < .5 ? a : b; if (Array.isArray(a)) return a.map((v, i) => (v == null || b[i] == null) ? (t < .5 ? v : b[i]) : v + (b[i] - v) * t); if (typeof a === 'number') return a + (b - a) * t; return a; }
+function mistura(A, Bp, t) { const o = {}; for (const k of new Set([...Object.keys(A), ...Object.keys(Bp)])) o[k] = k === 'root' ? { p: lerp(A.root.p, Bp.root.p, t), r: lerp(A.root.r, Bp.root.r, t), q: A.root.q && A.root.q.map((x, i) => [x[0], x[1] + (Bp.root.q[i][1] - x[1]) * t]) } : lerp(A[k], Bp[k], t); return o; }
 function aplica(p) {
   B.root.position.set(p.root.p[0], 1, p.root.p[2]);
   if (p.root.q) { // rotações em sequência, no mundo: [['z',90],['x',90],...]
@@ -201,5 +201,6 @@ window.quadro = function (i, n) {
   aplica(mistura(P[seq[k]], P[seq[k + 1]], ease(f))); dinamicos.forEach(fn => fn()); render();
   return out.toDataURL('image/jpeg', .9);
 };
-window.probe = function (p) { aplica(completa(p)); const r = {}; for (const n of ["shR","elR","maoR","maoL"]) { const v = wp(n); r[n] = [+v.x.toFixed(3), +v.y.toFixed(3), +v.z.toFixed(3)]; } return JSON.stringify(r); };
+window.probe = function (p) { aplica(completa(p)); const r = {}; for (const n of ["shR","elR","maoR","maoL","knR","toeR","knL","toeL"]) { const v = wp(n); r[n] = [+v.x.toFixed(3), +v.y.toFixed(3), +v.z.toFixed(3)]; } return JSON.stringify(r); };
+window.__rig = { aplica, completa, wp };
 window.pronto = true;

@@ -2,6 +2,26 @@
 // O vídeo do Igor (link do YouTube ou arquivo enviado na Biblioteca de exercícios) sempre tem prioridade.
 const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, '').replace(/\s+/g, ' ').trim();
 const MAPA = [
+  // 17/11: exercícios novos dos programas (mobilidade, casa, corrida, HIIT)
+  [/^gato.?camelo/, 'gato-camelo'],
+  [/^mobilidade 90.?90/, 'mobilidade-90-90'],
+  [/^alongamento (do )?piriforme/, 'alongamento-piriforme'],
+  [/^alongamento (de |do )?flexor(es)? de quadril/, 'alongamento-flexor-quadril'],
+  [/^rotacao toracica/, 'rotacao-toracica'],
+  [/^livro aberto/, 'livro-aberto'],
+  [/^deslizamento na parede|wall slide/, 'wall-slide'],
+  [/^alongamento (de |do )?peitoral na parede/, 'alongamento-peitoral-parede'],
+  [/^mobilidade de tornozelo/, 'mobilidade-tornozelo-parede'],
+  [/^agachamento profundo/, 'agachamento-profundo'],
+  [/^superman/, 'superman'],
+  [/^agachamento livre \(peso do corpo\)|^agachamento (livre )?sem peso/, 'agachamento-livre-corpo'],
+  [/^elevacao de quadril no chao/, 'ponte-gluteo'],
+  [/^polichinelo/, 'polichinelo'],
+  [/^skipping/, 'skipping'],
+  [/^mountain climber|^escalador/, 'mountain-climber'],
+  [/^burpee/, 'burpee'],
+  [/^panturrilha unilateral no step/, 'panturrilha-unilateral-step'],
+  [/^salto no step/, 'salto-step'],
   // 14/11: nomes do Mfit que são o mesmo movimento de uma animação que já existe
   [/^abs infra.*declinado/, 'abdominal-infra-declinado'],
   [/^puxada aberta.*barra/, 'puxada-pronada'],
@@ -205,6 +225,10 @@ const MAPA = [
   [/^rosca direta (com |c\/ )?halter/, 'rosca-direta-halter'],
 ];
 export const ANIM_LISTA = [
+  ['Gato-camelo', 'Mobilidade'], ['Mobilidade 90/90 de quadril', 'Mobilidade'], ['Alongamento do piriforme deitada', 'Mobilidade'], ['Alongamento de flexor de quadril ajoelhada', 'Mobilidade'],
+  ['Rotação torácica em quatro apoios', 'Mobilidade'], ['Livro aberto deitada de lado', 'Mobilidade'], ['Deslizamento na parede (wall slide)', 'Mobilidade'], ['Alongamento de peitoral na parede', 'Mobilidade'],
+  ['Mobilidade de tornozelo na parede', 'Mobilidade'], ['Agachamento profundo com pausa', 'Mobilidade'], ['Superman (extensão de costas no chão)', 'Core'], ['Agachamento livre (peso do corpo)', 'Quadríceps'],
+  ['Elevação de quadril no chão (sem peso)', 'Glúteo'], ['Polichinelo', 'Cardio'], ['Skipping', 'Cardio'], ['Mountain climber', 'Cardio'], ['Burpee', 'Cardio'], ['Salto no step', 'Cardio'], ['Panturrilha unilateral no step', 'Panturrilha'],
   ['Cadeira extensora', 'Quadríceps'], ['Agachamento hack', 'Quadríceps'], ['Agachamento livre com barra', 'Quadríceps'],
   ['Leg press 45', 'Quadríceps'], ['Leg press horizontal', 'Quadríceps'], ['Agachamento no smith', 'Quadríceps'],
   ['Afundo no smith', 'Glúteo'], ['Afundo alternado no smith', 'Glúteo'], ['Rosca direta com halter', 'Braços'],
