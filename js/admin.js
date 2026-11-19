@@ -216,7 +216,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     box.querySelector('[data-treino]').onclick = () => { closeOverlay(); editorTreino(a.id, a.nome, go); };
     box.querySelector('[data-ficha],[data-semficha]').onclick = () => { if (fi) { closeOverlay(); fichaAnamnese(fi); } else toast('Ela ainda não respondeu a anamnese.'); };
     box.querySelector('[data-postural]').onclick = () => { closeOverlay(); avaliacaoPostural(a); };
-    box.querySelector('[data-ac]').onclick = () => { closeOverlay(); acesso(a); };
+    box.querySelector('[data-ac]').onclick = () => { closeOverlay(); acesso(a).catch(e => toast('Não abriu o acesso: ' + (e?.message || e), true)); };
   }
 
   function trocarMinhaSenha() {
@@ -235,7 +235,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
 
   async function acesso(a) {
     const { data } = await db.sb.from('profiles').select('nome,whatsapp,ativa').eq('id', a.id).single();
-    const { data: u } = await db.sb.rpc('email_de', { uid: a.id }).catch(() => ({ data: null }));
+    const { data: u } = await db.sb.rpc('email_de', { uid: a.id }).then(r => r, () => ({ data: null })); // o rpc do Supabase não tem .catch: travava o "Acesso ao app"
     overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px"><h2>${esc(data.nome)}</h2>
       <a class="btn wa sm" href="${wa(data.whatsapp, msgAcesso(data.nome, u || '(e-mail dela)'))}" target="_blank" rel="noopener">Enviar acesso no WhatsApp</a>
       <div class="card" id="vol"><b>🏋️ Volume por semana</b><p class="muted small">Carregando…</p></div>
