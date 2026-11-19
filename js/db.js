@@ -33,6 +33,13 @@ export async function esqueciSenha(email) {
   if (error) throw error;
 }
 
+// Cadastro por convite (migração 026): a própria aluna cria a conta, que nasce pausada esperando o Igor liberar.
+// Erros voltam com .codigo (nome, email, whatsapp, senha, ja_existe, muitos, falhou, rede) pra tela explicar certo.
+export async function cadastroConvite(dados) {
+  let r; try { r = await fetch(`${C.SUPABASE_URL}/functions/v1/cadastro-convite`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: C.SUPABASE_ANON_KEY, Authorization: `Bearer ${C.SUPABASE_ANON_KEY}` }, body: JSON.stringify(dados) }); }
+  catch { throw Object.assign(new Error('rede'), { codigo: 'rede' }); }
+  const j = await r.json().catch(() => ({})); if (!r.ok || j.erro) throw Object.assign(new Error(j.erro || 'falhou'), { codigo: j.erro || 'falhou' }); return true;
+}
 export async function perfil() {
   const u = await sessionUser(); if (!u) return null;
   const { data, error } = await sb.from('profiles').select('*').eq('id', u.id).single();
@@ -286,6 +293,10 @@ export const admin = {
     const sem = {}; (data || []).forEach(r => { const v = n(r.kg) * n(r.reps); if (v > 0) { const k = seg(r.sessoes.finalizada_em); sem[k] = (sem[k] || 0) + v; } });
     const out = []; for (let i = 5; i >= 0; i--) { const k = seg(Date.now() - i * 7 * 86400e3); out.push({ semana: k, kg: Math.round(sem[k] || 0) }); } return out;
   },
+  // Cadastros novos pelo convite, esperando o Igor liberar (migração 026)
+  async aguardando() { const { data, error } = await sb.from('profiles').select('id,nome,whatsapp,created_at,anamnese_em').eq('aguardando', true).order('created_at'); if (error) { if (/aguardando/.test(error.message || '')) return []; throw error; } return data || []; },
+  async liberarCadastro(id, plano) { const { error } = await sb.from('profiles').update({ ativa: true, aguardando: false, plano }).eq('id', id); if (error) throw error; },
+  async dispensarCadastro(id) { const { error } = await sb.from('profiles').update({ aguardando: false }).eq('id', id); if (error) throw error; },
   async alunas() { const { data, error } = await sb.from('v_alunas_status').select('*').order('nome'); if (error) throw error; return data; },
   // Treinos com comentário dela OU nota baixa (≤ 4) / esforço no limite (≥ 9) sem texto: sem tempo de escrever,
   // a nota é o sinal. Os sem resposta vêm primeiro (nenhum some da lista por ser antigo).

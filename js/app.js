@@ -40,8 +40,9 @@ const rapido = (p, fb, ms = 5000) => Promise.race([Promise.resolve(p).catch(() =
 function go(name, arg, { hist = true } = {}) {
   if (!routes[name]) name = 'home';
   if (recarregarDepois && TELA_CALMA.test('#' + name) && !document.querySelector('.modal')) { recarregarDepois = false; history.replaceState({ name, arg: null }, '', '#' + name); return location.reload(); } // versão nova chegou no meio de algo: atualiza na próxima aba
-  if (!S.perfil && !['entrada', 'login'].includes(name)) name = 'entrada';
-  if (S.perfil?.senha_trocada === false && S.perfil.role !== 'admin' && !['entrada', 'login'].includes(name)) { fecharToast(); return criarSenha(); } // 1º acesso: voltar/URL não pula a troca da senha
+  if (!S.perfil && !['entrada', 'login', 'convite'].includes(name)) name = 'entrada';
+  if (S.perfil?.senha_trocada === false && S.perfil.role !== 'admin' && !['entrada', 'login', 'convite'].includes(name)) { fecharToast(); return criarSenha(); }
+  if (S.perfil?.aguardando && !S.perfil.ativa && S.perfil.role !== 'admin' && !['entrada', 'login', 'convite'].includes(name)) { fecharToast(); return telaAguardando(); } // cadastro do convite: só a espera e a anamnese até o Igor liberar // 1º acesso: voltar/URL não pula a troca da senha
   fecharToast(); A.fecharPasseio(); if (name !== 'spinAula') { pararSpin?.(); pararSpin = null; }
   // "? Dúvida" no meio do treino: abre o tira-dúvidas sem pausar o treino nem matar o descanso (só minimiza)
   if (rotaAtual === 'sessao' && name === 'assistente' && S.sessao) { duvidaNoTreino = true; clearInterval(clockIv); minimizarDescanso(); }
@@ -49,7 +50,7 @@ function go(name, arg, { hist = true } = {}) {
   else if (['sessao', 'fim'].includes(name)) duvidaNoTreino = false;
   arg = arg ?? null;
   const st = { name, arg };
-  if (hist) { const igual = name === rotaAtual && (arg === argAtual || name === 'treino'); /* trocar de treino na aba Treino não empilha (voltar sai da aba) */ if (rotaAtual === null || igual || ['entrada', 'login'].includes(rotaAtual) && name !== 'login') history.replaceState(st, '', '#' + name); else history.pushState(st, '', '#' + name); }
+  if (hist) { const igual = name === rotaAtual && (arg === argAtual || name === 'treino'); /* trocar de treino na aba Treino não empilha (voltar sai da aba) */ if (rotaAtual === null || igual || ['entrada', 'login', 'convite'].includes(rotaAtual) && name !== 'login') history.replaceState(st, '', '#' + name); else history.pushState(st, '', '#' + name); }
   rotaAtual = name; argAtual = arg;
   $$('.tabs .tab').forEach(t => t.classList.toggle('on', t.dataset.go === name)); // acende a aba na hora, antes de carregar
   window.scrollTo(0, 0); Promise.resolve(routes[name](arg)).then(() => { if (rotaAtual === name) window.scrollTo(0, 0); });
@@ -65,8 +66,8 @@ window.addEventListener('popstate', ev => {
   if (minimizarDescanso()) return repoe(); // descanso aberto: voltar só minimiza, o tempo continua
   if (rotaAtual === 'spinAula' && $('#sPausa') && !$('#sPausa').disabled) { $('#sSair').click(); return repoe(); } // aula rodando: voltar pergunta (não perde a aula)
   const st = ev.state || { name: S.perfil ? 'home' : 'entrada' };
-  if (!S.perfil && !['entrada', 'login'].includes(st.name)) return go('entrada', null, { hist: false });
-  if (S.perfil && ['entrada', 'login'].includes(st.name)) { history.replaceState({ name: 'home', arg: null }, '', '#home'); return go('home', null, { hist: false }); }
+  if (!S.perfil && !['entrada', 'login', 'convite'].includes(st.name)) return go('entrada', null, { hist: false });
+  if (S.perfil && ['entrada', 'login', 'convite'].includes(st.name)) { history.replaceState({ name: 'home', arg: null }, '', '#home'); return go('home', null, { hist: false }); }
   const avisaPausa = rotaAtual === 'sessao' && S.sessao && st.name !== 'sessao' && st.name !== 'fim';
   go(st.name, st.arg, { hist: false });
   if (avisaPausa) toast(t('Treino pausado. Tá tudo salvo: é só tocar em Continuar.'));
@@ -140,7 +141,7 @@ function isoWeek(d) { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(),
 // ENTRADA / LOGIN ---------------------------------------------------------
 routes.entrada = () => { render(`<div class="view noTabs"><div class="topo-bts">${botaoLetra(true)}${botaoIdioma().replace('langbtn', 'langbtn inline')}</div><div class="hero-entrada"><img src="icons/igor_s.jpg" alt="Igor Sousa" fetchpriority="low">
   <div class="c"><div class="logo big">IGOR<br>SOUSA <b>TEAM</b></div><p class="muted">${t('Treino, comunidade e evolução. Tudo no seu celular.')}</p>
-  <button class="btn" data-go="login">${t('Entrar')}</button>${NATIVO ? '' : `<a class="btn ghost" href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener">${t('Sou nova, quero começar')}</a>`}</div></div></div>`); $('#lang').onclick = escolherIdioma; };
+  <button class="btn" data-go="login">${t('Entrar')}</button><button class="btn ghost" data-go="convite">${t('Recebi o convite do Igor')}</button>${NATIVO ? '' : `<a class="btn ghost" href="${esc(C.KIWIFY_CHECKOUT)}" target="_blank" rel="noopener">${t('Sou nova, quero começar')}</a>`}</div></div></div>`); $('#lang').onclick = escolherIdioma; };
 
 routes.login = () => {
   render(`<div class="view noTabs"><div class="topbar"><button class="back" data-go="entrada">‹ ${t('Voltar')}</button><div class="row" style="gap:8px;width:auto">${botaoLetra(true)}${botaoIdioma().replace('langbtn', 'langbtn inline')}</div></div>
@@ -174,6 +175,67 @@ routes.login = () => {
   };
   $('#esq').onclick = async e => { e.preventDefault(); const em = $('#em').value.trim(); if (!/^\S+@\S+\.\S{2,}$/.test(em)) { $('#err').textContent = em ? t('Confere o e-mail: falta alguma parte (ex. nome@gmail.com).') : t('Digita seu e-mail no campo acima e toca de novo.'); $('#err').hidden = false; $('#em').focus(); return; } $('#err').hidden = true; try { await db.esqueciSenha(em); toast(t('Te mandei um link por e-mail pra criar outra senha.') + ' ' + t('Não chegou? Olha no spam ou nas promoções.'), false, { fixo: true }); } catch (x) { toast(traduzErro(x), true); } };
 };
+
+// CADASTRO POR CONVITE (migração 026) -------------------------------------------
+// Aluna que já treina com o Igor (vinda do Mfit) cria a própria conta. Nasce pausada: ela faz a anamnese
+// e espera o Igor liberar no painel. Ninguém entra no time sem ele liberar.
+routes.convite = () => {
+  render(`<div class="view noTabs"><div class="topbar"><button class="back" data-go="entrada">‹ ${t('Voltar')}</button><div class="row" style="gap:8px;width:auto">${botaoLetra(true)}${botaoIdioma().replace('langbtn', 'langbtn inline')}</div></div>
+  <div><h1>${t('Seu cadastro no app')}</h1><p class="muted mt">${t('Pra quem já é aluna do Igor. Leva 1 minuto: depois vem a anamnese e o Igor libera seu treino.')}</p></div>
+  <form id="fc" novalidate style="display:flex;flex-direction:column;gap:14px">
+    <div class="field"><label class="l" for="cn">${t('Nome completo')}</label><input class="input" id="cn" autocomplete="name" autocapitalize="words" maxlength="120"></div>
+    <div class="field"><label class="l" for="cw">${t('WhatsApp com DDD')}</label><input class="input" id="cw" type="tel" inputmode="tel" autocomplete="tel" placeholder="62 99999-0000" maxlength="20"></div>
+    <div class="field"><label class="l" for="ce">${t('E-mail')}</label><input class="input" id="ce" type="email" inputmode="email" autocomplete="email" autocapitalize="off" maxlength="160"><p class="muted small" style="margin-top:6px">${t('É com ele que você entra no app.')}</p></div>
+    <div class="field"><label class="l" for="cs">${t('Crie uma senha')}</label>${campoSenha('cs', t('6 ou mais'))}</div>
+    <input id="csite" name="site" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+    <p class="err" id="cerr" hidden></p>
+    <button class="btn" id="cbt">${t('Criar meu cadastro')}</button>
+    <p class="muted center small">${t('Já tem conta?')} <a href="#" data-go="login" style="display:inline-block;padding:12px 4px">${t('Entrar')}</a></p></form></div>`);
+  $('#lang').onclick = escolherIdioma;
+  const erro = (m, foco) => { $('#cerr').textContent = m; $('#cerr').hidden = false; if (foco) $(foco).focus(); };
+  $('#fc').onsubmit = async e => {
+    e.preventDefault(); $('#cerr').hidden = true;
+    const nome = $('#cn').value.trim().replace(/\s+/g, ' '), wpp = $('#cw').value.replace(/\D/g, ''), email = $('#ce').value.trim().toLowerCase(), senha = $('#cs').value;
+    if (!/\S+\s+\S+/.test(nome)) return erro(t('Escreve seu nome completo (nome e sobrenome).'), '#cn');
+    if (wpp.length < 10 || wpp.length > 13) return erro(t('Confere o WhatsApp: DDD + número (ex. 62 99999-0000).'), '#cw');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return erro(t('Confere o e-mail: falta alguma parte (ex. nome@gmail.com).'), '#ce');
+    if (senha.length < 6) return erro(t('A senha precisa ter pelo menos 6 letras ou números.'), '#cs');
+    $('#cbt').disabled = true; $('#cbt').textContent = t('Criando…');
+    try { await db.cadastroConvite({ nome, whatsapp: wpp, email, senha, site: $('#csite').value }); await db.login(email, senha); await boot(); }
+    catch (x) {
+      const c = x?.codigo;
+      $('#cbt').disabled = false; $('#cbt').textContent = t('Criar meu cadastro');
+      if (c === 'ja_existe') { erro(t('Esse e-mail já tem cadastro. Toca em Entrar aqui embaixo (se esqueceu a senha, lá tem "Esqueci minha senha").')); return; }
+      if (c === 'nome') return erro(t('Escreve seu nome completo (nome e sobrenome).'), '#cn');
+      if (c === 'whatsapp') return erro(t('Confere o WhatsApp: DDD + número (ex. 62 99999-0000).'), '#cw');
+      if (c === 'email') return erro(t('Confere o e-mail: falta alguma parte (ex. nome@gmail.com).'), '#ce');
+      if (c === 'senha') return erro(t('A senha precisa ter pelo menos 6 letras ou números.'), '#cs');
+      if (c === 'rede') return erro(t('Sem internet agora. Tenta de novo quando o sinal voltar.'));
+      if (c === 'muitos') return erro(t('Muita gente se cadastrando agora. Tenta de novo daqui a pouco.'));
+      // conta criada mas o login falhou (ex. sinal caiu no meio): manda pro Entrar com o e-mail dela
+      if (!c && x?.message) { erro(t('Seu cadastro foi criado. Toca em Entrar e usa o e-mail e a senha que você acabou de criar.')); return; }
+      erro(t('Não deu pra criar agora. Tenta de novo daqui a pouco; se continuar, chama o Igor.'));
+    }
+  };
+};
+function telaAguardando() {
+  const p = S.perfil;
+  if (!p.anamnese_em) {
+    render(`<div class="view noTabs fx" style="padding-top:28px"><div class="row between" style="align-items:flex-start"><div class="logo big" style="font-size:1.875rem">IGOR<br>SOUSA <b>TEAM</b></div>${botaoLetra(true)}</div>
+    <div><h1>${t('Bem-vinda, {nome}!', { nome: esc(primeiroNome(p.nome)) })}</h1><p class="mt" style="font-size:1rem;line-height:1.45">${t('Falta só a anamnese. Ela precisa ficar registrada aqui no app novo, porque não dá pra trazer a do Mfit.')}</p></div>
+    <button class="btn" id="anamC">${t('Preencher agora')}</button><button class="btn ghost sm" id="sairC">${t('Sair')}</button></div>`);
+    $('#anamC').onclick = () => anamneseForm(S.perfil, telaAguardando);
+  } else {
+    render(`<div class="view noTabs fx" style="padding-top:28px"><div class="logo big" style="font-size:1.875rem">IGOR<br>SOUSA <b>TEAM</b></div>
+    <div class="card" style="border:1px solid var(--accent)"><h2>${t('Cadastro recebido ✓')}</h2><p class="mt" style="font-size:1rem;line-height:1.45">${t('O Igor vai conferir e liberar o seu treino aqui no app. Quando ele liberar, é só abrir o app de novo.')}</p></div>
+    <button class="btn" id="atuC">↻ ${t('Já liberou? Atualizar')}</button>
+    ${C.WHATSAPP_IGOR ? `<a class="btn ghost" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}?text=${encodeURIComponent(t('Oi Igor! Fiz meu cadastro no app novo.'))}" target="_blank" rel="noopener">${t('Avisar o Igor no WhatsApp')}</a>` : ''}
+    <button class="btn ghost sm" id="anamC">${t('Rever minha anamnese')}</button><button class="btn ghost sm" id="sairC">${t('Sair')}</button></div>`);
+    $('#anamC').onclick = () => anamneseForm(S.perfil, telaAguardando);
+    $('#atuC').onclick = async () => { $('#atuC').disabled = true; await boot(); if (S.perfil?.aguardando) toast(t('Ainda não foi liberado. O Igor te avisa quando liberar.'), false, { curto: true }); };
+  }
+  $('#sairC').onclick = async () => { await db.logout(); S.perfil = null; go('entrada'); };
+}
 
 // HOME -----------------------------------------------------------------------
 // Treinos feitos sem sinal entram na contagem na hora (sequência, meta, treino de hoje), antes de subir pro banco.
@@ -1408,7 +1470,7 @@ async function ativarPush() {
 // Conteúdo do Igor em outra língua: o que o glossário não dá conta, a IA traduz e a tela se atualiza sozinha
 if (!DEMO && db.traduzir) ligarTradutor((id, textos) => db.traduzir(id, textos));
 let redesenho = null;
-window.addEventListener('traducoes', () => { clearTimeout(redesenho); redesenho = setTimeout(() => { if (!rotaAtual || !routes[rotaAtual] || ['sessao', 'fim', 'assistente', 'login', 'entrada'].includes(rotaAtual) || document.querySelector('#overlay .modal') || document.activeElement?.matches?.('input,textarea')) return; routes[rotaAtual](argAtual); }, 300); });
+window.addEventListener('traducoes', () => { clearTimeout(redesenho); redesenho = setTimeout(() => { if (!rotaAtual || !routes[rotaAtual] || ['sessao', 'fim', 'assistente', 'login', 'entrada', 'convite'].includes(rotaAtual) || document.querySelector('#overlay .modal') || document.activeElement?.matches?.('input,textarea')) return; routes[rotaAtual](argAtual); }, 300); });
 // Alarme do descanso pelo servidor: no iPhone, com a tela apagada, é o único jeito de tocar e vibrar
 { const ps = new URLSearchParams(location.search), q = ps.get('strava'); if (q) { ps.delete('strava'); history.replaceState(null, '', location.pathname + (ps.toString() ? '?' + ps : '') + location.hash); setTimeout(() => { if (q === 'ok') { db.LS.set('strava_on', true); toast(t('Strava conectado ✓ O próximo treino que você finalizar vai pro seu Strava.')); } else toast(q === 'sem_permissao' ? t('Pra lançar os treinos, o Strava precisa da permissão de publicar. Tenta de novo e deixa essa opção marcada.') : t('Não deu pra conectar o Strava agora. Tenta de novo.'), true); }, 1200); } }
 if (!DEMO) ligarAvisoRemoto({
@@ -1979,12 +2041,13 @@ async function boot() {
   const pronto = (p, ms) => guardado ? Promise.race([p, new Promise(r => setTimeout(() => r(ESPERA), ms))]) : p;
   S.user = await pronto(db.sessionUser().catch(() => null), 4000);
   if (S.user === ESPERA) S.user = { id: guardado.id };
-  if (!S.user) return go('entrada');
+  if (!S.user) return go(location.hash === '#convite' ? 'convite' : 'entrada'); // link do convite no navegador abre direto no cadastro
   let semRede = false;
   S.perfil = await pronto(db.perfil().catch(er => { semRede = erroDeRede(er); return null; }), 4000);
   if (S.perfil === ESPERA) { S.perfil = guardado; db.perfil().then(p => { if (p && S.perfil?.id === p.id) S.perfil = p; }).catch(() => {}); }
   if (!S.perfil && (semRede || navigator.onLine === false)) { render(`<div class="view noTabs"><div class="logo big" style="margin-top:40px">IGOR<br>SOUSA <b>TEAM</b></div><h2>${t('Sem internet pra carregar sua conta')}</h2><p class="muted">${t('Na 1ª vez neste celular o app precisa de sinal. Depois ele abre mesmo sem internet.')}</p><button class="btn" id="o">↻ ${t('Tentar de novo')}</button></div>`); $('#o').onclick = () => boot(); return; }
   if (!S.perfil) { render(`<div class="view noTabs"><h2>${t('Conta sem perfil')}</h2><p class="muted">${t('Chama o Igor no WhatsApp pra liberar seu acesso.')}</p><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
+  if (S.perfil.aguardando && !S.perfil.ativa && S.perfil.role !== 'admin') return telaAguardando(); // cadastro pelo convite: anamnese e espera o Igor liberar
   if (!S.perfil.ativa && S.perfil.role !== 'admin') { A.limparLembrete(); render(`<div class="view noTabs"><h2>${t('Acesso pausado')}</h2><p class="muted">${NATIVO ? t('Seu acesso tá pausado. Fala comigo que eu te ajudo.') : t('Sua assinatura tá pausada. Renovou? É só me chamar que libero na hora.')}</p><a class="btn" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}">${t('Falar com o Igor')}</a><button class="btn ghost" id="o">${t('Sair')}</button></div>`); $('#o').onclick = async () => { await db.logout(); go('entrada'); }; return; }
   sincronizarFila();
   // Igor também treina pelo app: com treino aberto no celular dele, volta pro treino (antes caía no painel e o treino parecia sumido)

@@ -39,7 +39,9 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   db = _db;
   let alunas = [], fb = [], venc = [], vencOk = true;
   let anam = [], pres = [];
+  let novos = []; // cadastros pelo convite esperando liberar (migração 026)
   try { [alunas, fb, anam, venc] = await Promise.all([db.admin.alunas(), db.admin.feedbacks(), db.admin.anamneses().catch(() => []), db.admin.vencimentos().catch(() => { vencOk = false; return []; }), db.admin.presenciais?.().catch(() => []) || []]).then(r => { pres = r.pop() || []; return r; }); } catch (e) { toast(e.message, true); }
+  novos = await db.admin.aguardando?.().catch(() => []) || [];
   const fichas = new Map(anam.map(x => [x.id, x]));
   const ativas = alunas.filter(a => a.ativa);
   const dia = d => { d = new Date(d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }; // dia no fuso do celular
@@ -75,6 +77,11 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
       <button class="atalho" id="recado"><span class="ico">${svg('rec')}</span>Recado</button>
       <button class="atalho" data-go="home"><span class="ico">${svg('ver')}</span>Ver como aluna</button>
     </div>
+    ${novos.length ? `<section class="bloco" id="novos"><h3>Cadastros novos pelo convite <span class="pill warn">${novos.length}</span></h3>
+      <p class="muted small">Se cadastraram sozinhas pelo link. Só entram no time quando você liberar.</p>
+      ${novos.map(n => `<div class="linhacard" style="flex-wrap:wrap;gap:8px"><span style="flex:1;min-width:150px"><b>${esc(n.nome)}</b><span class="muted small" style="display:block">${esc(n.whatsapp || '')} · ${n.anamnese_em ? 'anamnese ✓' : 'ainda sem anamnese'}</span></span>
+        <span class="row" style="gap:6px;width:auto">${n.anamnese_em && fichas.get(n.id) ? `<button class="btn ghost sm" style="width:auto" data-ficha="${n.id}">ficha</button>` : ''}<button class="btn ghost sm" style="width:auto" data-dispensa="${n.id}">não é aluna</button><button class="btn sm" style="width:auto" data-libera="${n.id}">Liberar</button></span></div>`).join('')}
+    </section>` : ''}
     <section class="bloco"><h3>Suas alunas</h3>
       <div class="grid2"><button class="tile cheio" id="nova">${svg('add')}<b>Cadastrar aluna</b></button><button class="tile cheio" id="lote">${svg('lote')}<b>Cadastro em lote</b></button></div>
       <button class="bigcard" id="ir-alunas">${svg('alunas')}<span><b>Alunas</b><span class="row wrap" style="gap:6px;margin-top:6px"><span class="pill good">Ativas: ${ativas.length}</span><span class="pill warn">Pausadas: ${alunas.length - ativas.length}</span></span></span>${svg('seta')}</button>
@@ -145,6 +152,19 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
 
   function ligar() {
     const on = (sel, fn) => { const e = $(sel); if (e) e.onclick = fn; };
+    // Cadastro do convite: Liberar pergunta o plano; "não é aluna" só tira da lista (a conta continua pausada)
+    $$('[data-libera]').forEach(b => b.onclick = () => { const n = novos.find(x => x.id === b.dataset.libera); if (!n) return;
+      overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px"><h2>Liberar ${esc(n.nome.split(' ')[0])}</h2><p class="muted small">Qual o plano dela? Depois é só montar o treino em "Montar treino da aluna".</p>
+        <button class="btn" data-pl="basico">Essencial</button><button class="btn" data-pl="personalizado">Personalizado</button><button class="btn ghost sm" id="c">Cancelar</button></div></div>`);
+      $('#c').onclick = closeOverlay;
+      $$('[data-pl]').forEach(x => x.onclick = async () => { $$('[data-pl]').forEach(y => y.disabled = true); try { await db.admin.liberarCadastro(n.id, x.dataset.pl); closeOverlay(); toast(`${n.nome.split(' ')[0]} liberada ✓ Agora monta o treino dela.`); go('admin'); } catch (e) { toast(traduzErro(e), true); $$('[data-pl]').forEach(y => y.disabled = false); } });
+    });
+    $$('[data-dispensa]').forEach(b => b.onclick = () => { const n = novos.find(x => x.id === b.dataset.dispensa); if (!n) return;
+      overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px"><h2>Tirar da lista?</h2><p class="muted">${esc(n.nome)} sai dos cadastros novos e a conta fica pausada, sem acesso a nada. Dá pra liberar depois em Alunas.</p>
+        <div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="ok" style="flex:1">Tirar</button></div></div></div>`);
+      $('#c').onclick = closeOverlay;
+      $('#ok').onclick = async () => { $('#ok').disabled = true; try { await db.admin.dispensarCadastro(n.id); closeOverlay(); toast('Tirada da lista.'); go('admin'); } catch (e) { toast(traduzErro(e), true); $('#ok').disabled = false; } };
+    });
     on('#volta', () => { if (recarregar) { recarregar = false; secao = 'inicio'; modo = null; go('admin'); } else abrir('inicio'); }); // mandou treino pra várias: recarrega os vencimentos
     $$('[data-fa]').forEach(b => b.onclick = () => { filtroA = b.dataset.fa; const q = $('#busca')?.value || ''; desenhar(); const bu = $('#busca'); if (bu && q) { bu.value = q; bu.oninput(); } });
     on('#ir-semplano', () => { filtroA = 'semplano'; abrir('alunas', 'treino'); });
