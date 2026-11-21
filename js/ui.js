@@ -65,7 +65,6 @@ export function videoModal(nome, url, dica, temCache = false) {
   const yt = youtubeEmbed(url), animApp = /(^|\/)anim\/[^/]+\.mp4$/.test(String(url || ''));
   // Animação do app (30–100 KB): fica guardada depois da 1ª vez e abre sem sinal (antes "o vídeo precisa de sinal" até pra ela)
   if (animApp && navigator.onLine === false && !temCache && 'caches' in window) { caches.match(new URL(url, location.href).href).then(r => r ? videoModal(nome, url, dica, true) : videoModal(nome, url, dica, 'nao')).catch(() => videoModal(nome, url, dica, 'nao')); return; }
-  if (animApp && navigator.onLine !== false) { try { fetch(url).catch(() => {}); } catch {} } // pedido normal (200): o service worker guarda pra abrir sem sinal
   if (url && navigator.onLine === false && temCache !== true) { // sem sinal: explica e mostra a dica, em vez da tela cinza do navegador
     overlay(`<div class="modal" id="vm"><div class="box" style="padding:20px;display:flex;flex-direction:column;gap:12px"><span class="pill" style="align-self:flex-start">📶 ${t('sem internet')}</span><h2>${esc(tc(nome))}</h2><p>${t('O vídeo precisa de sinal. Assim que a internet voltar, toca de novo.')}</p>
       ${dica ? `<div class="card" style="background:var(--n1)"><b style="font-size:0.875rem;color:var(--accent-t)">${t('DICA DO IGOR')}</b><p style="margin-top:4px;font-size:1rem;line-height:1.4">${esc(tc(dica))}</p></div>` : ''}<button class="btn sm" id="vm-close">${t('Entendi')}</button></div></div>`);
@@ -76,7 +75,7 @@ export function videoModal(nome, url, dica, temCache = false) {
   const gravado = /(^|\/)videos\/[a-z0-9-]+\.mp4$/.test(url || ''), dadosAviso = gravado && navigator.connection?.type !== 'wifi' ? `<br><span>${t('Toca no ▶ pra ver (uns 1,5 MB de internet).')}</span>` : '';
   const anim = /(^|\/)anim\/[a-z0-9-]+\.mp4$/.test(url || ''), img = /\.(jpe?g|png|webp|gif|heic)(\?|$)/i.test(url || '');
   const inner = yt ? `<iframe src="${yt}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`
-    : anim ? `<video src="${esc(url)}" autoplay loop muted playsinline></video>`
+    : anim ? `<video id="vm-anim" autoplay loop muted playsinline></video>`
     : img ? `<img src="${esc(url)}" alt="${esc(tc(nome))}" style="width:100%;height:100%;object-fit:contain">`
     : url ? `<video src="${esc(url)}" ${redeFraca() || (gravado && navigator.connection?.type !== 'wifi') ? 'preload="metadata"' : navigator.connection ? 'autoplay loop' : 'autoplay'} muted playsinline controls></video>`
     : null;
@@ -87,6 +86,8 @@ export function videoModal(nome, url, dica, temCache = false) {
       <p class="muted small">${t('O Igor tá gravando os vídeos de todos os exercícios. Ficou com dúvida na execução?')}</p><button class="btn sm" data-duvida="${esc(nome)}">? ${t('Tirar dúvida da execução com a IA')}</button><a class="btn ghost sm" href="https://wa.me/${esc(window.ISTEAM_CONFIG?.WHATSAPP_IGOR || '')}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a><button class="link-fim" id="vm-close" style="margin-top:0">${t('Fechar')}</button></div></div>`);
   $('#vm-close').onclick = closeOverlay;
   $('#vm').addEventListener('click', e => { if (e.target.id === 'vm') closeOverlay(); });
+  // Animação: baixa uma vez só (pedido normal, que o service worker guarda pra abrir sem sinal) e toca desse arquivo (antes baixava 2 vezes)
+  if (anim) { const usa = src => { const v = $('#vm-anim'); if (v) v.src = src; }; try { fetch(url).then(r => r.ok ? r.blob() : Promise.reject()).then(b => usa(URL.createObjectURL(b))).catch(() => usa(url)); } catch { usa(url); } }
 }
 
 // Apito: um só AudioContext (celular fraco não fica sem som depois de 40 apitos).
@@ -245,6 +246,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
     const doLado = l => meio ? (l > total / 2 ? l - Math.floor(total / 2) : l) : l, base = l => meio ? total / 2 : total;
     const rotulo = () => meio ? (trocou ? t('Lado 2 de 2') : t('Lado 1 de 2')) : t(titulo);
     const tick = () => {
+      if (trabalho) { if (document.hidden) { if (!me.ocultoEm) me.ocultoEm = Date.now(); } else if (left() > 0) me.ocultoEm = null; } // quando ela saiu do app com o cronômetro rodando
       if (pausado) return; const l = left(), n = q('#rest-n'); if (!n) return;
       if (meio && !trocou && l <= total / 2 && l > 0) { trocou = true; beep(); q('#rest-t').textContent = t('Lado 2 de 2 · troca de lado!'); toast(t('Troca de lado 🔄')); }
       let resta = 0; // segundos que faltam no intervalo atual (forte/leve)
@@ -252,7 +254,7 @@ export function restTimer(segundos, proximo, titulo = 'Descanso', { meio = false
       const rot = intervalos && fase >= 0 ? (fase ? t('Leve') : t('Forte!')) : trouxe(titulo);
       if (!trabalho && !intervalos && l <= 3 && l > 0 && l !== me.ultTic) { me.ultTic = l; beep('tic'); } // contagem 3-2-1 antes de acabar o descanso
       const lv = doLado(l); n.textContent = me.mini ? `${meio ? rotulo() : rot} ${fmtMin(lv)} · ${!trabalho && pxTxt ? pxTxt : t('toca pra abrir')}` : (lv >= 60 ? fmtMin(lv) : lv);
-      q('#ring').style.setProperty('--p', (lv / base() * 100) + '%'); if (l > 0) chipDescanso.atualiza(lv, base(), meio ? rotulo() : rot, pxTxt.slice(0, 60), Math.max(0, (fim - Date.now()) / 1000)); if (l <= 0) end(true, Date.now() - fim > 30000);
+      q('#ring').style.setProperty('--p', (lv / base() * 100) + '%'); if (l > 0) chipDescanso.atualiza(lv, base(), meio ? rotulo() : rot, pxTxt.slice(0, 60), Math.max(0, (fim - Date.now()) / 1000)); if (l <= 0) { const tarde = Date.now() - fim; /* cronômetro de exercício que acabou com o app fechado há mais de 1 min: não marca sozinho, pergunta */ if (trabalho && tarde > 60000) return end({ voltou: true, feitoAte: me.ocultoEm ? Math.max(0, Math.min(total, Math.round(total - (fim - me.ocultoEm) / 1000))) : null }, true); end(true, tarde > 30000); }
     };
     // atrasado: acabou com a tela apagada (o código parado) e só agora ela voltou: aviso fixo com "há N min", sem apito
     const end = (r, atrasado = false) => { if (restAtivo !== me) return; restAtivo = null; const tocando = r === true && (document.hidden || atrasado) && chipDescanso.alarme(); /* atrasado (timer segurado em 2º plano): a faixa já apitou na hora certa */ if (!tocando) chipDescanso.para(); cancelarAviso(r === true && (document.hidden || atrasado)); clearInterval(iv); document.removeEventListener('visibilitychange', tick); L.innerHTML = ''; if (r === true) { if (document.hidden || atrasado) avisoNaVolta(fim, trabalho); else { beep(); toast(trabalho ? t('Tempo! Série feita ✓') : t('Descanso acabou. Bora a próxima!')); } } resolve(r); };

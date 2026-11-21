@@ -16,15 +16,16 @@ await p.fill('#cn','Aline'); await p.click('#cbt'); await p.waitForTimeout(200);
 await p.fill('#cn','Aline Martins Gontias'); await p.fill('#cw','6299'); await p.click('#cbt'); await p.waitForTimeout(200); ok(/WhatsApp/i.test(await p.innerText('#cerr')), 'WhatsApp curto não passa');
 await p.fill('#cw','(62) 98221-3226'); await p.fill('#ce','aline@'); await p.click('#cbt'); await p.waitForTimeout(200); ok(/e-mail/i.test(await p.innerText('#cerr')), 'e-mail incompleto não passa');
 await p.fill('#ce','ja@gmail.com'); await p.fill('#cs','123'); await p.click('#cbt'); await p.waitForTimeout(200); ok(/6 letras/i.test(await p.innerText('#cerr')), 'senha curta não passa');
-await p.fill('#cs','senha123'); await p.click('#cbt'); await p.waitForTimeout(900); ok(/já tem cadastro/i.test(await p.innerText('#cerr')), 'e-mail repetido manda pro Entrar');
+await p.fill('#cs','senha123'); await p.fill('#cs2','senha12'); await p.click('#cbt'); await p.waitForTimeout(200); ok(/não estão iguais/i.test(await p.innerText('#cerr')), 'senha repetida diferente não passa (21/11)');
+await p.fill('#cs2','senha123'); await p.click('#cbt'); await p.waitForTimeout(900); ok(/já tem cadastro/i.test(await p.innerText('#cerr')), 'e-mail repetido manda pro Entrar');
 // cadastro certo → anamnese → espera
 await p.fill('#ce','aline@gmail.com'); await p.click('#cbt'); await p.waitForTimeout(1600);
 let t = await txt();
-if(!/Falta só a anamnese/.test(t)) console.log('TELA:', t.slice(0,400)); ok(/Bem-vinda, Aline!/.test(t) && /Falta só a anamnese/.test(t), 'depois do cadastro pede a anamnese');
+if(!/Falta só a sua ficha/.test(t)) console.log('TELA:', t.slice(0,400)); ok(/Bem-vinda, Aline!/.test(t) && /Falta só a sua ficha/.test(t), 'depois do cadastro pede a anamnese');
 ok(!/Bora, Aline/.test(t) && !/Treino A/.test(t), 'ainda não vê o treino');
 // tentar ir pro início pelo endereço não pula a espera
 await p.evaluate(()=>{ location.hash='#home'; dispatchEvent(new PopStateEvent('popstate',{state:{name:'home'}})); }); await p.waitForTimeout(600);
-ok(/Falta só a anamnese/.test(await txt()), 'voltar/endereço não abre o início antes de liberar');
+ok(/Falta só a sua ficha/.test(await txt()), 'voltar/endereço não abre o início antes de liberar');
 // anamnese pronta → tela de espera (simula como se já tivesse respondido)
 await p.evaluate(()=>{ const s=JSON.parse(localStorage.getItem('demo:state')); s.perfil.anamnese_em=new Date().toISOString(); s.perfil.objetivo='hipertrofia'; localStorage.setItem('demo:state',JSON.stringify(s)); }); await p.reload(); await p.waitForTimeout(1200);
 t = await txt(); ok(/Cadastro recebido/.test(t) && /Avisar o Igor no WhatsApp/.test(t), 'com anamnese: tela de espera com WhatsApp do Igor');

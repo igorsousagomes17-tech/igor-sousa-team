@@ -14,7 +14,7 @@ const nome0=await p.innerText('.view h2, .view h1').catch(()=>'');
 ok(await p.locator('.ocup').count()>=1,'botão Aparelho ocupado visível');
 await p.click('.ocup'); await p.waitForTimeout(400);
 const m=await p.innerText('#m'); console.log(m.replace(/\n+/g,' | '));
-const n=await p.locator('#m [data-o]').count(); ok(n===3,'2 opções + cancelar ('+n+')');
+const n=await p.locator('#m [data-o]').count(); ok(n===4,'2 opções + outro + cancelar ('+n+')');
 await p.click('#m [data-o="0"]'); await p.waitForTimeout(800);
 ok(/só hoje|Trocado/i.test(await p.innerText('body')) || true,'trocou');
 ok(await p.locator('.swap').count()>=0,'segue na sessão');

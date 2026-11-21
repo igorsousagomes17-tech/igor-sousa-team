@@ -78,7 +78,7 @@ const entrar = async (p, em) => { await p.goto('http://app.local/?demo'); await 
   ok(url === './anim/agachamento-smith.mp4', `Agachamento Smith no treino tem play com a animação (${url})`);
   ok(await p.locator('.ex:has-text("Goblet") .play.info').count() === 1, 'exercício sem animação continua com o "i" da dica');
   await p.click('.ex:has-text("Agachamento Smith") .play'); await w(p, 600);
-  ok(await p.locator('#vm .area.anim video[src="./anim/agachamento-smith.mp4"]').count() === 1, 'abre a animação em loop');
+  await p.waitForTimeout(400); ok(await p.locator('#vm .area.anim video[loop]').count() === 1 && /^(blob:|\.\/anim\/agachamento-smith\.mp4)/.test(await p.getAttribute('#vm .area.anim video', 'src') || ''), 'abre a animação em loop (baixada uma vez só)');
   ok(/Animação de como fazer/.test(await p.innerText('#vm')), 'avisa que é animação e o vídeo do Igor tá chegando');
   await p.screenshot({ path: `${D}/anim-1-aluna.png` });
   await ctx.close(); }

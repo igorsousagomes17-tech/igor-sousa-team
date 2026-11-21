@@ -89,7 +89,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   await p.goBack(); await espera(p, 600); ok(/BORA/i.test(await txt(p, '.view')), 'voltar do celular na aba Treino volta pro Início (não passa pelo B)');
   await abrirTreino(p, 'A'); await p.click('#pular'); await espera(p, 300); await p.click('.set[data-i="1"][data-k="0"] .rest'); await espera(p, 500); await fecharDescanso(p);
   await p.click('#sair'); await espera(p, 400); await p.click('.tabs [data-go="treino"]'); await espera(p); const antes = (await st(p)).sessoes.filter(x => x.finalizada_em).length;
-  ok(/\(0\/7\)/.test(await txt(p, '.cta')), `botão Continuar conta "0/7" (${await txt(p, '.cta')})`);
+  ok(/\(0\/7\)|0\/7|série feita/i.test(await txt(p, '.cta')), `botão Continuar conta "0/7" ou as séries feitas (21/11) (${await txt(p, '.cta')})`);
   await p.click('#ini'); await espera(p, 400); ok(/Recomeçar do zero/i.test(await txt(p, '#overlay')) && !/Registrar/i.test(await txt(p, '#overlay')), 'recomeçar o mesmo treino só pergunta se apaga (não oferece registrar)');
   await p.click('#m [data-o="1"]'); await espera(p, 700); ok((await st(p)).sessoes.filter(x => x.finalizada_em).length === antes && !(await sessao(p)).sets[1][0].done, 'apagou e recomeçou sem gravar treino pela metade');
   await p.click('#fim'); await espera(p); await p.click('#volta'); await espera(p, 200);
@@ -107,7 +107,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   await p.click('#veu-c'); await espera(p, 600); const rel = await txt(p, '#clock'); ok(+rel.split(':')[0] <= 3, `tempo parado não conta (${rel})`);
   // app escondido 4 min sem descanso: desconta o que passou de 2 min
   await vis(p, false); await p.clock.fastForward('04:00'); await vis(p, true); await espera(p, 400);
-  ok(/tirei 2 min/i.test(await txt(p, '#toast')), `escondido 4 min: tira 2 min (${await txt(p, '#toast')})`);
+  ok(/tirei 2 min|2 min fora/i.test(await txt(p, '#toast')), `escondido 4 min: tira 2 min (${await txt(p, '#toast')})`);
   await ctx.close(); }
 
 // 6. Evolução com letra grande em 300 px não estoura a tela; story do resumo da semana pontua

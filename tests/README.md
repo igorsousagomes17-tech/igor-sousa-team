@@ -63,3 +63,7 @@ registro do mês com 1 foto salva o peso; aviso da arte do story no Android): `W
 "Boa!" só com exercício completo, recado do Igor no treino certo, pausa longa sem descanso pendurado, "Aa" na entrada/login, erro de senha em "letras ou números", erro legível no tema claro,
 "↓ mais opções" na pergunta de saúde, cargas da aluna no Responder do painel, busca "casa" sem aparelho, Vídeos de casa, água com "hoje", só baixa o arquivo do idioma dela):
 `W=360 OUT=/tmp/shots node tests/rodada-1411.mjs`. Traduções novas: edite `js/i18n-fonte.js` e rode `node tools/i18n-gerar.mjs`.
+
+`tests/rodada-2111.mjs` testa a rodada 21/11 ("Aa" sem apagar o que ela digitou, convite com "Repete a senha" e voltar do celular, reconhecimento fora da contagem e do histórico, chip R estreito,
+drop sem descanso antes das quedas, "Outro exercício" no Aparelho ocupado, anotação de regulagem, último exercício só com Finalizar, HIIT com forte/leve à vista,
+20 min fora = véu com relógio parado, atalho Treino em casa, Pontos com a meta da semana e o desafio): `W=360 OUT=/tmp/shots node tests/rodada-2111.mjs`.

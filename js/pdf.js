@@ -5,6 +5,7 @@ import { semCarga, compartilharNativo } from './ui.js'; // mesma regra do app: e
 // As fontes do PDF só têm o alfabeto latino: em chinês e hindi o PDF sai em inglês (embutir fonte custaria vários MB).
 const LP = () => ['zh', 'hi'].includes(idioma()) ? 'en' : idioma();
 const T = (pt, v) => tl(LP(), pt, v);
+const tp = (n, um, varios, v) => T(n === 1 ? um : varios, { n, ...v }); // plural no idioma do PDF
 const JSPDF = new URL('./vendor/jspdf.umd.min.js', import.meta.url).href;
 const LARANJA = [255, 106, 0], PRETO = [11, 11, 12], CINZA = [110, 110, 115], CLARO = [245, 245, 245];
 
@@ -40,7 +41,7 @@ async function fotoCapa(url) {
 const limpa = s => String(s ?? '').replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[^\x20-\xFF]/g, '').trim();
 
 // programa: título do programa extra (o PDF vira o do programa, sem a ordem A/B/C/D)
-export async function gerarPdfTreino(plano, perfil, programa = null) {
+export async function gerarPdfTreino(plano, perfil, programa = null, ainda = null) { // ainda(): ela continua na tela do PDF? (saiu pro treino: não abre o compartilhar no meio da série)
   await carregarIdioma(LP()); // chinês/hindi: o PDF sai em inglês (carrega o dicionário dele)
   const { jsPDF } = await carregar();
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -68,7 +69,7 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
     doc.setFillColor(28, 28, 30); doc.roundedRect(M, y - 5.5, W - 2 * M, 11, 2, 2, 'F');
     doc.setTextColor(...LARANJA); doc.setFontSize(12); doc.text(limpa(t.letra), M + 5, y + 1.8);
     doc.setTextColor(...CLARO); doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.text(limpa(tc(t.nome)), M + 14, y + 1.8);
-    doc.setTextColor(...CINZA); doc.setFontSize(9); doc.text(limpa(T('{n} exercícios · ~{d} min', { n: t.exercicios.length, d: t.duracao_min || 40 })), W - M - 4, y + 1.8, { align: 'right' });
+    doc.setTextColor(...CINZA); doc.setFontSize(9); doc.text(limpa(tp(t.exercicios.length, '{n} exercício', '{n} exercícios') + ' · ' + T('~{d} min', { d: t.duracao_min || 40 })), W - M - 4, y + 1.8, { align: 'right' });
     doc.setFont('helvetica', 'bold'); y += 14;
   });
 
@@ -85,16 +86,26 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
   rodape(true);
 
   // UMA PÁGINA POR TREINO ------------------------------------------------------
-  plano.treinos.forEach(t => {
+  // Programa extra com treinos curtos (HIIT): o treino seguinte continua na mesma folha se couber (não gasta 5 folhas pra 5 linhas)
+  let yFim = null;
+  plano.treinos.forEach((t, ti) => {
+    const resumo = limpa(T('~{d} min', { d: t.duracao_min || 40 }) + '  ·  ' + tp(t.exercicios.length, '{n} exercício', '{n} exercícios'));
+    let y;
+    if (programa && ti > 0 && yFim != null && yFim + 50 < H - 16) {
+      y = yFim + 10; doc.setFillColor(...LARANJA); doc.rect(M, y - 6, W - 2 * M, 0.8, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...LARANJA); doc.setFontSize(16); doc.text(limpa(t.nome), M, y + 4);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(resumo, W - M, y + 4, { align: 'right' }); y += 16;
+    } else {
     doc.addPage();
     doc.setFillColor(...PRETO); doc.rect(0, 0, W, 40, 'F');
     doc.setFillColor(...LARANJA); doc.rect(0, 40, W, 1.5, 'F');
     doc.setFont('helvetica', 'bold'); doc.setTextColor(...LARANJA); doc.setFontSize(26); doc.text(limpa(programa ? t.nome : T('Treino {l}', { l: t.letra })), M, 22);
     doc.setTextColor(...CLARO); doc.setFontSize(13); doc.text(limpa(tc(programa || t.nome)), M, 31);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(limpa(T('~{d} min  ·  {n} exercícios', { n: t.exercicios.length, d: t.duracao_min || 40 })), W - M, 31, { align: 'right' });
-    let y = 52;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(resumo, W - M, 31, { align: 'right' });
+    y = 52;
+    }
     const casa = /casa/.test(perfil?.local_treino || ''); // treina em casa: o HIIT do PDF não manda pra esteira
-    const exs = [...t.exercicios].sort((a, b) => a.ordem - b.ordem).map(e => casa && /hiit/i.test(e.nome) ? { ...e, dica: 'HIIT = cardio em tiros: forte (quase sem conseguir falar) e leve. Em casa: corrida parada, polichinelo ou subir e descer um degrau.' } : e);
+    const exs = [...t.exercicios].sort((a, b) => a.ordem - b.ordem).map(e => casa && /hiit/i.test(e.nome) ? { ...e, dica: e.dica && programa ? e.dica + ' Em casa: corrida parada, polichinelo ou subir e descer um degrau.' : 'HIIT = cardio em tiros: forte (quase sem conseguir falar) e leve. Em casa: corrida parada, polichinelo ou subir e descer um degrau.' } : e); // programa: mantém os tempos dos tiros do Igor
     // Só o último (HIIT opcional) não cabe na folha: aperta o espaço entre os exercícios e tira a dica dele (não gasta uma folha só com ele)
     const altura = (e, semDica) => { const d = e.dica && !semDica ? doc.splitTextToSize(limpa(tc(e.dica)), W - 2 * M - 16).length : 0, an = !/hiit|cardio/i.test(e.nome) && !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || ''); return 13 + d * 4.4 + (e.alternativa && !semDica ? 5 : 0) + (an ? 6 : 0); };
     const ultOpc = exs.length > 1 && /hiit|cardio|opcional/i.test(exs[exs.length - 1].nome);
@@ -128,12 +139,13 @@ export async function gerarPdfTreino(plano, perfil, programa = null) {
       if (anota) { doc.setTextColor(...CINZA); doc.setFontSize(8.5); doc.text(limpa(T('Carga (kg):')) + '   ' + Array.from({ length: Math.min(e.series || 3, 5) }, () => '______').join('   '), M + 12, yy + 1); }
       y += h + gap;
     });
-    rodape();
+    yFim = y; const prox = plano.treinos[ti + 1]; if (!(programa && prox && y + 50 < H - 16)) rodape();
   });
 
   const nome = (programa ? `${limpa(programa)}.pdf` : `${limpa(T('Treino'))} ${limpa(mes).replace(/\s+(de|del)\s+/, ' ')}.pdf`).replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const blob = doc.output('blob');
   const titulo = programa ? limpa(programa) : T('Meu treino do mês'); // programa extra: com o nome dele (antes "Meu treino do mês")
+  if (ainda && !ainda()) return 'saiu';
   const nat = await compartilharNativo(blob, nome, titulo); if (nat === 'shared' || nat === 'cancel') return nat;
   const arquivo = new File([blob], nome, { type: 'application/pdf' });
   if (navigator.canShare?.({ files: [arquivo] })) {

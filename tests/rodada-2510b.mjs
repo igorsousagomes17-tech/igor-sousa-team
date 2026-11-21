@@ -51,7 +51,7 @@ const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env
   await p.click('.rest.tm'); await espera(p, 300); const f1 = await p.evaluate(() => JSON.parse(localStorage.getItem('demo:sessao')).trab?.ini);
   ok(f0 && f0 === f1 && !!(await p.$('#rest:not(.mini)')), 'tocar de novo no ⏱ só abre o cronômetro (não recomeça)');
   ok(/Forte!|Leve/i.test(await p.innerText('#rest-t')), 'cronômetro mostra a fase (Forte/Leve) com os segundos');
-  await p.click('#rest-x'); await p.clock.fastForward('02:00'); await p.click('#fim'); await espera(p, 800);
+  await p.click('#rest-x'); await p.clock.fastForward('02:00'); await p.click((await p.$('#fim')) ? '#fim' : '#fin'); /* no último só o Finalizar (21/11) */ await espera(p, 800);
   const v = await txt(p, '.view'); ok(/1 de 1/.test(v), `finalizar com o cardio rodando registra os minutos (${v.slice(0, 80)})`);
   await ctx.close(); }
 

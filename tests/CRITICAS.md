@@ -606,3 +606,52 @@ Base antes de mexer: fluxo-treino ok; rodada-2810 caiu 1 vez só por rodar junto
 - [ ] SUSPEITA (sem Android de verdade): "Baixar em PDF" pode abrir o compartilhar em vez de baixar quando o gerador já está guardado.
 - [ ] SUSPEITA (sem celular de verdade): apito do descanso com a tela bloqueada; agora o app oferece o cronômetro na tela de bloqueio no próprio descanso.
 - [ ] Seguem: publicar de novo a função `assistente`, campo de plano misto pro "Treinou presencial", foto do presencial "no aparelho", treinos em casa e "Aparelho ocupado" em casa (conteúdo do Igor), migrações 021/022/023 se ainda não rodaram, WhatsApp, vídeos, fotos dos prêmios, capa do PDF clara, link definitivo da Kiwify, aviso no celular quando o Igor responde. Nada de banco novo nesta rodada.
+
+## 2026-11-21 (rodada automática, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~46 únicos)
+Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite (19/11), série de reconhecimento, volume do treino, HIIT/casa da migração 025.
+
+**Júlia (23, iniciante, iPhone):** ⏱ do drop abria o descanso antes das quedas; Pontos sem dizer quanto vale "Semana completa"/"Desafio"; convite falando de Mfit e espera sem prazo; 4 jeitos de terminar no último exercício; voltar do iPhone no convite saía do app; ⚡ servindo pra Express e pra dica técnica; "Volume do treino: 738 kg" sem referência; HIIT sem os tempos forte/leve à vista; drop na 1ª vez sem peso nas quedas; convite sem "repete a senha" e "Sair" sem perguntar.
+**Carla (34, Android lento, veio do Mfit):** reconhecimento entrava no histórico da Puxada (carga nova sumia, dias viravam "parcial"); pular o reconhecimento deixava o treino incompleto; "+1460%" comparando com treino pela metade; pirâmide sem histórico mostrava "kg" e gravava o peso da série 1; "reconhecimento" em Minhas cargas; voltar do Android no descanso virava "ficou fora"; reps que caíram não apareciam; sem anotação de regulagem; 2º toque no bi-set engolido sem aviso; chip "R" quebrando a fila em 2 linhas.
+**Márcia (52, letra grande):** "Aa" apagava tudo o que ela digitou; convite sem repetir senha e "Sair" sem confirmar; kg "22,5" cortado com zoom; tema claro com placeholder/bordas apagados (2,8:1 e 1,7:1); "↓ mais opções" por cima de "Diabetes"; "anamnese"/"HIIT"/"20 x 21 perguntas"; abas A1/A2 cortando palavra com zoom; "Próxima" saindo da caixa; espera sem Aa nem prazo; "Aa" em ciclo escondido e aviso cobrindo o título.
+**Renata (29, mãe, Personalizado):** pausa sozinha deixava a tela acesa e o relógio correndo; cronômetro que acabou com o app fechado marcava a série; Igor manda trocar e o app não deixa; volta depois de 60 min direto no treino rodando; aviso da volta curto e no topo; painel sem pausas nem o que faltou; aba Treino "Continuar (0/7)"; peso do registro do mês sumia ao recarregar; voltar do Android tratado como "sumiço"; "Treinos por mês" contando treino pela metade.
+**Bia (19, celular velho, sinal ruim):** HIIT/Tabata precisando de um toque a cada tiro; "o máximo que der" gravando série vazia; PDF do HIIT em casa apagando os tempos do Igor; oferta de cardio depois do HIIT em casa; nome curto "Bike"/"Em casa" no story; circuito feito como séries seguidas (suspeita); Início sem atalho pro Treino em casa; aviso do PDF no meio do descanso; animação baixando 2 vezes; PDF "1 exercícios" e 5 folhas pra 5 linhas, "sem peso" só em alguns.
+
+### Corrigido
+- [x] Reconhecimento (aquecimento) não entra mais no histórico, na "Última" nem em Minhas cargas do exercício de verdade; não conta como exercício do treino (pular não deixa incompleto, não perde os 50 pts); chip "R" estreito (a fila cabe numa linha).
+- [x] Volume: só compara treino inteiro com treino inteiro (Express com Express); chama "Peso total levantado" e na 1ª vez explica "soma de tudo que você levantou… da próxima vez a gente compara".
+- [x] Pirâmide sem histórico: a série 2+ mostra o peso que vai ser gravado (o da anterior) e avisa uma vez "Gravei 40 kg, igual à anterior. Subiu? corrige".
+- [x] "o máximo que der" (sem número): o ✓ pergunta "Quantas saíram?" em vez de gravar vazio (2º toque marca assim mesmo).
+- [x] Drop: o ⏱ antes das quedas não abre o descanso ("Agora as quedas, sem descansar…"); dica diz "toca no ⏱ só depois da última queda"; queda na 1ª vez sugere ~75% do peso; "↳ queda" não parece mais botão.
+- [x] "Aa" não apaga o que ela digitou (convite, login, 1º acesso) e diz o que o próximo toque faz; aviso some ao salvar a senha.
+- [x] Convite: "Repete a senha"; voltar do celular volta pra entrada; espera com "Aa", prazo ("normalmente em até 1 dia"), WhatsApp em destaque e "Sair" com "Ficar" em destaque; sem "anamnese/Mfit" ("sua ficha: umas perguntas rápidas…"); aviso de saúde sem "HIIT" ("treino intenso: tiros, pular, correr"); Início sem "20 perguntas".
+- [x] Pausa sozinha (10 min): solta a tela e para o relógio. Volta depois de 10+ min fora: véu "Pausei seu treino · faz uma série leve antes"; menos que isso: aviso fixo embaixo numa frase só.
+- [x] Cronômetro de exercício que acabou com o app fechado há mais de 1 min: pergunta "Fez tudo? / Fiz só X min" (antes marcava sozinho e inflava minutos/kcal).
+- [x] Voltar do Android = pausa dela (guarda o descanso, "Pausa de N min").
+- [x] Aba Treino: "Continuar Treino A · 2 séries feitas" (não "0/7").
+- [x] Registro do mês: peso e cintura ficam no rascunho junto das fotos.
+- [x] Aparelho ocupado: sempre com "Outro exercício (o Igor pediu…)" com sugestões; painel: "✎ Mudar o treino dela" direto no Responder.
+- [x] Feedback com texto dela leva pro Igor "⏸ N pausas · faltou: …" (sem texto não vira feedback pra responder).
+- [x] Evolução: "Treinos por mês" só com treino completo (igual ao desafio).
+- [x] Pontos: "Meta da semana batida (4 treinos completos na semana)" e "Desafio do mês (16 treinos completos no mês)".
+- [x] Último exercício: só "✓ Finalizar treino" (sem "Encerrar"); nos outros, "Parar o treino antes do fim".
+- [x] Dica técnica com 💡 (⚡ fica só pro Express); HIIT mostra "30s forte / 30s leve · eu apito a cada troca. Dá pra parar antes".
+- [x] HIIT/Tabata: acabou o descanso curto (≤30 s ou forte/leve), o próximo tiro começa sozinho.
+- [x] Card: HIIT do programa (circuito em casa) conta como cardio (sem oferta de "cardio de 20 min"); nome "HIIT · Bike", "HIIT · Em casa · circuito" na sessão, card e story.
+- [x] Início de quem treina em casa: atalho "🏠 Treino em casa".
+- [x] PDF: não abre o compartilhar se ela já saiu pro treino; HIIT de programa mantém os tempos do Igor (+ opção de casa); "1 exercício" no singular; programa curto continua na mesma folha; "sem peso" em todo exercício de tempo.
+- [x] Animação baixa uma vez só (antes 2 downloads em paralelo).
+- [x] Minhas cargas com "× reps"; histórico mostra "−2 reps" quando o kg é o mesmo e as reps caíram.
+- [x] "📝 anotar regulagem" por exercício (fica no celular e aparece sempre embaixo das séries).
+- [x] Bi-set: 2º toque rápido avisa "Toca de novo pra marcar essa série".
+- [x] Letra grande/zoom: coluna Nº e botão encolhem (kg não corta); abas A1/A2 uma embaixo da outra; rodapé da anamnese quebra em linhas com "Próxima" em cima; "↓ mais opções" dentro do rodapé (não cobre "Diabetes").
+- [x] Tema claro: placeholder #6b6b73 (5:1), bordas de campo/botão vazado/opções #8a8a93 (3:1).
+- [x] Demo: convite não herda nascimento/peso/altura da Ana.
+- [x] SW v80. Teste novo `tests/rodada-2111.mjs`; ajustados animacoes, convite, ocupado, volume, rodada-2410, rodada-2510b, rodada-2610b, rodada-3110.
+
+### Pendente
+- [ ] Circuito de casa (HIIT "Em casa · circuito"): fazer 1 de cada e repetir as voltas, ou 4 séries de cada? Regra de treino do Igor (hoje: séries seguidas de cada).
+- [ ] Liberar Vídeos/tira-dúvidas pra quem ainda espera liberação no convite: decisão do Igor (hoje não vê nada antes de liberar).
+- [ ] Aviso no celular quando o Igor libera o cadastro: precisa do push (fase 2).
+- [ ] Anotação de regulagem fica só no celular (trocou de celular, perde): subir pro banco precisa de tabela nova — decisão do Igor se vale.
+- [ ] Interrupções/o que faltou só chegam pro Igor quando ela escreve algo no feedback (sem texto, não entra na lista pra responder, pra não lotar o painel).
+- [ ] Seguem: publicar de novo a função `assistente`, campo de plano misto pro "Treinou presencial", foto do presencial "no aparelho", "Aparelho ocupado" em casa, migrações 021/022/023 se ainda não rodaram, WhatsApp, vídeos, fotos dos prêmios, capa do PDF clara, link definitivo da Kiwify, aviso no celular quando o Igor responde. Nada de banco novo nesta rodada.

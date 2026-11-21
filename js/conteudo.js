@@ -355,8 +355,8 @@ export function equivalentes(nome, alternativa, original, jaNoTreino = []) {
 
 // Mesmo exercício com nome escrito diferente ("Leg press 45" x "Leg Press 45°" x "leg press 45 pés mais fechados"):
 // a carga da segunda aparece na quinta. 2 = mesmo nome; 1 = variação de execução (pés, pegada, pausa); 0 = outro exercício.
-export const chaveEx = n => String(n || '').replace(/\s*·\s*reconhecimento$/i, '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, ' ').replace(/\bgraus?\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
-const OUTRO_EX = /\b(unilateral|unilat|uni|horizontal|vertical|inclinad\w*|declinad\w*|smith|maquina|halter\w*|barra|polia|cabo|sumo|frontal|bulgar\w*|articulad\w*|sentad\w*|em pe|deitad\w*|alternad\w*|corda|caneleira|elastico|kettlebell|anilha|banco|step|bola|livre|hack|pendulo|unipodal)\b/;
+export const chaveEx = n => String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[°º]/g, ' ').replace(/\bgraus?\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+const OUTRO_EX = /\b(unilateral|unilat|uni|horizontal|vertical|inclinad\w*|declinad\w*|smith|maquina|halter\w*|barra|polia|cabo|sumo|frontal|bulgar\w*|articulad\w*|sentad\w*|em pe|deitad\w*|alternad\w*|corda|caneleira|elastico|kettlebell|anilha|banco|step|bola|livre|hack|pendulo|unipodal|reconhecimento)\b/; // reconhecimento (aquecimento) nunca entra no histórico do exercício de verdade
 export function casaEx(atual, outro) {
   const a = chaveEx(atual), b = chaveEx(outro); if (!a || !b) return 0; if (a === b) return 2;
   const [c, l] = a.length < b.length ? [a, b] : [b, a]; if (!l.startsWith(c + ' ')) return 0;

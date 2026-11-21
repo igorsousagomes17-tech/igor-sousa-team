@@ -301,7 +301,7 @@ export const admin = {
   // Treinos com comentário dela OU nota baixa (≤ 4) / esforço no limite (≥ 9) sem texto: sem tempo de escrever,
   // a nota é o sinal. Os sem resposta vêm primeiro (nenhum some da lista por ser antigo).
   async feedbacks() {
-    const base = 'id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,exercicios_feitos,exercicios_total,duracao_s,profiles!sessoes_aluna_id_fkey(nome,plano)', comResp = base + ',resposta_aluna,resposta_aluna_em,resposta_aluna_lida_em';
+    const base = 'id,aluna_id,titulo,finalizada_em,esforco,nota,comentario,resposta_igor,exercicios_feitos,exercicios_total,duracao_s,profiles!sessoes_aluna_id_fkey(nome,plano)', comResp = base + ',resposta_aluna,resposta_aluna_em,resposta_aluna_lida_em';
     const sinal = 'comentario.not.is.null,nota.lte.4,esforco.gte.9';
     const busca = sel => Promise.all([
       sb.from('sessoes').select(sel).not('finalizada_em', 'is', null).or(sinal).is('resposta_igor', null).order('finalizada_em', { ascending: true }).limit(200),

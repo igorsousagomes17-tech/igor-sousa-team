@@ -22,7 +22,7 @@ const fechar = async p => { if (await p.locator('#rest-skip').count()) { await p
 { const { ctx, p } = await nova(); await entrar(p); await treino(p, 'B'); await passo(p, 'Abdu');
   ok(await p.locator('.dl[data-k="0"]').count() === 2, 'drop: quedas prescritas já aparecem');
   ok(await p.getAttribute('.dl[data-k="0"][data-d="0"] input[data-df="reps"]', 'placeholder') === '4', 'drop: reps da queda com o "4" do Igor de exemplo');
-  ok(/tira um pouco de peso e já faz mais 4 \+ 4/.test(await p.innerText('.bloco')), 'drop: explica o que é na própria tela');
+  ok(/tira (um pouco|uns 20-30%) d[eo] peso e já faz mais 4 \+ 4/.test(await p.innerText('.bloco')), 'drop: explica o que é na própria tela');
   await p.fill('.set[data-k="0"] input[data-f="kg"]', '40'); await p.fill('.set[data-k="0"] input[data-f="reps"]', '12+4+4');
   await p.fill('.dl[data-k="0"][data-d="0"] input[data-df="kg"]', '30'); await p.fill('.dl[data-k="0"][data-d="0"] input[data-df="reps"]', '4');
   await p.fill('.dl[data-k="0"][data-d="1"] input[data-df="kg"]', '20'); await p.fill('.dl[data-k="0"][data-d="1"] input[data-df="reps"]', '4');

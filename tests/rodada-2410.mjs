@@ -44,7 +44,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
 { const T = new Date('2026-10-24T10:00:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p); await abrirTreino(p, 'B');
   await p.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => window.__vis || 'visible' }); Object.defineProperty(document, 'hidden', { configurable: true, get: () => window.__vis === 'hidden' }); window.__vis = 'hidden'; document.dispatchEvent(new Event('visibilitychange')); });
   await p.clock.fastForward('40:00'); await p.evaluate(() => { window.__vis = 'visible'; document.dispatchEvent(new Event('visibilitychange')); }); await espera(p, 600);
-  const rel = await p.innerText('#clock'); ok(/^[0-2]:\d\d$/.test(rel), `40 min fora não contam (${rel})`); ok(/fora/i.test(await p.innerText('#toast')), 'avisa que não contou o tempo fora'); await ctx.close(); }
+  const rel = await p.innerText('#clock'); ok(/^[0-2]:\d\d$/.test(rel), `40 min fora não contam (${rel})`); ok(/fora/i.test(await p.innerText('#toast')) || /fora/i.test((await p.$('#m')) ? await p.innerText('#m') : ''), 'avisa que não contou o tempo fora (40 min: pausa e pergunta, 21/11)'); await ctx.close(); }
 
 // 4. Treino às 22h30 do dia 31 não conta no desafio de novembro
 { const T = new Date('2026-10-31T22:30:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p); await abrirTreino(p, 'B');
