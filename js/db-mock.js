@@ -20,7 +20,8 @@ let state = LS.get('state') || { logado: false, perfil: perfilDemo, sessoes: [
   evolucao: [{ data: daysAgo(92).toISOString().slice(0, 10), peso_kg: 68, cintura_cm: 77 }, { data: daysAgo(20).toISOString().slice(0, 10), peso_kg: 64.2, cintura_cm: 72 }], series: [] };
 const save = () => LS.set('state', state);
 
-export const sb = { auth: { onAuthStateChange() {}, async getSession() { return { data: { session: null } }; } }, from() { return { select() { return this; }, eq() { return this; }, async single() { return { data: state.perfil }; } }; }, rpc() { const p = Promise.resolve({ data: 'ana@gmail.com' }); return { then: (a, b) => p.then(a, b) }; } }; // igual ao Supabase de verdade: só .then, sem .catch
+export const sb = { auth: { onAuthStateChange(fn) { (window.__authCbs ||= []).push(fn); }, // testes disparam eventos (ex. PASSWORD_RECOVERY) com window.__authCbs
+ async getSession() { return { data: { session: null } }; } }, from() { return { select() { return this; }, eq() { return this; }, async single() { return { data: state.perfil }; } }; }, rpc() { const p = Promise.resolve({ data: 'ana@gmail.com' }); return { then: (a, b) => p.then(a, b) }; } }; // igual ao Supabase de verdade: só .then, sem .catch
 export async function sessionUser() { return state.logado ? { id: 'demo' } : null; }
 export async function login(email, senha) { await wait(400); if (!email) throw new Error('x'); if (state.convite && state.convite.email === String(email).trim().toLowerCase()) { state.logado = true; save(); return { id: 'demo' }; } if (senha === 'errada') throw new Error('Invalid login credentials'); if (senha === 'limite') throw new Error('Request rate limit reached'); state.logado = true; state.perfil.role = /igor/i.test(email) ? 'admin' : 'aluna'; state.perfil.nome = /igor/i.test(email) ? 'Igor Sousa' : 'Ana Paula (demo)'; save(); return { id: 'demo' }; }
 export async function logout() { state.logado = false; save(); }
