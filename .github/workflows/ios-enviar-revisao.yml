@@ -1,0 +1,32 @@
+# Manda a versão do iPhone (já enviada pelo "App do iPhone") pra revisão da Apple. Roda só quando alguém manda.
+name: iPhone - enviar pra revisão
+
+on:
+  workflow_dispatch:
+    inputs:
+      versao:
+        description: 'Versão (a mesma do build enviado, ex. 1.0.1)'
+        required: true
+      notas:
+        description: 'O que há de novo (texto da loja)'
+        required: true
+
+jobs:
+  revisao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: MWY235RM47
+      ASC_ISSUER_ID: a313878e-b8b7-415d-b21f-6b5bdce0856e
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enviar
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          VERSAO: ${{ inputs.versao }}
+          NOTAS: ${{ inputs.notas }}
+        run: |
+          python3 -m pip install --quiet pyjwt cryptography
+          printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/k.p8"
+          ASC_KEY_PATH="$RUNNER_TEMP/k.p8" python3 nativo/scripts/enviar_revisao_ios.py
+          rm -f "$RUNNER_TEMP/k.p8"
