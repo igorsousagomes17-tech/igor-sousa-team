@@ -1,0 +1,29 @@
+# Mostra ou libera os países onde o app do iPhone aparece na App Store. Roda só quando alguém manda.
+name: iPhone - países da loja
+
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: 'ver ou todos'
+        required: true
+        default: ver
+
+jobs:
+  paises:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: MWY235RM47
+      ASC_ISSUER_ID: a313878e-b8b7-415d-b21f-6b5bdce0856e
+    steps:
+      - uses: actions/checkout@v4
+      - name: Países
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          MODO: ${{ inputs.modo }}
+        run: |
+          python3 -m pip install --quiet pyjwt cryptography
+          printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/k.p8"
+          ASC_KEY_PATH="$RUNNER_TEMP/k.p8" python3 nativo/scripts/paises_ios.py
+          rm -f "$RUNNER_TEMP/k.p8"
