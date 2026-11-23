@@ -1515,7 +1515,18 @@ let redesenho = null;
 window.addEventListener('traducoes', () => { clearTimeout(redesenho); redesenho = setTimeout(() => { if (!rotaAtual || !routes[rotaAtual] || ['sessao', 'fim', 'assistente', 'login', 'entrada', 'convite'].includes(rotaAtual) || document.querySelector('#overlay .modal') || document.activeElement?.matches?.('input,textarea')) return; routes[rotaAtual](argAtual); }, 300); });
 // Alarme do descanso pelo servidor: no iPhone, com a tela apagada, é o único jeito de tocar e vibrar
 { const ps = new URLSearchParams(location.search), q = ps.get('strava'); if (q) { ps.delete('strava'); history.replaceState(null, '', location.pathname + (ps.toString() ? '?' + ps : '') + location.hash); setTimeout(() => { if (q === 'ok') { db.LS.set('strava_on', true); toast(t('Strava conectado ✓ O próximo treino que você finalizar vai pro seu Strava.')); } else toast(q === 'sem_permissao' ? t('Pra lançar os treinos, o Strava precisa da permissão de publicar. Tenta de novo e deixa essa opção marcada.') : t('Não deu pra conectar o Strava agora. Tenta de novo.'), true); }, 1200); } }
-if (!DEMO) ligarAvisoRemoto({
+// App das lojas: aviso do fim do descanso/tempo é notificação do próprio celular (toca com ela no WhatsApp ou com a tela
+// bloqueada). O push do navegador não existe dentro do app das lojas: antes, fora do app, não chegava nada (Nicolle 23/11).
+const LN = NATIVO && window.Capacitor?.Plugins?.LocalNotifications;
+const nidLocal = s => (Math.abs([...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)) % 2000000000) || 1;
+if (LN) ligarAvisoRemoto({
+  local: true,
+  agendar: async d => { try { let p = await LN.checkPermissions(); if (p.display !== 'granted') p = await LN.requestPermissions(); if (p.display !== 'granted') return false;
+    await LN.schedule({ notifications: [{ id: nidLocal(d.id), title: d.titulo, body: d.corpo, schedule: { at: new Date(d.em), allowWhileIdle: true } }] }); return true; } catch { return false; } },
+  cancelar: id => LN.cancel({ notifications: [{ id: nidLocal(id) }] }).catch(() => {}),
+  inscrever: () => {}
+});
+else if (!DEMO) ligarAvisoRemoto({
   agendar: d => (S.perfil && S.perfil.role !== 'admin' ? db.push.descanso(d) : Promise.resolve(false)),
   cancelar: id => db.push.cancelarDescanso(id).catch(() => {}),
   inscrever: () => { db.LS.del('pushEm'); ativarPush(); }
