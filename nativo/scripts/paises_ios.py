@@ -43,6 +43,13 @@ off = [t for t in lista if not t['attributes'].get('available')]
 print(f'disponível em {len(on)} países:', ' '.join(sorted(on)))
 print(f'fora em {len(off)} países', 'GBR fora' if any(t['relationships']['territory']['data']['id']=='GBR' for t in off) else '')
 if MODO == 'todos':
+    ok, falhou = [], []
     for t in off:
-        chamar('PATCH', f"/v1/territoryAvailabilities/{t['id']}", {'data': {'type': 'territoryAvailabilities', 'id': t['id'], 'attributes': {'available': True}}})
-    print(f'liberado em mais {len(off)} países')
+        pais = t['relationships']['territory']['data']['id']
+        try:
+            chamar('PATCH', f"/v1/territoryAvailabilities/{t['id']}", {'data': {'type': 'territoryAvailabilities', 'id': t['id'], 'attributes': {'available': True}}})
+            ok.append(pais)
+        except urllib.error.HTTPError:
+            falhou.append(pais)
+    print(f'liberado em mais {len(ok)} países')
+    print(f'não liberou em {len(falhou)}:', ' '.join(sorted(falhou)))
