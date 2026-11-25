@@ -40,7 +40,7 @@ const base = { mes: '2026-12-01', treinos: [
   ] },
 ] };
 const autorizados = ['Agachamento goblet com halter', 'Búlgaro com halteres', 'Afundo com halteres', 'Passada com halteres', 'Agachamento sumô com halter',
-  'Remada curvada com halter', 'Remada serrote com halter', 'Rosca direta com halteres', 'Rosca martelo com halteres', 'Agachamento Hack', 'Cadeira flexora', 'Extensora unilateral', 'Dead bug', 'Mobilidade de tornozelo']
+  'Remada curvada com halter', 'Remada serrote com halter', 'Rosca direta com halteres', 'Rosca martelo com halteres', 'Agachamento Hack', 'Cadeira flexora', 'Extensora unilateral', 'Dead bug', 'Mobilidade de tornozelo', 'Flexão de braço']
   .map(nome => ({ nome, origem: 'app' }));
 
 // Aluna de academia de prédio: só halter, prancha, abdominal; o histórico do Mfit dela não tem máquina
@@ -52,6 +52,10 @@ ok(!nomesP.some(n => A.equipamento(n) === 'maquina'), 'aluna de prédio: nenhuma
 ok(A.conferirAcrescimos(rp.treinos, ctxPredio).length === 0, 'aluna de prédio: tudo é dela ou acréscimo com halter autorizado');
 ok(nomesP.includes('Agachamento goblet com halter') && nomesP.includes('Búlgaro com halteres'), 'aluna de prédio: manteve os exercícios que ela já faz');
 ok(!nomesP.includes('Agachamento Hack'), 'Hack é autorizado mas é máquina: não entra como novo');
+ok(ctxPredio.pode('Mobilidade de tornozelo').ok && ctxPredio.pode('Dead bug').ok, 'mobilidade e abdômen sem aparelho autorizados entram como novidade (Igor, 25/11)');
+ok(!ctxPredio.pode('Flexão de braço').ok, 'peso do corpo fora de mobilidade/abdômen continua não entrando novo');
+const semMob = A.montarDaAluna(base, { id: 'u-sem-mob' }, A.contexto({ historico: ['Prancha', 'Abdominal infra', 'Agachamento goblet com halter'], autorizados }));
+ok(!semMob.avisos.some(a => /sem mobilidade/.test(a)), 'aluna sem mobilidade no histórico ganha mobilidade nova');
 
 // Aluna de academia comum, que já faz máquinas
 const comum = { id: 'u-comum', nome: 'Aluna Comum' };

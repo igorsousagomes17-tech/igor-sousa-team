@@ -5,8 +5,8 @@
 // Regras do Igor que este arquivo segue:
 // - Cada aluna parte do que ela já faz: os exercícios dos últimos 4-5 treinos dela no Mfit (histórico)
 //   ficam. Muita gente treina em academia de prédio, então exercício diferente ela não consegue fazer.
-// - Acrescentar só com halter (nunca máquina) e só exercício autorizado: os que ele cadastrou no Mfit
-//   ou os que estão na biblioteca do app.
+// - Acrescentar só com halter (nunca máquina), ou mobilidade/abdômen sem aparelho, e só exercício autorizado:
+//   os que ele cadastrou no Mfit ou os que estão na biblioteca do app.
 // - Amigas não podem ficar com o treino uma a cara da outra (limite de parecido menor entre amigas).
 // - Fechamento do treino no sábado ou domingo, treino novo começa na segunda.
 // - Nunca duas máquinas num bi-set, e o exercício B do bi-set com halter.
@@ -53,12 +53,13 @@ export function grupo(nome) {
 // ---------- o que ela pode fazer ----------
 // historico: nomes dos exercícios dos últimos 4-5 treinos dela no Mfit (só na memória, na hora de montar)
 // autorizados: [{ nome, origem: 'mfit' | 'app' }] (cadastrados pelo Igor no Mfit + biblioteca do app)
-// extras: que equipamento pode ser ACRESCENTADO (o Igor disse: só halter)
-export function contexto({ historico = [], autorizados = [], extras = ['halter'] } = {}) {
+// extras: que equipamento pode ser ACRESCENTADO (o Igor disse: halter)
+// semAparelho: mobilidade e abdômen sem aparelho também podem entrar novos (Igor, 25/11)
+export function contexto({ historico = [], autorizados = [], extras = ['halter'], semAparelho = true } = {}) {
   const hist = new Map(historico.map(n => [chave(n), n]));
   const aut = new Map(autorizados.map(a => [chave(a.nome ?? a), a.nome ?? a]));
   return {
-    hist, aut, extras: new Set(extras),
+    hist, aut, extras: new Set(extras), semAparelho,
     temNoHistorico: n => hist.has(chave(n)),
     // ok = ela já faz, ou é autorizado e o equipamento pode ser acrescentado (halter)
     pode(n) {
@@ -66,7 +67,10 @@ export function contexto({ historico = [], autorizados = [], extras = ['halter']
       if (hist.has(k)) return { ok: true, por: 'historico' };
       if (!aut.has(k)) return { ok: false, por: 'fora da base do Mfit e da biblioteca do app' };
       const eq = equipamento(n);
-      return this.extras.has(eq) ? { ok: true, por: 'acrescimo' } : { ok: false, por: eq === 'maquina' ? 'máquina (ela pode não ter)' : `${eq.replace('_', ' ')} (só halter pode entrar novo)` };
+      if (this.extras.has(eq)) return { ok: true, por: 'acrescimo' };
+      // Igor (25/11): mobilidade e abdômen sem aparelho também podem entrar como novidade
+      if (eq === 'peso_corpo' && this.semAparelho && ['Mobilidade', 'Core'].includes(grupo(n))) return { ok: true, por: 'acrescimo' };
+      return { ok: false, por: eq === 'maquina' ? 'máquina (ela pode não ter)' : `${eq.replace('_', ' ')} (só halter, mobilidade ou abdômen sem aparelho entram novos)` };
     },
   };
 }
