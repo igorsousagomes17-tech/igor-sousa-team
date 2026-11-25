@@ -1,5 +1,6 @@
 // Painel do Igor
 import { $, $$, esc, toast, overlay, closeOverlay, fmtData, campoSenha, traduzErro } from './ui.js';
+import * as ATU from './atualizacao.js';
 import { construtor, montarExercicios, montarModelos, hojeStr as hojeIso, somaFim, somaDias, brDia, camposDatas, ligarDatas } from './biblioteca.js';
 
 const C = window.ISTEAM_CONFIG;
@@ -30,10 +31,11 @@ const ic = {
   alerta: '<path d="M12 3 2 20h20z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
   libT: '<path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="m16 5 3.5-1 3 15.5-3.5 1z"/>',
   libE: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M10 12.5v5l4-2.5z"/>',
+  ciclo: '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v4h-4"/><path d="M9 12l2 2 4-4"/>',
   seta: '<path d="m9 5 7 7-7 7"/>'
 };
 const svg = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ic[k]}</svg>`;
-let secao = 'inicio', modo = null, vtab = 'pend', filtroA = 'todas'; // seção aberta do painel; modo = o que acontece ao tocar numa aluna da lista; filtroA = pílula da lista de alunas
+let secao = 'inicio', modo = null, vtab = 'pend', filtroA = 'todas', loteAtu = null; // seção aberta do painel; modo = o que acontece ao tocar numa aluna da lista; filtroA = pílula da lista de alunas
 
 export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   db = _db;
@@ -92,6 +94,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
       <div class="grid2">
         <button class="tile" id="t-modelos"><span class="ico">${svg('libT')}</span><b>Biblioteca de treinos</b></button>
         <button class="tile" id="t-exercicios"><span class="ico">${svg('libE')}</span><b>Biblioteca de exercícios</b></button>
+        <button class="tile" id="t-lote"><span class="ico">${svg('ciclo')}</span><b>Atualização do mês</b><span class="muted small" style="align-self:flex-start">lote da semana</span></button>
         <button class="tile" id="t-treino"><span class="ico">${svg('treino')}</span><b>Montar treino da aluna</b></button>
         <button class="tile" id="t-ficha"><span class="ico">${svg('anam')}</span><b>Anamneses</b>${comSaude.length ? `<span class="pill warn" style="align-self:flex-start">${comSaude.length} ⚠ saúde</span>` : ''}</button>
         <button class="tile" id="t-postural"><span class="ico">${svg('post')}</span><b>Avaliação postural</b></button>
@@ -137,6 +140,75 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     <div class="row" style="gap:8px"><button class="pill big-pill ${vtab === 'pend' ? 'on' : ''}" data-vtab="pend">Pendentes (${pendentes.length})</button><button class="pill big-pill ${vtab === 'res' ? 'on' : ''}" data-vtab="res">Resolvidas (${resolvidas.length})</button></div>
     <div class="card">${lista.length ? lista.map(v => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(v.nome)}</b><span>${esc(v.titulo || 'Treino')} · ${quando(v)}</span></div><div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" style="flex:1;white-space:nowrap" data-treino="${v.aluna_id}" data-n="${esc(v.nome)}" data-renova="1">Renovar</button><button class="btn ghost sm" style="flex:1;white-space:nowrap" data-visto="${v.id}" data-v="${v.visto_em ? 0 : 1}">${v.visto_em ? 'Reabrir' : 'Já resolvi'}</button></div></div>`).join('') : `<p class="muted">${vtab === 'pend' ? 'Nenhum treino vencendo agora ✓' : 'Nada resolvido ainda.'}</p>`}</div>`;
   }
+  // Atualização mensal automática (ramo atualizacao-automatica, não lançado). Fecha sábado/domingo, começa segunda.
+  const telaLote = () => `${topo('Atualização do mês')}<div id="lote" class="painel-sec"><p class="muted">Carregando…</p></div>`;
+  async function carregarLote() {
+    const el = $('#lote'); if (!el) return;
+    const hoje = hojeIso(), L = ATU.loteDaSemana(hoje), dd = d => brDia(d).slice(0, 5);
+    let lote = null, amigas = [], perfis = [];
+    try { [lote, amigas, perfis] = await Promise.all([db.admin.atu.lote(L.fechamento), db.admin.atu.amigas(), db.admin.atu.perfis()]); }
+    catch (e) { el.innerHTML = `<p class="err">Não carregou: ${esc(traduzErro(e))}</p>`; return; }
+    if (lote?.semMigracao) { el.innerHTML = `<div class="card"><p><b>Falta preparar o banco.</b></p><p class="muted small">A tela da atualização automática precisa da migração 027 rodada no Supabase. Ela só vai junto com o lançamento.</p></div>`; return; }
+    loteAtu = lote;
+    const nomeDe = id => alunas.find(a => a.id === id)?.nome || lote?.alunas.find(x => x.aluna_id === id)?.nome || 'aluna';
+    const perfil = new Map(perfis.map(p => [p.id, p]));
+    const parAmiga = new Set(amigas.map(p => [...p].sort().join('|')));
+    // Quem entra: quem tem rascunho no lote, ou (sem lote ainda) quem tem o treino fechando até o domingo
+    const linhas = lote?.alunas?.length ? lote.alunas : venc.filter(v => alunas.find(a => a.id === v.aluna_id)?.ativa && ATU.entraNoLote(v.fim, L)).map(v => ({ aluna_id: v.aluna_id, fim_anterior: v.fim, ...(() => { const pg = ATU.pagamento({ nome: nomeDe(v.aluna_id), pago_ate: perfil.get(v.aluna_id)?.pago_ate }, { hoje }); return { pagamento: pg.status, pagamento_obs: pg.por }; })() }));
+    const emAberto = linhas.filter(x => x.pagamento && x.pagamento !== 'pago');
+    const alertas = linhas.filter(x => x.parecido_pct != null && x.parecido_pct > (parAmiga.has([x.aluna_id, x.parecido_com].sort().join('|')) ? ATU.LIMITE_AMIGAS : ATU.LIMITE_GERAL));
+    const aprovadas = linhas.filter(x => x.aprovado && !x.no_app_em);
+    const pill = x => x.pagamento === 'pago' ? `<span class="pill good">pago · ${esc(x.pagamento_obs || '')}</span>` : x.pagamento === 'pendente' ? '<span class="pill warn">pagamento em aberto</span>' : x.pagamento ? '<span class="pill warn">não achei o pagamento</span>' : '';
+    const igual = x => x.parecido_pct == null ? '' : `<span class="pill ${alertas.includes(x) ? 'warn' : ''}">${x.parecido_pct}% igual${x.parecido_com ? ' a ' + esc(nomeDe(x.parecido_com).split(' ')[0]) : ''}${parAmiga.has([x.aluna_id, x.parecido_com].sort().join('|')) ? ' (amiga)' : ''}</span>`;
+    el.innerHTML = `<p class="muted">Fecha <b>${ATU.diaSemana(L.fechamento)} ${dd(L.fechamento)}</b>, o treino novo começa <b>segunda ${dd(L.inicio)}</b> e vence domingo ${dd(L.fim)}. Nada vai pras alunas sem você aprovar.</p>
+      <div class="row wrap" style="gap:6px;margin:8px 0"><span class="pill">${pl(linhas.length, 'aluna no lote', 'alunas no lote')}</span>${emAberto.length ? `<span class="pill warn">${pl(emAberto.length, 'pagamento pra conferir', 'pagamentos pra conferir')}</span>` : ''}${alertas.length ? `<span class="pill warn">${pl(alertas.length, 'parecida demais', 'parecidas demais')}</span>` : ''}<span class="pill good">${pl(aprovadas.length, 'aprovada', 'aprovadas')}</span></div>
+      ${emAberto.length ? `<div class="card"><p><b>Pagamento pra você conferir</b></p><p class="muted small">Só aviso: o treino delas sobe igual e ninguém recebe mensagem.</p>${emAberto.map(x => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(nomeDe(x.aluna_id))}</b><span>${esc(x.pagamento_obs || '')}</span></div></div>`).join('')}</div>` : ''}
+      <div class="row" style="gap:8px;margin:10px 0"><button class="btn ghost sm" id="lt-amigas" style="flex:1">Amigas (${amigas.length})</button>${lote?.alunas?.length ? `<button class="btn sm" id="lt-pub" style="flex:1" ${aprovadas.length ? '' : 'disabled'}>Publicar ${aprovadas.length || ''} no app</button>` : ''}</div>
+      <div class="card">${linhas.length ? linhas.map(x => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(nomeDe(x.aluna_id))}</b><span>${x.fim_anterior ? `treino atual vence ${ATU.diaSemana(x.fim_anterior)} ${dd(x.fim_anterior)}` : 'sem treino atual'}${perfil.get(x.aluna_id)?.tambem_mfit === false ? ' · só no app' : ' · app e Mfit'}</span></div>
+        <div class="row wrap" style="gap:4px;margin-top:6px">${pill(x)}${igual(x)}${x.avisos?.length ? `<span class="pill warn">${pl(x.avisos.length, 'aviso', 'avisos')}</span>` : ''}${x.no_app_em ? '<span class="pill good">no app ✓</span>' : ''}${x.no_mfit_em ? '<span class="pill good">no Mfit ✓</span>' : x.treinos ? '<span class="pill">falta o Mfit</span>' : ''}</div>
+        ${x.treinos ? `<div class="row" style="gap:8px;margin-top:8px"><button class="btn ghost sm" style="flex:1" data-lt-ver="${x.aluna_id}">Ver rascunho</button><button class="btn ${x.aprovado ? 'ghost ' : ''}sm" style="flex:1" data-lt-ok="${x.aluna_id}" data-v="${x.aprovado ? 0 : 1}" ${x.no_app_em ? 'disabled' : ''}>${x.aprovado ? 'Tirar aprovação' : 'Aprovar'}</button></div>` : '<p class="muted small" style="margin-top:6px">Rascunho ainda não montado (eu monto lendo os últimos treinos dela no Mfit).</p>'}</div>`).join('') : '<p class="muted">Ninguém fecha o treino até domingo ✓</p>'}</div>`;
+    $$('[data-lt-ver]').forEach(b => b.onclick = () => verRascunho(linhas.find(x => x.aluna_id === b.dataset.ltVer), nomeDe));
+    $$('[data-lt-ok]').forEach(b => b.onclick = async () => { b.disabled = true; try { await db.admin.atu.aprovar(lote.id, b.dataset.ltOk, b.dataset.v === '1'); carregarLote(); } catch (e) { toast(traduzErro(e), true); b.disabled = false; } });
+    const ba = $('#lt-amigas'); if (ba) ba.onclick = () => telaAmigas(amigas);
+    const bp = $('#lt-pub'); if (bp) bp.onclick = () => publicarLote(lote, aprovadas, nomeDe);
+  }
+  function verRascunho(x, nomeDe) {
+    if (!x) return;
+    const app = ATU.paraApp(x.treinos, null);
+    overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;margin-top:20px">
+      <div class="row between"><h2>${esc(nomeDe(x.aluna_id))}</h2><button class="btn ghost sm" id="c" style="width:auto">Fechar</button></div>
+      ${x.avisos?.length ? `<div class="card">${x.avisos.map(a => `<p class="small">⚠ ${esc(a)}</p>`).join('')}</div>` : '<p class="muted small">Sem aviso: tudo que entrou ela já faz ou é com halter autorizado.</p>'}
+      ${x.treinos.map(t => `<div class="card"><b>${esc(t.letra)} · ${esc(t.nome)}</b>${t.exercicios.map((e, i) => `<div class="small" style="padding:4px 0;border-bottom:1px solid var(--line)">${i + 1}. ${esc(e.nome)} · ${esc(String(e.series))}x${esc(String(e.reps))}${e.metodo && e.metodo !== 'normal' ? ' · ' + esc(e.metodo) : ''}${e.biset_com ? ' · <span class="pill">bi-set</span>' : ''}${e.novo ? ' <span class="pill on">novo</span>' : ''}</div>`).join('')}</div>`).join('')}
+      <p class="muted small">No Mfit sobe com os mesmos nomes e a mesma ordem.</p>
+      <textarea class="input" readonly rows="6" style="font-family:monospace;font-size:12px">${esc(ATU.paraTexto(app))}</textarea>
+    </div></div>`);
+    $('#c').onclick = closeOverlay;
+  }
+  function telaAmigas(amigas) {
+    const ops = [...alunas].filter(a => a.ativa).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(a => `<option value="${a.id}">${esc(a.nome)}</option>`).join('');
+    const nome = id => alunas.find(a => a.id === id)?.nome || 'aluna';
+    overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px;margin-top:20px">
+      <div class="row between"><h2>Amigas</h2><button class="btn ghost sm" id="c" style="width:auto">Fechar</button></div>
+      <p class="muted small">Entre amigas o treino pode ter no máximo ${ATU.LIMITE_AMIGAS}% igual (entre as outras, ${ATU.LIMITE_GERAL}%).</p>
+      ${amigas.map(([a, b]) => `<div class="linhacard"><span>${esc(nome(a))} + ${esc(nome(b))}</span><button class="btn ghost sm" style="width:auto" data-am-x="${a}|${b}">tirar</button></div>`).join('') || '<p class="muted">Nenhum par marcado ainda.</p>'}
+      <label class="l" for="am1">Marcar novo par</label><select class="input" id="am1"><option value="">Aluna</option>${ops}</select><select class="input" id="am2"><option value="">Amiga dela</option>${ops}</select>
+      <button class="btn sm" id="am-ok">Marcar como amigas</button>
+    </div></div>`);
+    $('#c').onclick = () => { closeOverlay(); carregarLote(); };
+    $$('[data-am-x]').forEach(b => b.onclick = async () => { const [a, c] = b.dataset.amX.split('|'); try { await db.admin.atu.marcarAmigas(a, c, false); closeOverlay(); telaAmigas(amigas.filter(p => p.join('|') !== b.dataset.amX)); } catch (e) { toast(traduzErro(e), true); } });
+    $('#am-ok').onclick = async () => { const a = $('#am1').value, c = $('#am2').value; if (!a || !c || a === c) return toast('Escolhe duas alunas diferentes.', true);
+      try { await db.admin.atu.marcarAmigas(a, c, true); closeOverlay(); telaAmigas([...amigas.filter(p => p.slice().sort().join() !== [a, c].sort().join()), [a, c].sort()]); } catch (e) { toast(traduzErro(e), true); } };
+  }
+  function publicarLote(lote, aprovadas, nomeDe) {
+    overlay(`<div class="modal" id="m"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:10px"><h2>Publicar no app?</h2>
+      <p class="muted">${pl(aprovadas.length, 'aluna aprovada recebe', 'alunas aprovadas recebem')} o treino novo no app, começando segunda ${brDia(lote.inicio).slice(0, 5)}: ${esc(aprovadas.map(x => nomeDe(x.aluna_id).split(' ')[0]).join(', '))}.</p>
+      <p class="muted small">No Mfit eu subo o mesmo treino depois, aluna por aluna.</p>
+      <div class="row"><button class="btn ghost sm" id="c" style="flex:1">Cancelar</button><button class="btn sm" id="ok" style="flex:1">Publicar</button></div></div></div>`);
+    $('#c').onclick = closeOverlay;
+    $('#ok').onclick = async () => { $('#ok').disabled = true; let n = 0;
+      for (const x of aprovadas) { try { await db.admin.atu.publicarNoApp(lote, x, ATU.paraApp(x.treinos, null)); n++; } catch (e) { toast(`${nomeDe(x.aluna_id)}: ${traduzErro(e)}`, true); } }
+      closeOverlay(); recarregar = true; toast(`${pl(n, 'treino publicado', 'treinos publicados')} no app ✓`); carregarLote(); };
+  }
   const telaExercicios = () => `${topo('Biblioteca de exercícios')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
   const telaModelos = () => `${topo('Biblioteca de treinos')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
   function telaDuvidas() {
@@ -144,7 +216,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   }
 
   function desenhar() {
-    const corpo = { inicio: telaInicio, alunas: telaAlunas, atencao: telaAtencao, feedbacks: telaFeedbacks, duvidas: telaDuvidas, atualizacoes: telaAtualizacoes, exercicios: telaExercicios, modelos: telaModelos }[secao] || telaInicio;
+    const corpo = { inicio: telaInicio, alunas: telaAlunas, atencao: telaAtencao, feedbacks: telaFeedbacks, duvidas: telaDuvidas, atualizacoes: telaAtualizacoes, lote: telaLote, exercicios: telaExercicios, modelos: telaModelos }[secao] || telaInicio;
     render(`<div class="view noTabs fx painel">${corpo()}</div>`);
     window.scrollTo(0, 0); ligar();
   }
@@ -187,6 +259,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     $$('[data-pfoto]').forEach(b => b.onclick = async () => { const url = await db.fotoUrl(b.dataset.pfoto).catch(() => null); if (!url) return toast('Não consegui abrir a foto agora.', true); overlay(`<div class="modal" id="pm"><div class="box" style="padding:12px;display:flex;flex-direction:column;gap:10px"><b>${esc(b.dataset.pnome)} · treino presencial</b><img src="${url}" alt="" style="width:100%;max-height:70vh;object-fit:contain;border-radius:10px"><button class="btn ghost sm" id="pmX">Fechar</button></div></div>`); $('#pmX').onclick = closeOverlay; $('#pm').addEventListener('click', e => { if (e.target.id === 'pm') closeOverlay(); }); });
     $$('[data-lida]').forEach(b => b.onclick = async () => { const f = fb.find(x => String(x.id) === b.dataset.lida); try { await db.admin.marcarRespostaLida(b.dataset.lida); if (f) f.resposta_aluna_lida_em = new Date().toISOString(); const i = delasNovas.indexOf(f); if (i >= 0) delasNovas.splice(i, 1); desenhar(); } catch (e) { toast(e.message, true); } });
     if (secao === 'duvidas') carregarDuvidas();
+    on('#t-lote', () => abrir('lote')); if (secao === 'lote') carregarLote();
     on('#t-exercicios', () => abrir('exercicios')); on('#t-modelos', () => abrir('modelos'));
     if (secao === 'exercicios') montarExercicios($('#bib'), db);
     if (secao === 'modelos') montarModelos($('#bib'), db, { aoEnviar: () => { recarregar = true; } });

@@ -337,6 +337,29 @@ export const admin = {
   },
   // Atualizações (igual ao Mfit): último treino de cada aluna com o vencimento. visto_em = "marcar como lida"
   async vencimentos() { const { data, error } = await sb.from('planos').select('id,aluna_id,mes,titulo,inicio,fim,visto_em').order('mes', { ascending: false }); if (error) throw error; const vistas = new Set(); return (data || []).filter(p => !vistas.has(p.aluna_id) && vistas.add(p.aluna_id)); },
+  // Atualização mensal automática (migração 027, ainda não aplicada). semTabela = a migração não rodou.
+  atu: {
+    semTabela: e => /42P01|PGRST20[05]|does not exist|schema cache|Could not find/i.test(`${e?.code || ''} ${e?.message || ''}`),
+    async lote(fechamento) {
+      const { data: l, error } = await sb.from('lotes').select('*').eq('fechamento', fechamento).maybeSingle();
+      if (error) { if (admin.atu.semTabela(error)) return { semMigracao: true }; throw error; }
+      if (!l) return null;
+      const { data: linhas, error: e2 } = await sb.from('lote_alunas').select('*').eq('lote_id', l.id); if (e2) throw e2;
+      return { ...l, alunas: linhas || [] };
+    },
+    async perfis() { // até quando está pago + se também sobe no Mfit
+      const { data, error } = await sb.from('profiles').select('id,nome,pago_ate,tambem_mfit').eq('role', 'aluna');
+      if (error) { if (semColuna(error, 'pago_ate') || semColuna(error, 'tambem_mfit')) return []; throw error; } return data || [];
+    },
+    async amigas() { const { data, error } = await sb.from('amigas').select('aluna_a,aluna_b'); if (error) { if (admin.atu.semTabela(error)) return []; throw error; } return (data || []).map(x => [x.aluna_a, x.aluna_b]); },
+    async marcarAmigas(a, b, on) { const [x, y] = [a, b].sort(); const q = on ? sb.from('amigas').upsert({ aluna_a: x, aluna_b: y }) : sb.from('amigas').delete().eq('aluna_a', x).eq('aluna_b', y); const { error } = await q; if (error) throw error; },
+    async aprovar(loteId, alunaId, aprovado) { const { error } = await sb.from('lote_alunas').update({ aprovado }).eq('lote_id', loteId).eq('aluna_id', alunaId); if (error) throw error; },
+    // Publica no app o rascunho aprovado: plano novo do mês do início, começando na segunda e vencendo no domingo
+    async publicarNoApp(lote, linha, treinosApp) {
+      await admin.salvarPlano(linha.aluna_id, lote.inicio.slice(0, 7) + '-01', treinosApp, { inicio: lote.inicio, fim: lote.fim });
+      const { error } = await sb.from('lote_alunas').update({ no_app_em: new Date().toISOString() }).eq('lote_id', lote.id).eq('aluna_id', linha.aluna_id); if (error) throw error;
+    },
+  },
   async marcarVisto(planoId, visto) { const { error } = await sb.from('planos').update({ visto_em: visto ? new Date().toISOString() : null }).eq('id', planoId); if (error) throw error; },
   async publicarRecado(texto, midia_url) { const { error } = await sb.from('recados').insert({ texto, midia_url }); if (error) throw error; },
   async setAtiva(id, ativa) { const { error } = await sb.from('profiles').update({ ativa }).eq('id', id); if (error) throw error; },

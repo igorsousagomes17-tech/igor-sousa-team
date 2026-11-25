@@ -69,3 +69,8 @@ registro do mês com 1 foto salva o peso; aviso da arte do story no Android): `W
 `tests/rodada-2111.mjs` testa a rodada 21/11 ("Aa" sem apagar o que ela digitou, convite com "Repete a senha" e voltar do celular, reconhecimento fora da contagem e do histórico, chip R estreito,
 drop sem descanso antes das quedas, "Outro exercício" no Aparelho ocupado, anotação de regulagem, último exercício só com Finalizar, HIIT com forte/leve à vista,
 20 min fora = véu com relógio parado, atalho Treino em casa, Pontos com a meta da semana e o desafio): `W=360 OUT=/tmp/shots node tests/rodada-2111.mjs`.
+
+`tests/atualizacao.mjs` testa o motor da atualização mensal automática (ramo `atualizacao-automatica`, não lançado), sem navegador:
+fecha no sábado/domingo e começa na segunda, aluna de academia de prédio não recebe máquina, acréscimo só com halter autorizado,
+bi-set sem duas máquinas e com o B de halter, mantém o mês passado, amigas abaixo de 40% igual, pagamento só avisa: `node tests/atualizacao.mjs`.
+`tests/atualizacao-painel.mjs` testa a tela "Atualização do mês" do painel no modo demo: `OUT=/tmp/shots node tests/atualizacao-painel.mjs`.

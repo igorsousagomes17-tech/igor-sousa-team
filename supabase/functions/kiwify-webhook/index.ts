@@ -23,15 +23,27 @@ Deno.serve(async (req) => {
   const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
   const existente = list?.users.find(x => x.email === email);
 
+  // Até quando está pago (migração 027): a próxima cobrança da assinatura, ou 30 dias a partir de hoje.
+  // A atualização mensal confere isso antes de cada lote e só avisa o Igor de quem está em aberto.
+  const sub = body.Subscription || body.subscription || {};
+  const prox = String(sub.next_payment || sub.charges?.future?.[0]?.charge_date || '').slice(0, 10);
+  const pagoAte = /^\d{4}-\d{2}-\d{2}$/.test(prox) ? prox : new Date(Date.now() + 30 * 86400e3).toISOString().slice(0, 10);
+  // Sem a coluna pago_ate (migração 027 não rodada), grava como antes
+  const atualiza = async (id: string, campos: Record<string, unknown>) => {
+    const { error } = await admin.from('profiles').update({ ...campos, pago_ate: pagoAte }).eq('id', id);
+    if (error && /pago_ate/.test(error.message || '') && Object.keys(campos).length) await admin.from('profiles').update(campos).eq('id', id);
+  };
+
   if (aprovado) {
     if (existente) {
-      await admin.from('profiles').update({ ativa: true }).eq('id', existente.id);
+      await atualiza(existente.id, { ativa: true });
       await admin.from('pontos_log').insert({ aluna_id: existente.id, motivo: 'renovacao', pontos: 50, ref: new Date().toISOString().slice(0, 7) }).then(() => {});
     } else {
       const senha = whatsapp.length >= 8 ? whatsapp : Math.random().toString(36).slice(2, 10);
       const { data: nu, error } = await admin.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { nome } });
       if (error) return new Response(error.message, { status: 500 });
       await admin.from('profiles').insert({ id: nu.user.id, nome, whatsapp, role: 'aluna' });
+      await atualiza(nu.user.id, {});
       // TODO fase 2: disparar WhatsApp automático com o acesso. Por ora, aparece no painel do Igor em "acesso".
     }
   } else if (cancelado && existente) {
