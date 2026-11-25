@@ -4,9 +4,9 @@
 --
 -- O que guarda:
 --   bases_mensais     o treino base do mês, com vagas e opções de exercício por vaga
---   assinaturas       a combinação de cada aluna (o que ela recebeu), pra manter 70-80% no mês seguinte
+--   assinaturas       o que cada aluna recebeu, pra NÃO repetir no mês seguinte
 --   amigas            pares de alunas que são amigas (limite de parecido menor entre elas)
---   lotes / lote_alunas  o lote de cada semana (fecha sábado/domingo, começa segunda) e o rascunho de cada aluna
+--   lotes / lote_alunas  o lote de cada semana (revisa no fim de semana; cada aluna começa no dia em que o treino dela vence) e o rascunho de cada aluna
 --   profiles.pago_ate, profiles.tambem_mfit
 --   biblioteca_exercicios.equipamento (halter, máquina...)
 -- O histórico do Mfit de cada aluna é lido só na hora de montar o treino dela e não é guardado aqui.
@@ -58,9 +58,8 @@ create table if not exists amigas (
 
 create table if not exists lotes (
   id uuid primary key default gen_random_uuid(),
-  fechamento date not null unique check (extract(isodow from fechamento) in (6, 7)), -- sábado ou domingo
-  inicio date not null check (extract(isodow from inicio) = 1),                      -- segunda
-  fim date not null,
+  fechamento date not null unique check (extract(isodow from fechamento) in (6, 7)), -- fim de semana em que o Igor revisa
+  ate date not null,                   -- entram as alunas cujo treino vence até esse dia (domingo seguinte)
   base_id uuid references bases_mensais(id),
   status text not null default 'rascunho' check (status in ('rascunho', 'revisado', 'publicado')),
   created_at timestamptz default now(),
@@ -70,7 +69,10 @@ create table if not exists lotes (
 create table if not exists lote_alunas (
   lote_id uuid not null references lotes(id) on delete cascade,
   aluna_id uuid not null references profiles(id) on delete cascade,
-  fim_anterior date,                   -- quando o treino atual vencia (antes de alinhar no fim de semana)
+  fim_anterior date,                   -- quando o treino atual vence
+  inicio date,                         -- o treino novo entra no dia em que vence o atual (Igor, 25/11)
+  fim date check (fim is null or extract(isodow from fim) in (6, 7)), -- e vence num sábado ou domingo
+  trocas jsonb not null default '[]',  -- o que mudou da base pra ela e por quê [{letra,vaga,de,para,motivo}]
   pagamento text check (pagamento in ('pago', 'pendente', 'nao_achei')),
   pagamento_obs text,                  -- "Kiwify até 20/11", "Pix"
   treinos jsonb,                       -- rascunho no formato do editor (letra, nome, exercicios...)

@@ -28,27 +28,32 @@ export function equipamento(nome) {
   if (/\b(maquina|cadeira|mesa flexora|leg ?press|leg 45|hack|pendulo|articulad[ao]|quadril 45|peck|voador|graviton|adutora|abdutora|extensora|flexora|panturrilha sentad[ao]|remada baixa|cross ?over)\b/.test(n)) return 'maquina';
   if (/\b(polia|cabo|crossover|corda|puxada|pulldown|pull down|face pull|pallof)\b/.test(n)) return 'polia';
   if (/\bsmith\b/.test(n)) return 'smith';
-  if (/\b(barra|terra|sumo|stiff|supino reto|levantamento|remada curvada)\b/.test(n)) return 'barra';
+  if (/\b(barra|terra|sumo|stiff|supino reto|levantamento|remada curvada)\b/.test(n) || /elevacao de quadril(?!.*(unilateral|sem peso|isometric))|hip thrust/.test(n)) return 'barra';
   if (/\b(elastico|mini ?band|band|superband)\b/.test(n)) return 'elastico';
   if (/\b(prancha|abdominal|abs|dead ?bug|flexao|mobilidade|alongamento|ponte|bird ?dog|cossaco|lateral alternado|caminhada|polichinelo|burpee|infra|canivete|hollow)\b/.test(n)) return 'peso_corpo';
   return 'outro';
 }
 const GUIADO = new Set(['maquina']); // o que conta como "máquina" na regra do bi-set (polia e Smith usados livres não contam)
 
+// Exercícios que o Igor tirou (não entram nem como reserva): skill de treino + pedido de 25/11 (agachamento lateral)
+const RETIRADOS = /agachamento lateral alternado|good morning|pull ?through|pullover|rosca bayesiana|copenhagen|supino inclinado (no )?smith|hiperextensao 45|flexao com deficit|peito apoiado|b-?stance|meio ajoelhad|pulldown unilateral ajoelhad|smith com anilha no calcanhar/;
+export const retirado = nome => RETIRADOS.test(chave(nome));
+
 export function grupo(nome) {
   const n = chave(nome);
   // Cossaco e agachamento lateral alternado o Igor usa como a mobilidade do dia de inferior
   if (/mobilidade|alongamento|90 90|gato|libera|cossaco|lateral alternado|rotacao de quadril/.test(n)) return 'Mobilidade';
-  if (/prancha|abdominal|abs|dead ?bug|crunch|infra|obliquo|pallof|canivete|core|hollow/.test(n)) return 'Core';
+  if (/prancha|abdominal|abs|dead ?bug|crunch|infra|obliquo|pallof|canivete|core|hollow|rotacao de tronco|mountain/.test(n)) return 'Core';
   if (/quadril|glute|abdu|adu[ct]|coice|ponte|thrust|caminhada lateral|mini ?band|kickback|elevacao pelvica/.test(n)) return 'Glúteo';
-  if (/stiff|flexora|flexao de joelho|terra|romeno|posterior|nordic/.test(n)) return 'Posterior';
+  if (/stiff|flexora|flexao de joelho|terra|romeno|romanian|swing|posterior|nordic/.test(n)) return 'Posterior';
   if (/panturrilha|gemeos/.test(n)) return 'Panturrilha';
   if (/agacha|goblet|leg|extensora|afundo|bulgaro|passada|avanco|hack|sumo|step|adutora|cossaco/.test(n)) return 'Quadríceps';
   if (/remada|puxada|pulldown|pull down|barra fixa|serrote|face pull/.test(n)) return 'Costas';
   if (/crucifixo inv|face pull/.test(n)) return 'Ombro';
   if (/supino|crucifixo|flexao de bra|peck|crossover|voador/.test(n)) return 'Peito';
   if (/desenvolvimento|elevacao lateral|elevacao frontal|ombro|arnold|remada alta/.test(n)) return 'Ombro';
-  if (/rosca|biceps|triceps|testa|frances|mergulho/.test(n)) return 'Braços';
+  if (/triceps|testa|frances|mergulho/.test(n)) return 'Tríceps';
+  if (/rosca|biceps/.test(n)) return 'Bíceps';
   return 'Outros';
 }
 
@@ -60,22 +65,30 @@ export function grupo(nome) {
 export function contexto({ historico = [], autorizados = [], extras = ['halter'], semAparelho = true } = {}) {
   const hist = new Map(historico.map(n => [chave(n), n]));
   const aut = new Map(autorizados.map(a => [chave(a.nome ?? a), a.nome ?? a]));
+  // Igor (25/11): os últimos 4-5 treinos dela mostram que equipamento ela tem. Se a base pede um equipamento
+  // que ela não usou nesses treinos, troca.
+  const usou = new Set(historico.map(equipamento).filter(e => e !== 'outro'));
   return {
-    hist, aut, extras: new Set(extras), semAparelho,
+    hist, aut, usou, extras: new Set(extras), semAparelho, daBase: new Set(),
     temNoHistorico: n => hist.has(chave(n)),
-    // ok = ela já faz, ou é autorizado e o equipamento pode ser acrescentado (halter)
+    // ok = ela já faz; ou é halter / mobilidade e abdômen sem aparelho; ou é da base do mês com equipamento que ela usa
     pode(n) {
       const k = chave(n);
+      if (retirado(n)) return { ok: false, por: 'o Igor tirou esse exercício' };
       if (hist.has(k)) return { ok: true, por: 'historico' };
-      if (!aut.has(k)) return { ok: false, por: 'fora da base do Mfit e da biblioteca do app' };
+      if (!aut.has(k) && !this.daBase.has(k)) return { ok: false, por: 'fora da base do Mfit e da biblioteca do app' };
       const eq = equipamento(n);
       if (this.extras.has(eq)) return { ok: true, por: 'acrescimo' };
       // Igor (25/11): mobilidade e abdômen sem aparelho também podem entrar como novidade
       if (eq === 'peso_corpo' && this.semAparelho && ['Mobilidade', 'Core'].includes(grupo(n))) return { ok: true, por: 'acrescimo' };
-      return { ok: false, por: eq === 'maquina' ? 'máquina (ela pode não ter)' : `${eq.replace('_', ' ')} (só halter, mobilidade ou abdômen sem aparelho entram novos)` };
+      // exercício da base do mês com um equipamento que ela usou nos últimos treinos (peso do corpo não conta:
+      // fora mobilidade e abdômen, novidade só com halter)
+      if (this.daBase.has(k) && eq !== 'peso_corpo' && usou.has(eq)) return { ok: true, por: 'equipamento que ela usa' };
+      return { ok: false, por: `ela não usou ${NOME_EQ[eq] || eq} nos últimos treinos` };
     },
   };
 }
+const NOME_EQ = { maquina: 'máquina', polia: 'polia', smith: 'Smith', barra: 'barra', elastico: 'elástico', peso_corpo: 'esse exercício sem peso', halter: 'halter', outro: 'esse equipamento' };
 
 // ---------- sorteio que se repete (mesma aluna + mesmo mês = mesmo resultado) ----------
 export function sorteio(semente) {
@@ -85,55 +98,84 @@ export function sorteio(semente) {
 }
 const embaralha = (arr, r) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
+export const ehSuperior = nome => /superior|costas|peito|ombro|tr[ií]ceps|b[ií]ceps|bra[cç]o|mmss/i.test(nome || '');
+// mês anterior: aceita lista de nomes ou treinos [{ nome, exercicios: [nome | { nome }] }]
+const nomesDoMes = m => (m || []).flatMap(x => typeof x === 'string' ? [x] : (x.exercicios || []).map(e => typeof e === 'string' ? e : e.nome));
+// Quais exercícios do treino novo repetem o mês passado dela (o Igor não quer repetir)
+export function conferirMesAnterior(treinos, mesAnterior) {
+  const passado = new Set(nomesDoMes(mesAnterior).map(chave));
+  return treinos.flatMap(t => t.exercicios.filter(e => passado.has(chave(e.nome))).map(e => ({ letra: t.letra, treino: t.nome, nome: e.nome })));
+}
+
 // ---------- montar a versão da aluna ----------
 // base: { mes, treinos: [{ letra, nome, duracao_min, vagas: [{ id, opcoes: [nomes], series, reps, descanso_s, metodos: [..], reps_opcoes: [..], biset_com }] }] }
 // aluna: { id, dias_semana }
 // assinatura (opcional): o que ela recebeu no mês passado { escolhas: { vagaId: nome }, metodos: {..}, reps: {..} }
+// mesAnterior (opcional): os exercícios do treino atual dela (lidos do Mfit na hora, não guardados).
+//   Regra do Igor (25/11): o treino novo NÃO repete os exercícios do mês passado. O histórico mostra
+//   o que ela consegue fazer na academia dela, não o que deve se repetir.
 // evitar (opcional): Set de chaves "treino|exercício|método" que uma amiga já tem
-export function montarDaAluna(base, aluna, ctx, { assinatura = null, evitar = new Set() } = {}) {
+export function montarDaAluna(base, aluna, ctx, { assinatura = null, mesAnterior = [], evitar = new Set() } = {}) {
   const r = sorteio(`${aluna.id}|${base.mes}`);
   const avisos = [], escolhas = {}, metodos = {}, repsEsc = {};
+  const passado = new Set([...nomesDoMes(mesAnterior), ...Object.values(assinatura?.escolhas || {})].map(chave));
+  const naSemana = new Set(); // já usado em outro dia: só se não tiver outra opção
+  const trocas = []; // o que saiu diferente da 1ª opção da base, e por quê (o Igor vê no painel)
+  ctx.daBase = new Set((base.treinos || []).flatMap(t => (t.vagas || []).flatMap(v => (v.opcoes || []).map(chave))));
   const treinos = (base.treinos || []).map(t => {
     const exercicios = [];
-    const usados = new Set(); // sem repetir no mesmo dia; entre dias pode (o Igor repete stiff, dead bug...)
+    const usados = new Set(); // nunca repete no mesmo dia
     const vagasB = new Set((t.vagas || []).map(v => v.biset_com).filter(Boolean)); // vaga que é o B de um bi-set
     for (const v of t.vagas || []) {
       const tk = chave(t.nome);
       const validas = (v.opcoes || []).filter(o => ctx.pode(o).ok && !usados.has(chave(o)));
-      // Nenhuma opção da base serve: fica um exercício dela do mesmo grupo, que ela já faz
       let candidatas = validas;
-      if (!candidatas.length) {
+      // Nenhuma opção da base serve, ou todas repetem o mês passado dela: entra também o que ela já faz do mesmo
+      // grupo, ou acréscimo (halter, mobilidade/abdômen sem aparelho) da base do Mfit / biblioteca do app
+      if (!candidatas.length || candidatas.every(c => passado.has(chave(c)))) {
         const gr = grupo(v.opcoes?.[0] || '');
-        candidatas = [...ctx.hist.values()].filter(h => grupo(h) === gr && !usados.has(chave(h)));
-        if (candidatas.length) avisos.push(`${t.letra}: nenhuma opção da vaga ${v.id} cabe na academia dela, fica ${candidatas[0]} (que ela já faz)`);
+        const extra = [...ctx.hist.values(), ...ctx.aut.values()].filter(h => grupo(h) === gr && !usados.has(chave(h)) && !passado.has(chave(h)) && ctx.pode(h).ok
+          && !(gr === 'Mobilidade' && !ehSuperior(t.nome) && /peitora|ombro|torac|wall slide|costas/.test(chave(h)))); // mobilidade do dia de perna é de quadril/tornozelo
+        candidatas = [...new Map([...candidatas, ...extra, ...(candidatas.length ? [] : [...ctx.hist.values()].filter(h => grupo(h) === gr && !usados.has(chave(h))))].map(h => [chave(h), h])).values()];
       }
       if (!candidatas.length) { avisos.push(`${t.letra}: vaga ${v.id} ficou vazia (nada da base nem do histórico dela serve)`); continue; }
       // B do bi-set: com halter sempre que der; se não der, pelo menos não máquina
       if (vagasB.has(v.id)) { const h = candidatas.filter(c => equipamento(c) === 'halter'), nm = candidatas.filter(c => !GUIADO.has(equipamento(c))); candidatas = h.length ? h : nm.length ? nm : candidatas; }
       const mets = v.metodos?.length ? v.metodos : ['normal'];
-      // ordem de preferência: a escolha do mês passado (manter 70-80%), depois o que ela já faz, depois acréscimo com halter
-      const anterior = assinatura?.escolhas?.[v.id];
-      const ranqueadas = [
-        ...candidatas.filter(c => anterior && chave(c) === chave(anterior)),
-        ...embaralha(candidatas.filter(c => ctx.temNoHistorico(c) && !(anterior && chave(c) === chave(anterior))), r),
-        ...embaralha(candidatas.filter(c => !ctx.temNoHistorico(c) && !(anterior && chave(c) === chave(anterior))), r),
-      ];
+      // ordem de preferência: o que não estava no mês passado e não está em outro dia da semana;
+      // dentro disso, o que ela já faz antes do acréscimo com halter. Repetir o mês passado só em último caso.
+      const nota = c => (passado.has(chave(c)) ? 4 : 0) + (naSemana.has(chave(c)) ? 2 : 0) + (ctx.temNoHistorico(c) ? 0 : 1);
+      const emb = embaralha(candidatas, r);
+      const ranqueadas = emb.map((c, i) => [c, nota(c), i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(x => x[0]);
       const metOrd = embaralha(mets, r);
       // primeira combinação exercício + método que a amiga não tem
       let nome = ranqueadas[0], metodo = metOrd[0];
-      busca: for (const c of ranqueadas) for (const m of metOrd) if (!evitar.has(`${tk}|${chave(c)}|${chave(m)}`)) { nome = c; metodo = m; break busca; }
+      // (a amiga só desempata entre opções igualmente boas: nunca puxa um exercício do mês passado)
+      busca: for (const c of ranqueadas.filter(c => nota(c) === nota(ranqueadas[0]))) for (const m of metOrd) if (!evitar.has(`${tk}|${chave(c)}|${chave(m)}`)) { nome = c; metodo = m; break busca; }
+      const prim = v.opcoes?.[0];
+      if (prim && chave(prim) !== chave(nome)) {
+        const p = ctx.pode(prim), kp = chave(prim);
+        const motivo = !p.ok ? p.por : usados.has(kp) ? '' : passado.has(kp) ? 'estava no mês passado dela'
+          : vagasB.has(v.id) && equipamento(prim) !== 'halter' && equipamento(nome) === 'halter' ? 'o B do bi-set é com halter'
+          : naSemana.has(kp) ? '' : metOrd.every(m => evitar.has(`${tk}|${kp}|${chave(m)}`)) ? 'uma amiga dela já tem' : '';
+        // só o que mudou por causa dela (equipamento, mês passado, amiga); a escolha entre opções da base não conta
+        if (motivo) trocas.push({ letra: t.letra, vaga: v.id, de: prim, para: nome, motivo });
+      }
+      if (!validas.some(c => chave(c) === chave(nome))) avisos.push(`${t.letra}: nenhuma opção da vaga ${v.id} serve pra ela, entrou ${nome} (${ctx.temNoHistorico(nome) ? 'que ela já faz' : equipamento(nome) === 'halter' ? 'acréscimo com halter' : 'acréscimo sem aparelho'})`);
+      if (passado.has(chave(nome))) avisos.push(`${t.letra}: ${nome} repete do mês passado (nenhuma outra opção da vaga ${v.id} serve pra ela)`);
       const reps = v.reps_opcoes?.length ? v.reps_opcoes[Math.floor(r() * v.reps_opcoes.length)] : v.reps;
-      usados.add(chave(nome)); escolhas[v.id] = nome; metodos[v.id] = metodo; repsEsc[v.id] = reps;
+      usados.add(chave(nome)); naSemana.add(chave(nome)); escolhas[v.id] = nome; metodos[v.id] = metodo; repsEsc[v.id] = reps;
       exercicios.push({ vaga: v.id, nome, series: v.series, reps, descanso_s: v.descanso_s, metodo, biset_vaga: v.biset_com || null, novo: !ctx.temNoHistorico(nome) });
     }
     // bi-set: liga pelo nome do exercício escolhido na vaga parceira
     for (const e of exercicios) { const par = e.biset_vaga && exercicios.find(x => x.vaga === e.biset_vaga); e.biset_com = par ? par.nome : null; }
     return { letra: t.letra, nome: t.nome, duracao_min: t.duracao_min || 55, exercicios };
   });
-  // ordem dos dias própria (sem mudar quais treinos ela tem)
-  const ordem = embaralha(treinos.map(t => t.letra), r);
+  // ordem dos dias própria, sempre alternando inferior e superior (como o Igor monta)
+  const inf = embaralha(treinos.filter(t => !ehSuperior(t.nome)).map(t => t.letra), r), sup = embaralha(treinos.filter(t => ehSuperior(t.nome)).map(t => t.letra), r);
+  const ordem = []; for (let i = 0; i < Math.max(inf.length, sup.length); i++) { if (inf[i]) ordem.push(inf[i]); if (sup[i]) ordem.push(sup[i]); }
   for (const t of treinos) for (const p of regrasTreino(t)) avisos.push(p);
-  return { treinos, ordem, assinatura: { escolhas, metodos, reps: repsEsc }, avisos };
+  return { treinos, ordem, assinatura: { escolhas, metodos, reps: repsEsc }, avisos, trocas };
 }
 
 // ---------- regras ----------
@@ -148,7 +190,7 @@ export function regrasTreino(t) {
     const dosCore = grupo(e.nome) === 'Core' && grupo(par.nome) === 'Core';
     if (!dosCore && equipamento(par.nome) !== 'halter') prob.push(`${t.letra}: o B do bi-set (${par.nome}) não é com halter`);
   }
-  const sup = /superior|costas|peito|ombro|tr[ií]ceps|b[ií]ceps|bra[cç]o|mmss/i.test(t.nome);
+  const sup = ehSuperior(t.nome);
   if (!sup && /inferior|quadr|gl[uú]t|posterior|perna|mmii/i.test(t.nome) && !ex.some(e => grupo(e.nome) === 'Mobilidade')) prob.push(`${t.letra}: treino de inferior sem mobilidade`);
   if (sup && ex.filter(e => grupo(e.nome) === 'Core').length < 2) prob.push(`${t.letra}: treino de superior com menos de 2 de abdômen/core`);
   if (ex.some(e => /coice.*(triceps|halter)|triceps coice|kickback de triceps/.test(chave(e.nome)))) prob.push(`${t.letra}: tríceps coice (o Igor não usa)`);
@@ -190,14 +232,26 @@ export function conferirLote(rascunhos, amigas = []) {
 const D = s => new Date(String(s).slice(0, 10) + 'T12:00:00');
 const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const mais = (s, n) => { const d = D(s); d.setDate(d.getDate() + n); return iso(d); };
-// Fechamento: se o treino atual vence de segunda a sexta, estica até o domingo dessa semana (ninguém perde dia).
-// Sábado e domingo ficam como estão.
-export function fechamento(fimAtual) { const d = D(fimAtual), w = d.getDay(); return w === 0 || w === 6 ? iso(d) : mais(fimAtual, 7 - w); }
-export const inicio = fech => { const w = D(fech).getDay(); return mais(fech, w === 6 ? 2 : 1); }; // sempre segunda
-export const fimNovo = (ini, semanas = SEMANAS) => mais(ini, semanas * 7 - 1); // sempre domingo
-// Lote da semana: domingo desta semana (ou hoje, se hoje é domingo). Entra quem fecha até esse domingo.
-export function loteDaSemana(hoje) { const w = D(hoje).getDay(); const dom = w === 0 ? iso(D(hoje)) : mais(hoje, 7 - w); return { fechamento: dom, inicio: mais(dom, 1), fim: fimNovo(mais(dom, 1)) }; }
-export const entraNoLote = (fimAtual, lote) => !fimAtual || fechamento(fimAtual) <= lote.fechamento;
+// Regra do Igor (25/11): o treino novo entra no dia em que vence o atual da aluna (se já venceu, entra hoje).
+// O fim de semana vale só pra data em que o treino NOVO vence: 4 semanas depois, puxada pro sábado ou domingo
+// mais perto (segunda e terça voltam pro domingo; quarta, quinta e sexta vão pro sábado).
+export const fimDeSemana = s => mais(s, [0, -1, -2, 3, 2, 1, 0][D(s).getDay()]);
+const dia = s => String(s || '').slice(0, 10);
+export const inicioNovo = (vence, hoje) => !vence || dia(vence) < dia(hoje) ? dia(hoje) : dia(vence);
+export const fimNovo = (ini, semanas = SEMANAS) => fimDeSemana(mais(ini, semanas * 7));
+export const datasDoNovo = (vence, hoje, semanas = SEMANAS) => { const inicio = inicioNovo(vence, hoje); return { inicio, fim: fimNovo(inicio, semanas) }; };
+// Mês do plano no app: o mês em que cai o meio do treino novo. Nunca o mesmo mês do plano atual
+// (o app guarda um plano por aluna por mês, e o mesmo mês apagaria o treino que ela está fazendo).
+export function mesDoPlano(inicio, mesAtual) {
+  let m = mais(inicio, 14).slice(0, 7);
+  const at = dia(mesAtual).slice(0, 7);
+  if (at && m <= at) { const [y, mm] = at.split('-').map(Number); m = mm === 12 ? `${y + 1}-01` : `${y}-${String(mm + 1).padStart(2, '0')}`; }
+  return m + '-01';
+}
+// Lote da semana: o Igor revisa no fim de semana (domingo desta semana) e entram as alunas cujo treino vence
+// até o domingo seguinte (quem já venceu também entra). Cada uma recebe o novo no dia do vencimento dela.
+export function loteDaSemana(hoje) { const w = D(hoje).getDay(); const dom = w === 0 ? iso(D(hoje)) : mais(hoje, 7 - w); return { fechamento: dom, ate: mais(dom, 7) }; }
+export const entraNoLote = (vence, lote) => !vence || dia(vence) <= lote.ate;
 export const diaSemana = s => ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][D(s).getDay()];
 
 // ---------- pagamento (só avisa o Igor, nunca trava ninguém) ----------

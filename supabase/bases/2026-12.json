@@ -1,19 +1,18 @@
 {
  "mes": "2026-12-01",
- "nome": "Base dezembro · consolidar carga (força)",
- "tema": "Depois do mês de músculo alongado, dezembro mantém a base e consolida carga: pirâmide nos compostos, rest-pause (4+4+4 / 12+4+4) nos finalizadores e 2s na descida. Exercícios-base iguais ao nov/dez final do Igor.",
- "origem": "Treino-base nov/dez na versão final do Igor (revisão de 19/10/2026, registrada na skill de treino)",
+ "nome": "Base dezembro · treino novo, força com pirâmide",
+ "tema": "Treino novo: nenhum exercício do nov/dez volta como primeira opção (os do nov/dez só ficam de reserva, pra quem não tem outra opção na academia). Mesma divisão e mesmo jeito de montar: compostos em pirâmide 15/12/10/8 com 90s, finalizadores com (4+4+4) e (12+4+4), parciais alongadas.",
  "treinos": [
   {
    "letra": "A",
-   "nome": "Treino de Quadríceps",
+   "nome": "Quadríceps",
    "duracao_min": 55,
    "vagas": [
     {
      "id": "A1",
      "opcoes": [
       "Agachamento Cossaco",
-      "Mobilidade de quadril"
+      "Mobilidade de tornozelo na parede"
      ],
      "series": 2,
      "reps": "8 em cada lado",
@@ -22,7 +21,6 @@
     {
      "id": "A2",
      "opcoes": [
-      "Agachamento Smith",
       "Agachamento Hack",
       "Agachamento pêndulo"
      ],
@@ -30,15 +28,15 @@
      "reps": "15/12/10/8",
      "descanso_s": 90,
      "metodos": [
-      "pirâmide 15/12/10/8 (sobe a carga a cada série)",
-      "pirâmide com 2s na descida"
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série",
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série, 2s na descida"
      ],
      "biset_com": "A3"
     },
     {
      "id": "A3",
      "opcoes": [
-      "Goblet com anilha no calcanhar",
+      "Step up com halter",
       "Agachamento goblet"
      ],
      "series": 4,
@@ -48,41 +46,20 @@
     {
      "id": "A4",
      "opcoes": [
-      "Leg Press 45",
-      "Agachamento Hack",
-      "Step up com halter"
+      "Búlgaro no smith",
+      "Afundo no Smith"
      ],
      "series": 4,
-     "reps": "10-12",
-     "descanso_s": 60,
-     "metodos": [
-      "2s na descida",
-      "rest-pause 10+10+10 (10s) na última"
-     ]
-    },
-    {
-     "id": "A5",
-     "opcoes": [
-      "Afundo com Halteres entre Steps",
-      "Agachamento búlgaro com halter",
-      "Búlgaro no smith"
-     ],
-     "series": 3,
      "reps": "10 em cada lado",
      "descanso_s": 60,
      "metodos": [
       "normal",
       "pausa 1s embaixo"
-     ],
-     "reps_opcoes": [
-      "10 em cada lado",
-      "8-10 em cada lado"
      ]
     },
     {
-     "id": "A6",
+     "id": "A5",
      "opcoes": [
-      "Cadeira Extensora Unilateral + Parciais Alongadas",
       "Cadeira extensora articulada",
       "Cadeira Extensora"
      ],
@@ -90,19 +67,17 @@
      "reps": "12",
      "descanso_s": 60,
      "metodos": [
-      "parciais alongadas quando falhar",
-      "1x (12+4+4) na última",
-      "segura 2s em cima"
+      "segura 2s em cima",
+      "1x (12+4+4) na última"
      ]
     },
     {
-     "id": "A7",
+     "id": "A6",
      "opcoes": [
-      "Panturrilha em Pé + Parciais Alongadas",
       "Panturrilha unilateral no step com halter",
       "Panturrilha no Leg Press Horizontal"
      ],
-     "series": 3,
+     "series": 4,
      "reps": "15",
      "descanso_s": 45,
      "metodos": [
@@ -114,92 +89,102 @@
   },
   {
    "letra": "B",
-   "nome": "Treino de Glúteos",
+   "nome": "Peito, Ombro e Tríceps",
    "duracao_min": 55,
    "vagas": [
     {
      "id": "B1",
      "opcoes": [
-      "Mobilidade de quadril",
-      "Agachamento Cossaco"
+      "Core na polia",
+      "Prancha com Toque no Ombro"
      ],
-     "series": 2,
+     "series": 3,
      "reps": "12 em cada lado",
      "descanso_s": 30
     },
     {
      "id": "B2",
      "opcoes": [
-      "Caminhada Lateral com Mini Band"
+      "Rotação de tronco na polia",
+      "Abdominal na Polia Ajoelhado"
      ],
      "series": 3,
-     "reps": "15 em cada lado",
-     "descanso_s": 30
+     "reps": "12 em cada lado",
+     "descanso_s": 60
     },
     {
      "id": "B3",
      "opcoes": [
-      "Elevação de Quadril",
-      "Elevaçao de quadril solo com barra"
+      "Supino Vertical Maquina",
+      "Supino com Halteres Inclinado Baixo"
      ],
      "series": 4,
      "reps": "15/12/10/8",
      "descanso_s": 90,
      "metodos": [
-      "pirâmide 15/12/10/8 (sobe a carga a cada série)",
-      "pirâmide com 2s em cima"
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série",
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série, 2s na descida"
      ]
     },
     {
      "id": "B4",
      "opcoes": [
-      "Extensão de Quadril banco romano",
-      "Elevação de Quadril Unilateral"
+      "Crucifixo com halter"
      ],
-     "series": 4,
-     "reps": "12-15",
+     "series": 3,
+     "reps": "12",
      "descanso_s": 60,
      "metodos": [
       "normal",
-      "segura 2s em cima"
-     ],
-     "biset_com": "B5"
+      "segura 2s embaixo"
+     ]
     },
     {
      "id": "B5",
      "opcoes": [
-      "Stiff com Halteres",
-      "Agachamento sumô com halter"
+      "Elevação lateral com halter"
      ],
      "series": 4,
-     "reps": "8-10",
-     "descanso_s": 60
+     "reps": "12",
+     "descanso_s": 60,
+     "metodos": [
+      "normal",
+      "1x (12+4+4) na última"
+     ]
     },
     {
      "id": "B6",
      "opcoes": [
-      "Agachamento búlgaro com halter",
-      "Búlgaro no smith"
+      "Desenvolvimento com halter em pé",
+      "Desenvolvimento articulado"
      ],
-     "series": 4,
-     "reps": "8-10 em cada lado",
-     "descanso_s": 60,
-     "metodos": [
-      "carga alta",
-      "1x (4+4+4) na última"
-     ]
+     "series": 3,
+     "reps": "2x 10 + 1x (4+4+4)",
+     "descanso_s": 60
     },
     {
      "id": "B7",
      "opcoes": [
-      "Glúteo coice polia",
-      "Abdução de quadril maquina em pé",
-      "Abdução de Quadril Máquina com Tronco à Frente",
-      "Abdução de quadril 45"
+      "Tríceps Francês com Halter",
+      "Tríceps testa polia banco"
      ],
      "series": 3,
-     "reps": "12-15",
-     "descanso_s": 45,
+     "reps": "12",
+     "descanso_s": 60,
+     "metodos": [
+      "normal",
+      "parciais alongadas quando falhar"
+     ]
+    },
+    {
+     "id": "B8",
+     "opcoes": [
+      "Tríceps testa com halter",
+      "Tríceps máquina paralela"
+     ],
+     "series": 3,
+     "reps": "12",
+     "descanso_s": 60,
      "metodos": [
       "normal",
       "1x (12+4+4) na última"
@@ -209,14 +194,14 @@
   },
   {
    "letra": "C",
-   "nome": "Treino de Posterior",
+   "nome": "Glúteos",
    "duracao_min": 55,
    "vagas": [
     {
      "id": "C1",
      "opcoes": [
-      "Mobilidade de quadril",
-      "Agachamento Cossaco"
+      "Mobilidade 90/90 de quadril",
+      "Mobilidade de quadril"
      ],
      "series": 2,
      "reps": "10 em cada lado",
@@ -225,228 +210,124 @@
     {
      "id": "C2",
      "opcoes": [
-      "Agachamento Livre com Barra",
-      "Agachamento goblet"
+      "Abdução de quadril 45",
+      "Abdução de quadril maquina em pé"
      ],
      "series": 2,
-     "reps": "10",
+     "reps": "20",
      "descanso_s": 30
     },
     {
      "id": "C3",
      "opcoes": [
-      "Cadeira Flexora com Tronco Inclinado",
-      "Flexão de joelho em pé maquina",
-      "Cadeira Flexora"
+      "Elevação de Quadril",
+      "Elevaçao de quadril solo com barra"
      ],
      "series": 4,
      "reps": "15/12/10/8",
      "descanso_s": 90,
      "metodos": [
-      "pirâmide 15/12/10/8 (sobe a carga a cada série)",
-      "pirâmide com 2s na volta"
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série",
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série, 2s em cima"
      ]
     },
     {
      "id": "C4",
      "opcoes": [
-      "Levantamento terra Sumo",
-      "Stiff com Halteres"
+      "Agachamento sumô com halter"
      ],
      "series": 4,
      "reps": "10-12",
-     "descanso_s": 90,
+     "descanso_s": 60,
      "metodos": [
       "2s na descida",
-      "pirâmide 15/12/10/8/6"
+      "pausa 1s embaixo"
      ]
     },
     {
      "id": "C5",
      "opcoes": [
-      "Stiff unilateral com apoio",
-      "Stiff com Halteres",
-      "Extensão de Quadril banco romano"
+      "Afundo com step atrás com halter",
+      "Afundo com Halteres entre Steps"
      ],
-     "series": 3,
+     "series": 4,
      "reps": "10 em cada lado",
      "descanso_s": 60,
      "metodos": [
-      "normal",
-      "pausa 1s embaixo"
+      "com carga alta",
+      "com carga alta + 1x (4+4+4) na última"
      ]
     },
     {
      "id": "C6",
      "opcoes": [
-      "Mesa Flexora Unilateral com Parciais",
-      "Flexão de joelho em pé maquina"
+      "Leg press 45 unilateral",
+      "Stiff unilateral com apoio"
      ],
      "series": 4,
-     "reps": "12 em cada lado",
+     "reps": "10 em cada lado",
      "descanso_s": 60,
      "metodos": [
-      "parciais alongadas quando falhar",
-      "1x (12+4+4) na última"
+      "normal",
+      "segura 2s embaixo"
      ]
     },
     {
      "id": "C7",
      "opcoes": [
-      "Adução de Quadril Máquina",
-      "Cadeira adutora"
+      "Abdução de quadril maquina em pé",
+      "Abdução de quadril 45"
      ],
      "series": 3,
-     "reps": "15",
-     "descanso_s": 30
+     "reps": "2x 15 + 1x (12+4+4)",
+     "descanso_s": 60
     }
    ]
   },
   {
    "letra": "D",
-   "nome": "Treino Ombro/Tríceps (superior anterior)",
+   "nome": "Costas e Bíceps",
    "duracao_min": 55,
    "vagas": [
     {
      "id": "D1",
      "opcoes": [
-      "Dead Bug",
-      "Prancha com Toque no Ombro"
+      "Abdominal canivete alternado",
+      "Dead Bug"
      ],
      "series": 3,
-     "reps": "10 em cada lado",
-     "descanso_s": 30
+     "reps": "12 em cada lado",
+     "descanso_s": 60,
+     "biset_com": "D2"
     },
     {
      "id": "D2",
      "opcoes": [
-      "Abs infra no banco declinado",
-      "Abdominal na Polia Ajoelhado"
+      "Prancha",
+      "Abs infra no banco declinado"
      ],
      "series": 3,
-     "reps": "15",
-     "descanso_s": 30
+     "reps": "40s",
+     "descanso_s": 60
     },
     {
      "id": "D3",
      "opcoes": [
-      "Supino inclinado maquina",
-      "Supino com Halteres Inclinado Baixo",
-      "Supino Vertical Maquina"
+      "Puxada Pronada",
+      "Puxada Aberta"
      ],
-     "series": 3,
-     "reps": "12/10/8",
+     "series": 4,
+     "reps": "15/12/10/8",
      "descanso_s": 90,
      "metodos": [
-      "pirâmide 12/10/8 (sobe a carga a cada série)",
-      "pirâmide com 2s na descida"
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série",
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série, segura 2s embaixo"
      ]
     },
     {
      "id": "D4",
      "opcoes": [
-      "Crucifixo na maquina",
-      "Crucifixo com halter"
-     ],
-     "series": 4,
-     "reps": "12",
-     "descanso_s": 60,
-     "metodos": [
-      "normal",
-      "segura 2s fechado"
-     ]
-    },
-    {
-     "id": "D5",
-     "opcoes": [
-      "Elevação Lateral em Y",
-      "Elevação lateral com halter"
-     ],
-     "series": 4,
-     "reps": "12",
-     "descanso_s": 45,
-     "metodos": [
-      "normal",
-      "1x (12+4+4) na última"
-     ]
-    },
-    {
-     "id": "D6",
-     "opcoes": [
-      "Desenvolvimento Arnold",
-      "Desenvolvimento com halter em pé",
-      "Desenvolvimento articulado"
-     ],
-     "series": 2,
-     "reps": "10",
-     "descanso_s": 60,
-     "metodos": [
-      "2x10 + 1x (4+4+4)",
-      "pirâmide 12/10/8"
-     ]
-    },
-    {
-     "id": "D7",
-     "opcoes": [
-      "Tríceps Acima da Cabeça na Polia",
-      "Tríceps Francês com Halter"
-     ],
-     "series": 3,
-     "reps": "12",
-     "descanso_s": 45,
-     "metodos": [
-      "normal",
-      "parciais alongadas quando falhar"
-     ]
-    },
-    {
-     "id": "D8",
-     "opcoes": [
-      "Tríceps na polia com barra reta",
-      "Tríceps testa com halter",
-      "Tríceps máquina paralela"
-     ],
-     "series": 3,
-     "reps": "12",
-     "descanso_s": 45,
-     "metodos": [
-      "normal",
-      "drop na última"
-     ]
-    }
-   ]
-  },
-  {
-   "letra": "E",
-   "nome": "Costas e bíceps (superior posterior)",
-   "duracao_min": 55,
-   "vagas": [
-    {
-     "id": "E1",
-     "opcoes": [
-      "Pallof Press",
-      "Dead Bug"
-     ],
-     "series": 3,
-     "reps": "12 em cada lado",
-     "descanso_s": 30,
-     "biset_com": "E2"
-    },
-    {
-     "id": "E2",
-     "opcoes": [
-      "Abdominal Infra Solo",
-      "Abs infra no banco declinado"
-     ],
-     "series": 3,
-     "reps": "15",
-     "descanso_s": 30
-    },
-    {
-     "id": "E3",
-     "opcoes": [
-      "Puxada unilateral",
-      "Puxada Pronada",
+      "Remada curvada pegada supinada",
       "Remada serrote com halter"
      ],
      "series": 3,
@@ -458,85 +339,155 @@
      ]
     },
     {
-     "id": "E4",
+     "id": "D5",
      "opcoes": [
-      "Remada curvada com barra pegada pronada",
-      "Remada curvada pegada supinada",
+      "remada maquina pegada neutra",
       "Remada curvada com halter"
      ],
      "series": 3,
-     "reps": "12/10/8",
-     "descanso_s": 90,
-     "metodos": [
-      "pirâmide 12/10/8 (sobe a carga a cada série)",
-      "pirâmide com 2s na volta"
-     ]
+     "reps": "2x 10 + 1x (4+4+4)",
+     "descanso_s": 60
     },
     {
-     "id": "E5",
+     "id": "D6",
      "opcoes": [
-      "Puxada Pegada Supinada",
-      "remada maquina pegada neutra"
-     ],
-     "series": 2,
-     "reps": "10",
-     "descanso_s": 60,
-     "metodos": [
-      "2x10 + 1x (4+4+4)",
-      "segura 2s embaixo"
-     ]
-    },
-    {
-     "id": "E6",
-     "opcoes": [
-      "Pulldown com corda",
       "Crucifixo invertido com halter"
      ],
      "series": 3,
-     "reps": "12",
-     "descanso_s": 45
+     "reps": "15",
+     "descanso_s": 60
     },
     {
-     "id": "E7",
+     "id": "D7",
      "opcoes": [
-      "Rosca Inclinada com Halteres",
-      "Rosca direta no banco inclinado"
+      "Rosca direta com halteres",
+      "Rosca Scott maquina"
      ],
      "series": 3,
      "reps": "10",
-     "descanso_s": 45,
+     "descanso_s": 60,
      "metodos": [
       "normal",
       "desce em 3s"
      ]
     },
     {
-     "id": "E8",
+     "id": "D8",
      "opcoes": [
-      "Rosca direta na polia baixa com corda",
-      "Rosca Spider",
-      "Rosca martelo com halteres"
+      "Rosca martelo com halteres",
+      "Rosca Scott maquina"
      ],
      "series": 3,
      "reps": "12",
-     "descanso_s": 45,
+     "descanso_s": 60,
      "metodos": [
       "normal",
-      "drop na última"
+      "1x (12+4+4) na última"
+     ]
+    }
+   ]
+  },
+  {
+   "letra": "E",
+   "nome": "Posterior",
+   "duracao_min": 55,
+   "vagas": [
+    {
+     "id": "E1",
+     "opcoes": [
+      "Mobilidade de quadril",
+      "Mobilidade 90/90 de quadril"
+     ],
+     "series": 2,
+     "reps": "10 em cada lado",
+     "descanso_s": 30
+    },
+    {
+     "id": "E2",
+     "opcoes": [
+      "Kettlebell swing",
+      "Extensão de Quadril banco romano"
+     ],
+     "series": 2,
+     "reps": "15",
+     "descanso_s": 30
+    },
+    {
+     "id": "E3",
+     "opcoes": [
+      "Cadeira Flexora com Tronco Inclinado",
+      "Flexão de joelho em pé maquina"
+     ],
+     "series": 4,
+     "reps": "15/12/10/8",
+     "descanso_s": 90,
+     "metodos": [
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série",
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série, 2s na volta"
+     ]
+    },
+    {
+     "id": "E4",
+     "opcoes": [
+      "Romanian deadlift com halter",
+      "Stiff com Halteres"
+     ],
+     "series": 4,
+     "reps": "10-12",
+     "descanso_s": 60,
+     "metodos": [
+      "2s na descida",
+      "2s na descida + 1x (6+3+3) na última"
+     ]
+    },
+    {
+     "id": "E5",
+     "opcoes": [
+      "Flexão de joelho em pé maquina",
+      "Cadeira Flexora com Tronco Inclinado"
+     ],
+     "series": 4,
+     "reps": "12 em cada perna",
+     "descanso_s": 60,
+     "metodos": [
+      "parciais alongadas quando falhar",
+      "1x (12+4+4) na última"
+     ]
+    },
+    {
+     "id": "E6",
+     "opcoes": [
+      "Cadeira adutora"
+     ],
+     "series": 3,
+     "reps": "15",
+     "descanso_s": 30
+    },
+    {
+     "id": "E7",
+     "opcoes": [
+      "Panturrilha no Leg Press Horizontal",
+      "Panturrilha unilateral no step com halter"
+     ],
+     "series": 3,
+     "reps": "15",
+     "descanso_s": 45,
+     "metodos": [
+      "parciais alongadas quando falhar"
      ]
     }
    ]
   },
   {
    "letra": "F",
-   "nome": "Superior completo",
+   "nome": "Superior Completo",
    "duracao_min": 55,
    "vagas": [
     {
      "id": "F1",
      "opcoes": [
-      "Abdominal na Polia Ajoelhado",
-      "Abs infra no banco declinado"
+      "Abdominal Remador",
+      "Pallof Press"
      ],
      "series": 3,
      "reps": "15",
@@ -546,36 +497,34 @@
     {
      "id": "F2",
      "opcoes": [
-      "Prancha com Toque no Ombro",
-      "Dead Bug"
+      "Prancha lateral com apoio no banco",
+      "Abdominal Infra Solo"
      ],
      "series": 3,
-     "reps": "10 em cada lado",
+     "reps": "30s em cada lado",
      "descanso_s": 30
     },
     {
      "id": "F3",
      "opcoes": [
-      "Supino com Halteres Inclinado Baixo",
-      "Supino inclinado maquina"
+      "Supino Vertical Maquina",
+      "Flexão de Braços"
      ],
-     "series": 3,
-     "reps": "10",
-     "descanso_s": 60,
+     "series": 4,
+     "reps": "15/12/10/8",
+     "descanso_s": 90,
      "metodos": [
-      "normal",
-      "pirâmide 12/10/8"
+      "pirâmide 15/12/10/8: sobe a carga e diminui as reps a cada série"
      ]
     },
     {
      "id": "F4",
      "opcoes": [
-      "Remada Invertida no Smith",
-      "Remada curvada com halter",
-      "remada maquina pegada neutra"
+      "Remada serrote com halter",
+      "Remada curvada com halter"
      ],
      "series": 3,
-     "reps": "10-12",
+     "reps": "10-12 em cada lado",
      "descanso_s": 60
     },
     {
@@ -593,30 +542,21 @@
      ]
     },
     {
-     "id": "F6",
-     "opcoes": [
-      "Face Pull",
-      "Crucifixo invertido com halter"
-     ],
-     "series": 3,
-     "reps": "15",
-     "descanso_s": 45
-    },
-    {
      "id": "F7",
      "opcoes": [
-      "Tríceps Francês com Halter",
-      "Tríceps testa polia banco"
+      "Tríceps máquina paralela",
+      "Tríceps testa polia banco",
+      "Tríceps Banco com Pernas Esticadas"
      ],
      "series": 3,
      "reps": "12",
-     "descanso_s": 30
+     "descanso_s": 60
     },
     {
      "id": "F8",
      "opcoes": [
-      "Rosca Spider",
-      "Rosca Inclinada com Halteres"
+      "Rosca Scott maquina",
+      "Rosca martelo com halteres"
      ],
      "series": 3,
      "reps": "12",

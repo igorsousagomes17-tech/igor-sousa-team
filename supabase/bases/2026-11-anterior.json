@@ -1,0 +1,81 @@
+{
+ "mes": "2026-11-01",
+ "nome": "Treino-base Nov/Dez 6x (versão final do Igor)",
+ "origem": "PDF 'Enviando por email 2i7tfgbg9ts' na pasta Treino do Drive",
+ "treinos": [
+  {
+   "nome": "Quadríceps",
+   "exercicios": [
+    "Agachamento Lateral Alternado",
+    "Agachamento Smith",
+    "Goblet com anilha no calcanhar",
+    "Leg Press 45",
+    "Afundo com Halteres entre Steps",
+    "Cadeira Extensora Unilateral + Parciais Alongadas",
+    "Panturrilha em Pé + Parciais Alongadas"
+   ]
+  },
+  {
+   "nome": "Peito, Ombro e Tríceps",
+   "exercicios": [
+    "Dead Bug",
+    "Abs infra no banco declinado",
+    "Crucifixo na maquina",
+    "Elevação Lateral em Y",
+    "Desenvolvimento Arnold",
+    "Supino inclinado maquina",
+    "Tríceps Acima da Cabeça na Polia",
+    "Tríceps na Polia com Barra Reta"
+   ]
+  },
+  {
+   "nome": "Glúteos",
+   "exercicios": [
+    "Caminhada Lateral com Mini Band",
+    "Elevação de Quadril Unilateral",
+    "Extensão de Quadril banco romano",
+    "Stiff com Halteres",
+    "Agachamento búlgaro com halter",
+    "Glúteo coice polia",
+    "Abdução de Quadril Máquina com Tronco à Frente"
+   ]
+  },
+  {
+   "nome": "Costas e Bíceps",
+   "exercicios": [
+    "Pallof Press",
+    "Abdominal Infra Solo",
+    "Puxada unilateral",
+    "Remada Curvada com Barra Reta (Pegada Pronada)",
+    "Puxada Pegada Supinada",
+    "Pulldown com Corda",
+    "Rosca Inclinada com Halteres",
+    "Rosca Direta na Polia Baixa com Corda"
+   ]
+  },
+  {
+   "nome": "Posterior",
+   "exercicios": [
+    "Agachamento Livre com Barra",
+    "Cadeira Flexora",
+    "Levantamento terra Sumo",
+    "Mesa Flexora Unilateral com Parciais",
+    "Stiff unilateral com apoio",
+    "Adução de Quadril Máquina"
+   ]
+  },
+  {
+   "nome": "Superior Completo",
+   "exercicios": [
+    "Abdominal na Polia Ajoelhado",
+    "Prancha com Toque no Ombro",
+    "Supino com Halteres Inclinado Baixo",
+    "Remada Invertida no Smith",
+    "Desenvolvimento Máquina (Pegada Pronada)",
+    "Face Pull",
+    "Tríceps Francês Sentado com Halteres",
+    "Rosca Spider"
+   ]
+  }
+ ]
+}

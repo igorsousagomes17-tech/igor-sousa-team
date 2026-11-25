@@ -93,7 +93,7 @@ export const admin = {
       if (state.loteDemo?.fechamento === fechamento) return state.loteDemo;
       const A = await import('./atualizacao.js');
       const lote = A.loteDaSemana(hojeISO(0));
-      const base = { mes: lote.inicio.slice(0, 7) + '-01', treinos: [
+      const base = { mes: A.mesDoPlano(lote.ate), treinos: [
         { letra: 'A', nome: 'Inferior · quadríceps', duracao_min: 55, vagas: [{ id: 'A1', opcoes: ['Mobilidade de tornozelo', 'Agachamento Cossaco'], series: 2, reps: '10', descanso_s: 30 }, { id: 'A2', opcoes: ['Leg press 45', 'Agachamento goblet com halter'], series: 4, reps: '12/10/8', descanso_s: 90, metodos: ['pirâmide', 'cadência 2s na descida'] }, { id: 'A3', opcoes: ['Búlgaro com halteres', 'Afundo com halteres'], series: 3, reps: '10', descanso_s: 60, metodos: ['normal', 'pausa embaixo'] }, { id: 'A4', opcoes: ['Cadeira extensora', 'Agachamento sumô com halter'], series: 3, reps: '12', descanso_s: 60, metodos: ['drop na última', 'isometria 3s'], biset_com: 'A5' }, { id: 'A5', opcoes: ['Agachamento sumô com halter', 'Stiff com halteres'], series: 3, reps: '12', descanso_s: 60 }] },
         { letra: 'B', nome: 'Superior · costas e bíceps', duracao_min: 55, vagas: [{ id: 'B1', opcoes: ['Prancha', 'Dead bug'], series: 3, reps: '30s', descanso_s: 30 }, { id: 'B2', opcoes: ['Abdominal infra', 'Dead bug'], series: 3, reps: '15', descanso_s: 30 }, { id: 'B3', opcoes: ['Puxada aberta', 'Remada curvada com halter', 'Remada serrote com halter'], series: 4, reps: '10-12', descanso_s: 60, metodos: ['normal', 'drop na última'] }, { id: 'B4', opcoes: ['Rosca direta com halteres', 'Rosca martelo com halteres'], series: 3, reps: '12', descanso_s: 45, metodos: ['normal', 'pico de contração'] }] }] };
       const aut = ['Agachamento goblet com halter', 'Búlgaro com halteres', 'Afundo com halteres', 'Agachamento sumô com halter', 'Stiff com halteres', 'Remada curvada com halter', 'Remada serrote com halter', 'Rosca direta com halteres', 'Rosca martelo com halteres', 'Dead bug'].map(nome => ({ nome }));
@@ -101,19 +101,20 @@ export const admin = {
       const pag = { a0: ['pago', 'Kiwify'], a1: ['pago', 'Pix'], a2: ['pendente', 'Kiwify até ' + hojeISO(-6)], a3: ['nao_achei', 'não achei na Kiwify nem no Pix'] };
       const nomes = { a0: 'Marcela D.', a1: 'Ludimila M.', a2: 'Ana Paula', a3: 'Lorena S.' };
       const ras = []; let evitar = new Set();
-      for (const id of Object.keys(hist)) { const r = A.montarDaAluna(base, { id }, A.contexto({ historico: hist[id], autorizados: aut }), { evitar: id === 'a1' ? evitar : new Set() }); if (id === 'a0') evitar = A.chaves(r.treinos); ras.push({ aluna_id: id, treinos: r.treinos, avisos: r.avisos }); }
+      for (const id of Object.keys(hist)) { const r = A.montarDaAluna(base, { id }, A.contexto({ historico: hist[id], autorizados: aut }), { evitar: id === 'a1' ? evitar : new Set() }); if (id === 'a0') evitar = A.chaves(r.treinos); ras.push({ aluna_id: id, treinos: r.treinos, avisos: r.avisos, trocas: r.trocas }); }
+      const vence = { a0: hojeISO(-2), a1: hojeISO(1), a2: hojeISO(3), a3: hojeISO(6) };
       // demo: a Ana Paula e a Lorena ficaram com o treino quase igual de propósito, pra mostrar o alerta
       ras[3].treinos = ras[2].treinos;
       const conf = A.conferirLote(ras, state.amigasDemo || [['a0', 'a1'], ['a2', 'a3']]);
       state.amigasDemo = state.amigasDemo || [['a0', 'a1'], ['a2', 'a3']];
-      state.loteDemo = { id: 'l1', ...lote, status: 'rascunho', alunas: ras.map(x => ({ lote_id: 'l1', aluna_id: x.aluna_id, nome: nomes[x.aluna_id], fim_anterior: hojeISO(1), pagamento: pag[x.aluna_id][0], pagamento_obs: pag[x.aluna_id][1], treinos: x.treinos, avisos: x.avisos, parecido_pct: conf.pior.get(x.aluna_id).pct, parecido_com: conf.pior.get(x.aluna_id).com, aprovado: false, no_app_em: null, no_mfit_em: null })) };
+      state.loteDemo = { id: 'l1', ...lote, status: 'rascunho', alunas: ras.map(x => ({ lote_id: 'l1', aluna_id: x.aluna_id, nome: nomes[x.aluna_id], fim_anterior: vence[x.aluna_id], ...A.datasDoNovo(vence[x.aluna_id], hojeISO(0)), trocas: x.trocas, pagamento: pag[x.aluna_id][0], pagamento_obs: pag[x.aluna_id][1], treinos: x.treinos, avisos: x.avisos, parecido_pct: conf.pior.get(x.aluna_id).pct, parecido_com: conf.pior.get(x.aluna_id).com, aprovado: false, no_app_em: null, no_mfit_em: null })) };
       save(); return state.loteDemo;
     },
     async perfis() { return []; },
     async amigas() { await wait(); return state.amigasDemo || [['a0', 'a1'], ['a2', 'a3']]; },
     async marcarAmigas(a, b, on) { await wait(); const k = [a, b].sort(); state.amigasDemo = (state.amigasDemo || []).filter(p => p.slice().sort().join() !== k.join()); if (on) state.amigasDemo.push(k); save(); },
     async aprovar(loteId, alunaId, aprovado) { await wait(); const l = state.loteDemo?.alunas.find(x => x.aluna_id === alunaId); if (l) l.aprovado = aprovado; save(); },
-    async publicarNoApp(lote, linha, treinosApp) { await admin.salvarPlano(linha.aluna_id, lote.inicio.slice(0, 7) + '-01', treinosApp, { inicio: lote.inicio, fim: lote.fim }); const l = state.loteDemo?.alunas.find(x => x.aluna_id === linha.aluna_id); if (l) l.no_app_em = iso(new Date()); save(); },
+    async publicarNoApp(lote, linha, treinosApp, { inicio, fim, mes }) { await admin.salvarPlano(linha.aluna_id, mes, treinosApp, { inicio, fim }); const l = state.loteDemo?.alunas.find(x => x.aluna_id === linha.aluna_id); if (l) l.no_app_em = iso(new Date()); save(); },
   },
   async marcarVisto(id, visto) { await wait(); const v = (state.venc || []).find(x => x.id === id); if (v) v.visto_em = visto ? iso(new Date()) : null; },
   async planoDe(alunaId) { await wait(); const v = (state.venc || []).find(x => x.aluna_id === alunaId); return state.planos?.[alunaId] || (v ? { ...PLANO, inicio: v.inicio, fim: v.fim } : PLANO); },

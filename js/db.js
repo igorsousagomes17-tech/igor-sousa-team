@@ -354,9 +354,9 @@ export const admin = {
     async amigas() { const { data, error } = await sb.from('amigas').select('aluna_a,aluna_b'); if (error) { if (admin.atu.semTabela(error)) return []; throw error; } return (data || []).map(x => [x.aluna_a, x.aluna_b]); },
     async marcarAmigas(a, b, on) { const [x, y] = [a, b].sort(); const q = on ? sb.from('amigas').upsert({ aluna_a: x, aluna_b: y }) : sb.from('amigas').delete().eq('aluna_a', x).eq('aluna_b', y); const { error } = await q; if (error) throw error; },
     async aprovar(loteId, alunaId, aprovado) { const { error } = await sb.from('lote_alunas').update({ aprovado }).eq('lote_id', loteId).eq('aluna_id', alunaId); if (error) throw error; },
-    // Publica no app o rascunho aprovado: plano novo do mês do início, começando na segunda e vencendo no domingo
-    async publicarNoApp(lote, linha, treinosApp) {
-      await admin.salvarPlano(linha.aluna_id, lote.inicio.slice(0, 7) + '-01', treinosApp, { inicio: lote.inicio, fim: lote.fim });
+    // Publica no app o rascunho aprovado: começa no dia em que vence o atual dela e vence num sábado ou domingo
+    async publicarNoApp(lote, linha, treinosApp, { inicio, fim, mes }) {
+      await admin.salvarPlano(linha.aluna_id, mes, treinosApp, { inicio, fim });
       const { error } = await sb.from('lote_alunas').update({ no_app_em: new Date().toISOString() }).eq('lote_id', lote.id).eq('aluna_id', linha.aluna_id); if (error) throw error;
     },
   },

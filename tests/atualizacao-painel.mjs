@@ -15,7 +15,7 @@ await p.goto('http://app.local/?demo'); await w(400); await p.click('text=ENTRAR
 
 await p.click('#t-lote'); await w(1200);
 const t = await txt('#lote');
-ok(/segunda/.test(t) && /domingo/.test(t), 'mostra fechamento no fim de semana e início na segunda');
+ok(/dia em que o dela vence/.test(t) && /novo de/.test(t), 'explica que cada aluna começa no dia em que o treino dela vence');
 ok(/4 alunas no lote/.test(t), 'lote com as 4 alunas da demo');
 ok(/Pagamento pra você conferir/.test(t) && /Ana Paula/.test(t) && /Lorena/.test(t), 'avisa quem está com pagamento em aberto');
 ok(/só aviso/i.test(t), 'deixa claro que é só aviso');
@@ -24,6 +24,7 @@ await p.screenshot({ path: `${D}/atu-1-lote.png`, fullPage: true });
 
 await p.click('[data-lt-ver="a2"]'); await w(300);
 const r = await txt('#m'); ok(/Inferior/.test(r) && /Superior/.test(r), 'rascunho abre com os treinos');
+ok(/O que mudei da base pra ela/.test(r) && /não usou máquina/.test(r), 'rascunho mostra o que trocou e por quê');
 ok(!/Leg press|Cadeira extensora|Puxada aberta/.test(r), 'aluna sem máquina no histórico não recebeu máquina');
 await p.screenshot({ path: `${D}/atu-2-rascunho.png`, fullPage: true }); await p.click('#c'); await w(200);
 
@@ -38,8 +39,9 @@ ok(/Publicar 2 no app/.test(await txt('#lt-pub')), 'duas aprovadas');
 await p.click('#lt-pub'); await w(300); ok(/Marcela/.test(await txt('#m')), 'confirmação mostra quem recebe');
 await p.click('#ok'); await w(1500);
 const st = await p.evaluate(() => JSON.parse(localStorage.getItem('demo:state')));
-const seg = st.loteDemo.inicio, dom = st.loteDemo.fim;
-ok(st.planos?.a0?.inicio === seg && st.planos?.a0?.fim === dom && new Date(seg + 'T12:00').getDay() === 1 && new Date(dom + 'T12:00').getDay() === 0, `plano no app começa segunda (${seg}) e vence domingo (${dom})`);
+const l0 = st.loteDemo.alunas.find(x => x.aluna_id === 'a0'), l1 = st.loteDemo.alunas.find(x => x.aluna_id === 'a1');
+const fds = d => [0, 6].includes(new Date(d + 'T12:00').getDay());
+ok(st.planos?.a0?.inicio === l0.inicio && st.planos?.a1?.inicio === l1.fim_anterior && fds(st.planos.a0.fim) && fds(st.planos.a1.fim), `cada uma começa no dia do vencimento dela (a1 vence ${l1.fim_anterior}, começa ${st.planos?.a1?.inicio}) e o novo vence no fim de semana (${st.planos?.a0?.fim}, ${st.planos?.a1?.fim})`);
 ok(!st.planos?.a2, 'quem não foi aprovada não recebeu nada');
 ok(/no app ✓/.test(await txt('#lote')), 'marca no app ✓');
 await p.screenshot({ path: `${D}/atu-4-publicado.png`, fullPage: true });
