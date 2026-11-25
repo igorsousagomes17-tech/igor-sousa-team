@@ -103,5 +103,19 @@ const app = A.paraApp(rc.treinos, rc.ordem);
 ok(app.length === 2 && app.every(t => t.exercicios.every(e => e.nome && e.series)), 'vira linhas do app');
 ok(A.paraTexto(app).startsWith('# '), 'vira texto do editor (o mesmo que vai pro Mfit)');
 
+// ---------- base de dezembro de verdade (supabase/bases/2026-12.json) ----------
+import fs from 'fs';
+const dez = JSON.parse(fs.readFileSync(new URL('../supabase/bases/2026-12.json', import.meta.url), 'utf8'));
+const nomesDez = [...new Set(dez.treinos.flatMap(t => t.vagas.flatMap(v => v.opcoes)))];
+ok(dez.treinos.length === 6 && dez.treinos.reduce((s, t) => s + t.vagas.length, 0) <= 60, 'base de dezembro: 6 dias e cabe no limite de 60 exercícios do Mfit');
+ok(dez.treinos.every(t => { const s = t.vagas.reduce((a, v) => a + v.series, 0); return s >= 22 && s <= 28; }), 'base de dezembro: 22 a 28 séries por dia (treino de 50-60 min)');
+const cheia = A.montarDaAluna(dez, { id: 'u-dez' }, A.contexto({ historico: nomesDez, autorizados: [] }));
+ok(cheia.avisos.length === 0, 'base de dezembro: aluna que faz tudo sai sem aviso (mobilidade, 2 de core, bi-sets)' + (cheia.avisos.length ? ': ' + cheia.avisos.join(' | ') : ''));
+ok(A.grupo('Agachamento Cossaco') === 'Mobilidade' && A.grupo('Agachamento Lateral Alternado') === 'Mobilidade', 'cossaco e agachamento lateral alternado contam como a mobilidade do dia');
+ok(!A.regrasTreino({ letra: 'E', nome: 'Costas e bíceps (superior posterior)', exercicios: [{ nome: 'Pallof Press' }, { nome: 'Abdominal Infra Solo' }] }).length, '"superior posterior" é dia de superior, não de inferior');
+const predioDez = A.montarDaAluna(dez, { id: 'u-predio-dez' }, A.contexto({ historico: nomesDez.filter(n => ['halter', 'peso_corpo', 'elastico', 'barra'].includes(A.equipamento(n))), autorizados: nomesDez.map(nome => ({ nome, origem: 'mfit' })) }));
+ok(!predioDez.treinos.flatMap(t => t.exercicios).some(e => A.equipamento(e.nome) === 'maquina'), 'base de dezembro: aluna de prédio não recebe máquina');
+ok(predioDez.treinos.some(t => t.exercicios.filter(e => e.nome === 'Stiff com Halteres').length) && predioDez.treinos.filter(t => t.exercicios.some(e => e.nome === 'Stiff com Halteres')).length >= 2, 'o mesmo exercício pode aparecer em dias diferentes (stiff no glúteo e no posterior)');
+
 console.log(falhas ? `\n${falhas} falha(s)` : '\nTudo certo');
 process.exit(falhas ? 1 : 0);

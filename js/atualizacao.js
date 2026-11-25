@@ -24,26 +24,28 @@ export const chave = n => String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '
 // "agachamento goblet com halter" é halter mesmo tendo "agachamento".
 export function equipamento(nome) {
   const n = chave(nome);
-  if (/\b(halter|halteres|dumbbell|goblet|kettlebell|kettle)\b/.test(n)) return 'halter';
-  if (/\b(maquina|cadeira|mesa flexora|leg ?press|leg 45|hack|pendulo|articulad[ao]|peck|voador|graviton|adutora|abdutora|extensora|flexora|panturrilha sentad[ao]|remada baixa|cross ?over)\b/.test(n)) return 'maquina';
+  if (/\b(halter|halteres|dumbbell|goblet|kettlebell|kettle|arnold)\b/.test(n)) return 'halter';
+  if (/\b(maquina|cadeira|mesa flexora|leg ?press|leg 45|hack|pendulo|articulad[ao]|quadril 45|peck|voador|graviton|adutora|abdutora|extensora|flexora|panturrilha sentad[ao]|remada baixa|cross ?over)\b/.test(n)) return 'maquina';
   if (/\b(polia|cabo|crossover|corda|puxada|pulldown|pull down|face pull|pallof)\b/.test(n)) return 'polia';
   if (/\bsmith\b/.test(n)) return 'smith';
-  if (/\b(barra|terra|sumo|stiff|supino reto|levantamento)\b/.test(n)) return 'barra';
+  if (/\b(barra|terra|sumo|stiff|supino reto|levantamento|remada curvada)\b/.test(n)) return 'barra';
   if (/\b(elastico|mini ?band|band|superband)\b/.test(n)) return 'elastico';
-  if (/\b(prancha|abdominal|abs|dead ?bug|flexao|mobilidade|alongamento|ponte|bird ?dog|cossaco|caminhada|polichinelo|burpee|infra|canivete|hollow)\b/.test(n)) return 'peso_corpo';
+  if (/\b(prancha|abdominal|abs|dead ?bug|flexao|mobilidade|alongamento|ponte|bird ?dog|cossaco|lateral alternado|caminhada|polichinelo|burpee|infra|canivete|hollow)\b/.test(n)) return 'peso_corpo';
   return 'outro';
 }
 const GUIADO = new Set(['maquina']); // o que conta como "máquina" na regra do bi-set (polia e Smith usados livres não contam)
 
 export function grupo(nome) {
   const n = chave(nome);
-  if (/mobilidade|alongamento|90 90|gato|libera/.test(n)) return 'Mobilidade';
+  // Cossaco e agachamento lateral alternado o Igor usa como a mobilidade do dia de inferior
+  if (/mobilidade|alongamento|90 90|gato|libera|cossaco|lateral alternado|rotacao de quadril/.test(n)) return 'Mobilidade';
   if (/prancha|abdominal|abs|dead ?bug|crunch|infra|obliquo|pallof|canivete|core|hollow/.test(n)) return 'Core';
-  if (/quadril|glute|abdu|coice|ponte|thrust|caminhada lateral|mini ?band|kickback|elevacao pelvica/.test(n)) return 'Glúteo';
-  if (/stiff|flexora|terra|romeno|posterior|nordic/.test(n)) return 'Posterior';
+  if (/quadril|glute|abdu|adu[ct]|coice|ponte|thrust|caminhada lateral|mini ?band|kickback|elevacao pelvica/.test(n)) return 'Glúteo';
+  if (/stiff|flexora|flexao de joelho|terra|romeno|posterior|nordic/.test(n)) return 'Posterior';
   if (/panturrilha|gemeos/.test(n)) return 'Panturrilha';
-  if (/agacha|leg|extensora|afundo|bulgaro|passada|avanco|hack|sumo|step|adutora|cossaco/.test(n)) return 'Quadríceps';
+  if (/agacha|goblet|leg|extensora|afundo|bulgaro|passada|avanco|hack|sumo|step|adutora|cossaco/.test(n)) return 'Quadríceps';
   if (/remada|puxada|pulldown|pull down|barra fixa|serrote|face pull/.test(n)) return 'Costas';
+  if (/crucifixo inv|face pull/.test(n)) return 'Ombro';
   if (/supino|crucifixo|flexao de bra|peck|crossover|voador/.test(n)) return 'Peito';
   if (/desenvolvimento|elevacao lateral|elevacao frontal|ombro|arnold|remada alta/.test(n)) return 'Ombro';
   if (/rosca|biceps|triceps|testa|frances|mergulho/.test(n)) return 'Braços';
@@ -91,9 +93,9 @@ const embaralha = (arr, r) => { const a = [...arr]; for (let i = a.length - 1; i
 export function montarDaAluna(base, aluna, ctx, { assinatura = null, evitar = new Set() } = {}) {
   const r = sorteio(`${aluna.id}|${base.mes}`);
   const avisos = [], escolhas = {}, metodos = {}, repsEsc = {};
-  const usados = new Set();
   const treinos = (base.treinos || []).map(t => {
     const exercicios = [];
+    const usados = new Set(); // sem repetir no mesmo dia; entre dias pode (o Igor repete stiff, dead bug...)
     const vagasB = new Set((t.vagas || []).map(v => v.biset_com).filter(Boolean)); // vaga que é o B de um bi-set
     for (const v of t.vagas || []) {
       const tk = chave(t.nome);
@@ -146,8 +148,9 @@ export function regrasTreino(t) {
     const dosCore = grupo(e.nome) === 'Core' && grupo(par.nome) === 'Core';
     if (!dosCore && equipamento(par.nome) !== 'halter') prob.push(`${t.letra}: o B do bi-set (${par.nome}) não é com halter`);
   }
-  if (/inferior|quadr|glut|posterior|perna/i.test(t.nome) && !ex.some(e => grupo(e.nome) === 'Mobilidade')) prob.push(`${t.letra}: treino de inferior sem mobilidade`);
-  if (/superior|costas|peito|ombro|tr[ií]ceps|b[ií]ceps|bra[cç]o/i.test(t.nome) && ex.filter(e => grupo(e.nome) === 'Core').length < 2) prob.push(`${t.letra}: treino de superior com menos de 2 de abdômen/core`);
+  const sup = /superior|costas|peito|ombro|tr[ií]ceps|b[ií]ceps|bra[cç]o|mmss/i.test(t.nome);
+  if (!sup && /inferior|quadr|gl[uú]t|posterior|perna|mmii/i.test(t.nome) && !ex.some(e => grupo(e.nome) === 'Mobilidade')) prob.push(`${t.letra}: treino de inferior sem mobilidade`);
+  if (sup && ex.filter(e => grupo(e.nome) === 'Core').length < 2) prob.push(`${t.letra}: treino de superior com menos de 2 de abdômen/core`);
   if (ex.some(e => /coice.*(triceps|halter)|triceps coice|kickback de triceps/.test(chave(e.nome)))) prob.push(`${t.letra}: tríceps coice (o Igor não usa)`);
   return prob;
 }
