@@ -693,3 +693,10 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - [x] Letra cinza mais clara (escuro #aca79f, claro #55555c).
 - O aviso "Seu navegador não aceita lembrete" já não aparecia no app das lojas.
 - SW v84.
+
+## 26/11/2026 — Correções do Igor (prints do celular)
+- [x] Story com a foto dela: no Android "Salvar na galeria" não salvava, e mandando pro WhatsApp/Instagram a arte sem fundo ficava preta. Agora ela escolhe a foto no app e o app junta foto + arte numa imagem 1080x1920 (JPEG) que vai pro compartilhar normal. No iPhone continua o "copiar só a arte" como opção.
+- [x] Ranking do mês no Início (pódio, a posição dela, bônus do top 3), logo abaixo do desafio/meta; toca e abre O time.
+- [x] "🎁 Loja do time" no Início (camiseta + quanto falta) e a tela de pontos com o título "Loja do time".
+- [x] Carinhas do "Quanto cansou?" no tema claro: a escolhida não mudava de cor (regra do claro ganhava do .on). Agora fica laranja.
+- Passeio guiado atualizado (ranking e loja no lugar do "O time"). SW v87. Teste: tests/fix-2611.mjs.

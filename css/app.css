@@ -604,3 +604,7 @@ details.cfg>summary{list-style:none;cursor:pointer}details.cfg>summary::-webkit-
 .bloco details.mais.opc{padding:0;border:0;background:transparent}
 details.cfg>summary{flex-wrap:wrap;gap:2px 10px}details.cfg>summary .muted{min-width:0}
 details.cfg{min-width:0;max-width:100%}details.cfg .cfg-box{grid-template-columns:minmax(0,1fr)}details.cfg .cfg-box>*{min-width:0}
+/* 26/11: no tema claro a carinha escolhida não mudava de cor (a regra do claro ganhava da .on) */
+:root[data-tema="claro"] .scale5 button.on{background:var(--accent);color:var(--accent-ink)}
+.home-rank .rk .md{font-size:1.125rem}
+.foto-story{display:block;width:100%;max-height:52vh;object-fit:contain;border-radius:14px;background:#000}

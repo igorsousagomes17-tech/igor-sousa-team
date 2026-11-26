@@ -111,7 +111,7 @@ const pularMob = async p => { await p.click('#pular'); await w(p, 400); }; // mo
 { const { ctx, p } = await nova({ android: true }); await entrar(p);
   await p.evaluate(() => { history.pushState({ name: 'card', arg: JSON.stringify({ titulo: 'Treino A', min: 40, seg: 2400, ex: 7, total: 7, series: 20, completo: true, kcal: 200 }) }, '', '#card'); dispatchEvent(new PopStateEvent('popstate', { state: history.state })); }); await w(p, 1500);
   const bt = await p.$('#arte, [data-arte], button:has-text("foto de fundo")'); if (bt) { await bt.click(); await w(p, 1500); }
-  if (await p.$('#salvaArte')) { await p.click('#salvaArte'); await w(p, 2200); const tt = await p.innerText('#toast'); ok(/figurinha/.test(tt) && !/escolhe ela/.test(tt), `aviso da arte salva fala da figurinha (${tt.slice(0, 80)})`); ok(!(await p.getAttribute('#toast', 'class')).includes('topo'), 'aviso embaixo, sem cobrir a arte'); await shot(p, 'arte'); }
+  // 26/11: o story com foto agora é montado no app (tests/fix-2611.mjs); sem mais "Salvar na galeria"
   else ok(false, 'abriu a tela da arte do story');
   await ctx.close(); }
 

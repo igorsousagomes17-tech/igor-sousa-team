@@ -99,13 +99,8 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   await terminarTudo(p);
   await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900);
   await p.click('#shareFoto'); await espera(p, 1500);
-  ok(!(await p.$('#copiaArte')), 'Android: sem botão de copiar (Instagram do Android não cola imagem)');
-  ok(/Salvar na galeria/i.test(await p.innerText('#salvaArte')), 'Android: botão diz "Salvar na galeria"');
-  ok(/figurinha/i.test(await p.innerText('.passos-ig')), 'Android: passo a passo manda pôr a arte pela figurinha');
-  const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#salvaArte'); const d = await dl;
-  ok(d && /\.png$/.test(d.suggestedFilename()), 'Android: salva PNG (mantém a transparência) sem abrir o compartilhar');
-  ok(/galeria/i.test(await p.innerText('#toast')), 'Android: avisa que salvou na galeria');
-  ok(await p.isVisible('#abreIg'), 'Android: depois de salvar aparece "Abrir o story do Instagram"'); await shot(p, 'story-sem-fundo-android');
+  ok(!(await p.$('#copiaArte')) && !(await p.$('#salvaArte')), 'Android: sem copiar nem "Salvar na galeria" (26/11: não salvava e ficava preto)');
+  ok(!!(await p.$('#fsArq')), 'Android: pede a foto dela pra montar o story aqui'); await shot(p, 'story-sem-fundo-android');
   await ctx.close(); }
 
 console.log('erros de página:', errs); await b.close();

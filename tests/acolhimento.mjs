@@ -24,7 +24,7 @@ for (const vw of [375,360]) {
   await shot('home'); await larg('home');
   await p.click('#resumoSem'); await p.clock.runFor(800); await shot('resumo'); await larg('resumo'); console.log(vw,'resumo:',(await p.innerText('.view')).replace(/\s+/g,' ').slice(0,200));
   await p.click('[data-go="home"]'); await p.clock.runFor(800); if(await p.isVisible('#resumoSem')) errs.push(vw+' card do resumo não sumiu depois de visto');
-  await p.click('.home-time'); await p.clock.runFor(1200); await shot('time'); await larg('time'); const tm=(await p.innerText('.view')).replace(/\s+/g,' '); console.log(vw,'time:',tm.slice(0,200)); if(!/ranking do mês/i.test(tm)) errs.push(vw+' time não carregou');
+  await p.click('#rankHome'); await p.clock.runFor(1200); await shot('time'); await larg('time'); const tm=(await p.innerText('.view')).replace(/\s+/g,' '); console.log(vw,'time:',tm.slice(0,200)); if(!/ranking do mês/i.test(tm)) errs.push(vw+' time não carregou');
   await p.click('.tabs [data-go="perfil"]'); await p.clock.runFor(900); await shot('perfil'); if(!(await p.isVisible('#swTime'))) errs.push(vw+' sem opção do time no perfil');
   await p.click('#swTime'); await p.clock.runFor(500);
   await p.click('#tour'); await p.clock.runFor(1500); if(!(await p.isVisible('.tour'))) errs.push(vw+' rever passeio não funcionou'); else await p.click('.tour-pula');

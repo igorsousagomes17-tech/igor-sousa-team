@@ -20,7 +20,7 @@ ok(!/···|…/.test(await txt('.tabs')), 'nome das abas inteiro');
 // Início: um card do Igor por vez
 const v = await txt('.view');
 ok(!(/O Igor te respondeu/.test(v) && /Recado do Igor/.test(v)), 'Início: resposta e recado do Igor não aparecem juntos');
-ok(!!(await p.$('.home-atalhos .home-ia')) && !!(await p.$('.home-atalhos .home-time')), 'Tira-dúvidas e O time lado a lado');
+ok(!!(await p.$('.home-atalhos .home-ia')) && !!(await p.$('#rankHome')), 'Tira-dúvidas lado a lado com a Loja; ranking no Início');
 await p.screenshot({ path: `${D}/ux-home.png`, fullPage: true });
 
 // Treino A: tela do exercício

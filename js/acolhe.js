@@ -42,8 +42,9 @@ const PASSOS = [
   ['#semana', 'Começo da semana', 'Toda segunda você escolhe por qual treino começar a semana. Na dúvida, toca em "seguir a ordem normal" e eu mostro o treino do dia.'],
   ['.card.hero', 'Treino de hoje', 'Aqui aparece o treino do dia. Toca em abrir e é só seguir: o app mostra o exercício, a sua última carga e o cronômetro do descanso.'],
   ['.home-ia', 'Tira-dúvidas 24h', 'Ficou com dúvida no meio do treino? Pergunta aqui. A IA do time responde na hora, com base no seu treino.'],
-  ['.home-time', 'O time', 'Você não treina sozinha: aqui você vê quem do time já treinou hoje e o ranking do mês.'],
-  ['.tabs', 'As abas', 'Aqui embaixo: Treino (todos os seus treinos), Vídeos, Pontos e prêmios, Evolução e Perfil. No Perfil tem sua anamnese, as respostas do Igor e este passeio, se quiser ver de novo.'],
+  ['.home-rank', 'Ranking do mês', 'Você não treina sozinha: aqui fica o ranking do mês. Toca pra ver o ranking inteiro e quem já treinou hoje.'],
+  ['.home-loja', 'Loja do time', 'Cada treino vale pontos. Aqui você vê quanto falta pra trocar pela camiseta do time ou pelo plano trimestral.'],
+  ['.tabs', 'As abas', 'Aqui embaixo: Treino (todos os seus treinos), Vídeos, Evolução (com seus pontos) e Perfil. No Perfil tem sua anamnese, as respostas do Igor e este passeio, se quiser ver de novo.'],
 ];
 export const passeioPendente = perfil => !demoPula() && !LSget('tour@' + perfil.id) && !!perfil.objetivo;
 export function passeio(perfil) {
@@ -212,4 +213,13 @@ export function htmlTime(d) {
     <div class="card"><h3>${t('Quem treinou hoje')}</h3>
       ${(d.feed || []).length ? `<div class="feed">${d.feed.slice(0, 20).map(f => `<div class="fd"><span class="av">${esc(iniciais(f.nome))}</span><div><b>${esc(f.nome)}</b> ${t('fez {x}', { x: esc(nomeSessao(f.titulo)) })} 💪<span class="muted small" style="display:block">${quanto(f.finalizada_em)}</span></div></div>`).join('')}</div>` : `<p class="muted mt">${t('Ninguém treinou ainda hoje. Bora ser a primeira? 😉')}</p>`}</div>
     <p class="muted small center">${t('No time aparece só o primeiro nome e a inicial. Dá pra sair do ranking no seu Perfil.')}</p>`;
+}
+// Ranking no Início (Igor, 26/11: "quero o ranking visível"): pódio do mês + a posição dela, toca e abre O time
+export function htmlRankHome(d) {
+  const medalha = i => ['🥇', '🥈', '🥉'][i] || `${i + 1}º`, lista = rankComEmpate(d), top3 = lista.filter(x => x.i < 3).slice(0, 3), eu = lista.find(x => x.r.eu);
+  if (!lista.length) return `<b style="font-size:0.9375rem">🏆 ${t('Ranking do mês')}</b><p class="muted">${t('O ranking começa com o primeiro treino do mês.')}</p>`;
+  return `<div class="row between" style="align-items:baseline"><b style="font-size:0.9375rem">🏆 ${t('Ranking do mês')}</b><span class="small" style="color:var(--accent-t);font-weight:700">${t('ver tudo')} ›</span></div>
+    <div class="rank" style="margin-top:6px">${top3.map(({ r, i }) => `<div class="rk ${r.eu ? 'eu' : ''}" style="padding:6px"><span class="md">${medalha(i)}</span><b style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.nome)}${r.eu ? ` <span class="pill on" style="font-size:0.6875rem">${t('você')}</span>` : ''}</b><span class="n">${tp(r.n, '{n} treino', '{n} treinos')}</span></div>`).join('')}</div>
+    ${eu && !top3.includes(eu) ? `<p class="small" style="margin-top:6px;font-weight:600">${t('Você está em {p}º com {n}. Bora subir!', { p: eu.i + 1, n: tp(eu.r.n, '{n} treino', '{n} treinos') })}</p>` : ''}
+    <p class="muted small" style="margin-top:4px">${t('Top 3 ganha +{a}, +{b} e +{c} pontos no dia 1º.', { a: num(BONUS_RANKING[0]), b: num(BONUS_RANKING[1]), c: num(BONUS_RANKING[2]) })}</p>`;
 }

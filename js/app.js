@@ -303,8 +303,9 @@ routes.home = async () => {
     <button class="card" data-go="pontos" style="text-align:left;border:0;color:var(--fg)"><h3>${esc(!desafio?.titulo || desafio.titulo === 'Desafio do mês' ? t('Desafio do mês') : desafio.titulo)}</h3><div class="big" style="margin:6px 0 4px">${mesCount}<small>/${tp(dmeta, '{n} treino', '{n} treinos')}</small></div><div class="bar"><i style="width:${Math.min(100, mesCount / dmeta * 100)}%"></i></div><p class="muted mt" id="desaf">${mesCount >= dmeta ? t('Batido! 🎉') : tp(dmeta - mesCount, 'Falta {n} pra +{b} pts', 'Faltam {n} pra +{b} pts', { b: desafio?.pontos_bonus || 200 })}</p></button>
     <div class="card"><h3>${t('Meta da semana')}</h3><div class="big" style="margin:6px 0 4px">${semCount}<small>/${tp(meta, '{n} treino', '{n} treinos')}</small></div><div class="row" style="gap:4px">${Array.from({ length: meta }, (_, i) => `<i class="dot ${i < semCount ? 'on' : ''}"></i>`).join('')}</div><p class="muted mt">${semCount >= meta ? t('Semana fechada 💪') : tp(meta - semCount, 'Falta {n} · você consegue', 'Faltam {n} · você consegue')}</p></div>
   </div>
+  <button class="card home-rank" id="rankHome" data-go="comunidade" style="text-align:left;border:1px solid var(--line);color:var(--fg);width:100%"><b style="font-size:0.9375rem">🏆 ${t('Ranking do mês')}</b><p class="muted">${t('Carregando…')}</p></button>
+  <div class="grid2 home-atalhos"><button class="card home-loja" data-go="pontos" style="text-align:left;border:1px solid var(--line);color:var(--fg)"><img src="icons/premios/premio-camiseta-essencial.png" alt="" width="360" height="391" loading="lazy" style="width:56px;height:auto;float:right;margin:-4px -4px 0 6px"><b style="font-size:0.9375rem">🎁 ${t('Loja do time')}</b><p class="muted">${(() => { const pts = p.pontos || 0, pr = PREMIOS.find(x => x.pts > pts); return PREMIOS.some(x => pts >= x.pts) ? t('Dá pra trocar seus pontos!') : pr ? t('{n} pts · faltam {f} pra {x}', { n: num(pts), f: num(pr.pts - pts), x: t(pr.curto || pr.nome) }) : t('{n} pts', { n: num(pts) }); })()}</p></button><button class="card home-ia" data-go="assistente" style="text-align:left;border:1px solid var(--line);color:var(--fg)"><b style="font-size:0.9375rem">💬 ${t('Tira-dúvidas 24h')}</b><p class="muted">${t('A IA do time responde na hora.')}</p></button></div>
   ${p.role !== 'admin' ? W.cardHtml(p, sessoes, db.LS) : ''}
-  <div class="grid2 home-atalhos"><button class="card home-ia" data-go="assistente" style="text-align:left;border:1px solid var(--line);color:var(--fg)"><b style="font-size:0.9375rem">💬 ${t('Tira-dúvidas 24h')}</b><p class="muted">${t('A IA do time responde na hora.')}</p></button><button class="card home-time" data-go="comunidade" style="text-align:left;border:1px solid var(--line);color:var(--fg)"><b style="font-size:0.9375rem">🔥 ${t('O time')}</b><p class="muted" id="timeHoje">${t('Quem treinou hoje e o ranking.')}</p></button></div>
   ${resumoAnt ? A.cardResumoHome(resumoAnt) : ''}
   <div class="row between"><h3>${t('Programas extras')}</h3><button class="back" style="color:var(--accent-t)" data-go="lib">${t('ver todos')}</button></div>
   <div class="hscroll">${cardCorrida(true)}${emCasa() ? '' : cardSpin(true) + cardHyrox(true)}${ordemProg(programas).map(pr => `<button class="lib mini" data-go="programa" data-arg="${pr.slug}" data-bg="${esc(pr.capa_url)}" style=""><b style="font-size:${tamTitulo(tc(pr.titulo), 126, 17)}">${esc(tc(pr.titulo))}</b><span>${esc(subProg(pr))}</span></button>`).join('')}${emCasa() ? cardSpin(true) + cardHyrox(true) : ''}</div></div>`, 'home');
@@ -317,7 +318,7 @@ routes.home = async () => {
   if ($('#resumoSem')) $('#resumoSem').onclick = () => { A.resumoVisto(resumoAnt.semanaKey); go('semana', resumoAnt.semanaKey + '|home'); };
   if ($('.volta-x')) $('.volta-x').onclick = () => { A.voltaVisto(); $('#volta')?.remove(); };
   const ult = sessoes.find(s => s.finalizada_em); A.avisarSW({ ultimo: ult?.finalizada_em || null, nome: primeiroNome(p.nome), proximo: prox ? t('Treino {l}', { l: prox.letra }) : t('treino') });
-  rapido(db.comunidade(), null, 6000).then(d => { const el = $('#timeHoje'); if (el && d?.hoje) el.textContent = tp(d.hoje, '{n} já treinou hoje. Bora?', '{n} já treinaram hoje. Bora?'); });
+  rapido(db.comunidade(), null, 6000).then(d => { const el = $('#rankHome'); if (el && rotaAtual === 'home') el.innerHTML = d ? A.htmlRankHome(d) : `<b style="font-size:0.9375rem">🏆 ${t('Ranking do mês')}</b><p class="muted">${t('Toca pra ver o ranking e quem treinou hoje.')}</p>`; });
   if (A.passeioPendente(p) && !S.fotosPend && !$('#overlay')?.innerHTML && !document.querySelector('.bv')) setTimeout(() => { if (rotaAtual === 'home' && !S.fotosPend && !$('#overlay')?.innerHTML && !document.querySelector('.tour')) A.passeio(p); }, 500);
   $$('.semop').forEach(b => b.onclick = () => { db.LS.set('inicioSemana', { semana: isoWeek(new Date()), letra: b.dataset.letra }); routes.home(); toast(t('Semana começa pelo Treino {l} ✓', { l: b.dataset.letra })); });
   if ($('#casaOk')) $('#casaOk').onclick = () => { db.LS.set('casaOk', 1); $('#casa')?.remove(); };
@@ -1433,35 +1434,48 @@ routes.card = async (arg) => { try { ['800 54px "Barlow Condensed"', '500 30px B
   };
 };
 
-// Arte sem fundo (igual Strava): ela copia, abre o story com a foto dela e cola por cima.
+// Story com a foto dela (26/11): no Android a arte sem fundo não salvava na galeria e no WhatsApp/Instagram ficava com fundo preto.
+// Agora ela escolhe a foto aqui e o app junta foto + arte numa imagem só, que vai pro story como uma imagem normal.
+async function juntaFotoArte(foto, arte) {
+  const abre = b => new Promise((ok, err) => { const u = URL.createObjectURL(b), im = new Image(); im.onload = () => { ok(im); setTimeout(() => URL.revokeObjectURL(u), 1000); }; im.onerror = err; im.src = u; });
+  const [f, a] = await Promise.all([abre(foto), abre(arte)]), W = 1080, H = 1920, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'), k = Math.max(W / f.naturalWidth, H / f.naturalHeight), fw = f.naturalWidth * k, fh = f.naturalHeight * k;
+  x.fillStyle = '#000'; x.fillRect(0, 0, W, H); x.drawImage(f, (W - fw) / 2, (H - fh) / 2, fw, fh); // foto cobrindo a tela toda (como o story)
+  const g = x.createLinearGradient(0, H * 0.35, 0, H); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.6)'); x.fillStyle = g; x.fillRect(0, 0, W, H); // escurece embaixo pra arte ler bem
+  const aw = W * 0.86, ah = a.naturalHeight * aw / a.naturalWidth; x.drawImage(a, (W - aw) / 2, H - ah - 150, aw, ah); // arte embaixo, rosto dela livre em cima
+  return new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+}
 function artePorCima(blob) {
-  // Android: compartilhar a PNG direto pro Instagram vira o FUNDO do story (fica preto atrás) e o Instagram do Android não cola imagem pelo Aa.
-  // Então lá a arte vai pra galeria e entra no story pela figurinha de foto, mantendo a transparência.
-  const android = /Android/i.test(navigator.userAgent);
-  const url = URL.createObjectURL(blob), podeCopiar = !android && !!(navigator.clipboard?.write && window.ClipboardItem);
+  const url = URL.createObjectURL(blob), podeCopiar = !/Android/i.test(navigator.userAgent) && !!(navigator.clipboard?.write && window.ClipboardItem);
   overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:12px;margin-top:16px">
     <h2>${t('Story com a sua foto')}</h2>
-    <div class="xadrez"><img src="${url}" alt="${t('Arte do treino sem fundo')}"></div>
-    <ol class="passos-ig"><li>${podeCopiar ? t('Toca em <b>Copiar a arte</b>.') : android ? t('Toca em <b>Salvar na galeria</b>.') : t('Toca em <b>Salvar a arte</b>.')}</li><li>${t('No Instagram, abre o story e escolhe a sua foto.')}</li><li>${podeCopiar ? t('Toca em <b>Aa</b>, segura o dedo na tela e escolhe <b>Colar</b>. A arte entra por cima da foto: é só ajustar o tamanho.') : t('Toca no ícone de figurinha, escolhe a arte que você salvou e ajusta o tamanho.')}</li></ol>
-    ${podeCopiar ? `<button class="btn" id="copiaArte">${t('Copiar a arte')}</button>` : ''}
-    <button class="btn ${podeCopiar ? 'ghost' : ''} sm" id="salvaArte">${android ? t('Salvar na galeria') : t('Salvar a arte')}</button>
-    ${android ? `<button class="btn sm" id="abreIg" hidden>${t('Abrir o story do Instagram')}</button><p class="muted center small">${t('Não salvou? Segura o dedo na arte acima e escolhe Baixar imagem.')}</p>` : ''}
+    <div id="fsPrev"><div class="xadrez"><img src="${url}" alt="${t('Arte do treino sem fundo')}"></div></div>
+    <p class="muted" id="fsTxt">${t('Escolhe uma foto sua (do treino, do espelho…) que eu coloco a arte por cima.')}</p>
+    <label class="btn" id="fsEsc" style="text-align:center">📷 ${t('Escolher minha foto')}<input type="file" accept="image/*" id="fsArq" hidden></label>
+    <button class="btn" id="fsPost" hidden>${t('Postar no story')}</button>
+    ${podeCopiar ? `<button class="btn ghost sm" id="copiaArte">${t('Ou copiar só a arte (cola no story pelo Aa)')}</button>` : ''}
     <button class="btn ghost sm" id="c">${t('Fechar')}</button></div></div>`);
-  // Abre direto a câmera de story do Instagram (aí ela escolhe a foto dela e põe a arte pela figurinha)
-  if ($('#abreIg')) $('#abreIg').onclick = () => { location.href = 'intent://story-camera#Intent;scheme=instagram;package=com.instagram.android;S.browser_fallback_url=https%3A%2F%2Fwww.instagram.com%2F;end'; };
-  const fecha = () => { closeOverlay(); URL.revokeObjectURL(url); };
+  let pronta = null, urlP = null;
+  const fecha = () => { closeOverlay(); URL.revokeObjectURL(url); if (urlP) URL.revokeObjectURL(urlP); };
   $('#c').onclick = fecha;
-  const ok = r => { pontosStory(r); };
-  if ($('#copiaArte')) $('#copiaArte').onclick = async () => {
-    try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); toast(t('Arte copiada ✓ Agora abre o story e cola por cima da sua foto.')); $('#copiaArte').textContent = t('Copiada ✓'); ok('shared'); }
-    catch { toast(t('Não deu pra copiar aqui. Toca em Salvar a arte.'), true); }
+  $('#fsArq').onchange = async ev => {
+    const f = ev.target.files?.[0]; if (!f) return; const esc0 = $('#fsEsc').firstChild; esc0.textContent = t('Montando…');
+    try { pronta = await juntaFotoArte(f, blob); } catch { pronta = null; }
+    esc0.textContent = '📷 ' + t('Trocar a foto'); ev.target.value = '';
+    if (!pronta) return toast(t('Não consegui abrir essa foto. Tenta outra.'), true);
+    if (urlP) URL.revokeObjectURL(urlP); urlP = URL.createObjectURL(pronta);
+    $('#fsPrev').innerHTML = `<img class="foto-story" src="${urlP}" alt="${t('Seu story com a arte do treino')}">`; $('#fsTxt').textContent = t('Ficou assim. Toca em Postar no story e escolhe o Instagram.');
+    $('#fsPost').hidden = false; $('#fsEsc').classList.add('ghost', 'sm');
   };
-  $('#salvaArte').onclick = async () => {
-    const file = new File([blob], 'treino-feito-sem-fundo.png', { type: 'image/png' });
-    if (nativoApp()) { const n = await compartilharNativo(blob, file.name, t('Treino feito')); if (n === 'shared') { ok('shared'); return; } if (n === 'cancel') return; } // app das lojas: abre o compartilhar do celular (dá pra mandar direto pro story)
-    if (android) { baixarImagem(blob, file.name); $('#salvaArte').textContent = t('Salva ✓'); $('#abreIg').hidden = false; ok('arte'); return; } // um aviso só, que não manda escolher a imagem como fundo (deixava o story preto)
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); ok('shared'); return; } catch (e) { if (e?.name === 'AbortError') return; } }
-    const a = document.createElement('a'); a.href = url; a.download = file.name; a.click(); ok('download');
+  $('#fsPost').onclick = async () => {
+    if (!pronta) return; const bt = $('#fsPost'); bt.disabled = true;
+    let r; try { r = await cardImagem({ pronto: pronta }); } catch { r = 'erro'; } bt.disabled = false;
+    if (r === 'erro') return toast(t('Não consegui abrir o compartilhar. Tira um print dessa tela e posta 😉'), true);
+    if (r !== 'cancel') pontosStory(r);
+  };
+  if ($('#copiaArte')) $('#copiaArte').onclick = async () => {
+    try { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); toast(t('Arte copiada ✓ Agora abre o story e cola por cima da sua foto.')); $('#copiaArte').textContent = t('Copiada ✓'); pontosStory('shared'); }
+    catch { toast(t('Não deu pra copiar aqui. Escolhe sua foto aqui em cima.'), true); }
   };
 }
 // +30 do story (card do treino e resumo da semana, mesmo limite do dia). Avisa da imagem na hora; os pontos chegam depois.
@@ -1813,8 +1827,8 @@ routes.semana = async (arg) => {
 // Prêmios (Igor, 26/11/2026): só a camiseta do time (3 modelos, ela escolhe) e o plano trimestral da consultoria.
 // A troca é com o Igor no WhatsApp (não é loja automática). Os pontos não zeram.
 const PREMIOS = [
-  { id: 'camiseta', pts: 3500, nome: 'Camiseta do time', sub: 'Você escolhe o modelo. Logo na frente, estampa nas costas.', falta: 'Faltam <b style="color:var(--fg)">{n} pts</b> pra camiseta do time.' },
-  { id: 'plano', pts: 12000, nome: 'Plano trimestral da consultoria', sub: '3 meses de treino com o Igor, pagos com os seus pontos.', falta: 'Faltam <b style="color:var(--fg)">{n} pts</b> pro plano trimestral.' },
+  { id: 'camiseta', pts: 3500, curto: 'a camiseta', nome: 'Camiseta do time', sub: 'Você escolhe o modelo. Logo na frente, estampa nas costas.', falta: 'Faltam <b style="color:var(--fg)">{n} pts</b> pra camiseta do time.' },
+  { id: 'plano', pts: 12000, curto: 'o plano trimestral', nome: 'Plano trimestral da consultoria', sub: '3 meses de treino com o Igor, pagos com os seus pontos.', falta: 'Faltam <b style="color:var(--fg)">{n} pts</b> pro plano trimestral.' },
 ];
 const CAMISETAS = [['essencial', 'Essencial'], ['treino-feito', 'Treino Feito'], ['constancia', 'Constância']];
 routes.pontos = async () => {
@@ -1828,7 +1842,7 @@ routes.pontos = async () => {
   <div class="card"><h3>${t('Como ganhar')}</h3><div style="display:grid;gap:8px;margin-top:8px;font-size:0.875rem">
     ${[['Treino completo', 50], ['Treino pela metade (10 min ou mais)', t('uma parte')], ['Treino presencial com o Igor', 50], [t('Meta da semana batida ({n} treinos completos na semana)', { n: p.dias_semana || 4 }), 100, 1], [t('Desafio do mês ({n} treinos completos no mês)', { n: des0?.meta_treinos || 16 }), des0?.pontos_bonus || 200, 1], ['Card no story', 30], ['Foto de evolução (1x/mês)', 80], ['Amiga indicada assinou', 300], [t('Top 3 do ranking do mês (1º, 2º e 3º)'), A.BONUS_RANKING.map(num).join(' · '), 1]].map(([a, b, pronto]) => `<div class="row between" style="gap:8px"><span>${pronto ? a : t(a)}</span><b style="color:var(--accent-t);white-space:nowrap">+${b}</b></div>`).join('')}</div>
     <p class="muted mt small">${t('Não precisa mandar comprovante dos treinos: os pontos entram sozinhos.')} ${t('Completo é com todos os exercícios (o HIIT opcional não precisa). Fez só uma parte, com 10 min ou mais? Ganha proporcional: 3 de 7 = +20.')}</p></div>
-  <div class="row between"><h3>${t('Prêmios')}</h3><span class="muted small">${t('Seus pontos não zeram.')}</span></div>
+  <div class="row between"><h3>🎁 ${t('Loja do time')}</h3><span class="muted small">${t('Seus pontos não zeram.')}</span></div>
   ${(() => { const prox = PREMIOS.find(x => x.pts > p.pontos), ja = PREMIOS.some(x => p.pontos >= x.pts);
     return (ja ? `<p style="font-weight:600">${t('Já dá pra trocar seus pontos! Toca em "Quero esse" no prêmio que escolher.')}</p>` : '') + (prox ? `<p class="muted">${t(prox.falta, { n: num(prox.pts - p.pontos) })}</p>` : ''); })()}
   <div class="pontos-premios">${PREMIOS.map(x => `<div class="card premio">
