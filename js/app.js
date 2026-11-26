@@ -1808,6 +1808,13 @@ routes.semana = async (arg) => {
 };
 
 // PONTOS --------------------------------------------------------------------------
+// Prêmios (Igor, 26/11/2026): só a camiseta do time (3 modelos, ela escolhe) e o plano trimestral da consultoria.
+// A troca é com o Igor no WhatsApp (não é loja automática). Os pontos não zeram.
+const PREMIOS = [
+  { id: 'camiseta', pts: 3500, nome: 'Camiseta do time', sub: 'Você escolhe o modelo. Logo na frente, estampa nas costas.', falta: 'Faltam <b style="color:var(--fg)">{n} pts</b> pra camiseta do time.' },
+  { id: 'plano', pts: 12000, nome: 'Plano trimestral da consultoria', sub: '3 meses de treino com o Igor, pagos com os seus pontos.', falta: 'Faltam <b style="color:var(--fg)">{n} pts</b> pro plano trimestral.' },
+];
+const CAMISETAS = [['essencial', 'Essencial'], ['treino-feito', 'Treino Feito'], ['constancia', 'Constância']];
 routes.pontos = async () => {
   const [p0, log0, ses0, des0] = await Promise.all([rapido(db.perfil(), null, 3000), rapido(db.meusPontos(S.perfil.id), null, 3000), rapido(sessoesComFila(S.perfil), [], 3000), rapido(db.desafioAtual(), null, 2000)]);
   const porId = Object.fromEntries((ses0 || []).map(x => [x.id, x])); // treino pela metade e presencial com o nome certo no histórico (antes tudo era "Treino completo")
@@ -1819,10 +1826,15 @@ routes.pontos = async () => {
   <div class="card"><h3>${t('Como ganhar')}</h3><div style="display:grid;gap:8px;margin-top:8px;font-size:0.875rem">
     ${[['Treino completo', 50], ['Treino pela metade (10 min ou mais)', t('uma parte')], ['Treino presencial com o Igor', 50], [t('Meta da semana batida ({n} treinos completos na semana)', { n: p.dias_semana || 4 }), 100, 1], [t('Desafio do mês ({n} treinos completos no mês)', { n: des0?.meta_treinos || 16 }), des0?.pontos_bonus || 200, 1], ['Card no story', 30], ['Foto de evolução (1x/mês)', 80], ['Amiga indicada assinou', 300]].map(([a, b, pronto]) => `<div class="row between" style="gap:8px"><span>${pronto ? a : t(a)}</span><b style="color:var(--accent-t)">+${b}</b></div>`).join('')}</div>
     <p class="muted mt small">${t('Não precisa mandar comprovante dos treinos: os pontos entram sozinhos.')} ${t('Completo é com todos os exercícios (o HIIT opcional não precisa). Fez só uma parte, com 10 min ou mais? Ganha proporcional: 3 de 7 = +20.')}</p></div>
-  <div class="row between"><h3>${t('Prêmios do trimestre')}</h3><span class="muted small">${t('vale até {d}', { d: dataLocal(new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3 + 3, 0), { day: 'numeric', month: 'short' }) })}</span></div>
-  ${(() => { const PR = [[900, 'Strap'], [1200, 'Elástico'], [1800, 'Luva'], [3000, 'Bag']], prox = PR.find(([v]) => v > p.pontos), ja = PR.some(([v]) => p.pontos >= v);
-    return (ja ? `<p style="font-weight:600">${t('Você já pode escolher um prêmio! Chama o Igor no WhatsApp pra trocar.')}</p><a class="btn sm" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}?text=${encodeURIComponent('Oi Igor! Quero trocar meus pontos por um prêmio 🎁')}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a>` : '') + (prox ? `<p class="muted">${t('Faltam <b style="color:var(--fg)">{n} pts</b> pra {x}.', { n: num(prox[0] - p.pontos), x: t(prox[1]) })}</p>` : ''); })()}
-  <div class="grid2 pontos-premios">${[['Strap<br>IS Team', 900, 'faixa de punho pra puxar peso', '🏋️‍♀️'], ['Elástico<br>+ adesivo', 1200, '', '🎗️'], ['Luva', 1800, '', '🧤'], ['Bag', 3000, '', '🎒']].map(([n, v, sub, ic]) => `<div class="lib"><span aria-hidden="true" style="display:block;font-size:2.5rem;line-height:1;margin-bottom:auto;padding-bottom:8px">${ic}</span><b>${t(n)}</b>${sub ? `<span>${t(sub)}</span>` : ''}<span>${t('{n} pts', { n: num(v) })} · ${p.pontos >= v ? t('dá pra trocar') : t('faltam {n}', { n: num(v - p.pontos) })}</span></div>`).join('')}</div>
+  <div class="row between"><h3>${t('Prêmios')}</h3><span class="muted small">${t('Seus pontos não zeram.')}</span></div>
+  ${(() => { const prox = PREMIOS.find(x => x.pts > p.pontos), ja = PREMIOS.some(x => p.pontos >= x.pts);
+    return (ja ? `<p style="font-weight:600">${t('Você já pode escolher um prêmio! Chama o Igor no WhatsApp pra trocar.')}</p><a class="btn sm" href="https://wa.me/${esc(C.WHATSAPP_IGOR)}?text=${encodeURIComponent('Oi Igor! Quero trocar meus pontos por um prêmio 🎁')}" target="_blank" rel="noopener">${t('Chamar o Igor no WhatsApp')}</a>` : '') + (prox ? `<p class="muted">${t(prox.falta, { n: num(prox.pts - p.pontos) })}</p>` : ''); })()}
+  <div class="pontos-premios">${PREMIOS.map(x => `<div class="card premio">
+    ${x.id === 'camiseta' ? `<div class="premio-camisas">${CAMISETAS.map(([arq, nome]) => `<figure><img src="icons/premios/premio-camiseta-${arq}.png" width="360" height="391" loading="lazy" alt="${esc(t('Camiseta {x}, costas', { x: nome }))}"><figcaption>${esc(nome)}</figcaption></figure>`).join('')}</div>` : `<div class="premio-plano" aria-hidden="true"><b>3</b><span>${t('meses de consultoria')}</span></div>`}
+    <div class="row between" style="gap:8px;align-items:baseline"><b class="premio-nome">${t(x.nome)}</b><b style="color:var(--accent-t);white-space:nowrap">${t('{n} pts', { n: num(x.pts) })}</b></div>
+    <span class="muted small">${t(x.sub)}</span>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${x.pts}" aria-valuenow="${Math.min(x.pts, p.pontos || 0)}" aria-label="${esc(t(x.nome))}"><i style="width:${Math.min(100, (p.pontos || 0) / x.pts * 100)}%"></i></div>
+    <span class="small" style="font-weight:600">${p.pontos >= x.pts ? t('dá pra trocar') : t('faltam {n}', { n: num(x.pts - p.pontos) })}</span></div>`).join('')}</div>
   <p class="muted small">${t('Juntou pontos pra mais de um? O Igor te explica no WhatsApp como fica a troca.')}</p>
   <div class="card"><h3>${t('Histórico')}</h3>${log.length ? log.slice(0, 15).map(l => `<div class="row between" style="padding:6px 0;font-size:0.8125rem;gap:8px"><span>${nomeLog(l) || (nomes[l.motivo] ? t(nomes[l.motivo]) : esc(l.motivo))}<span class="muted"> · ${fmtData(l.created_at)}</span></span><b style="color:var(--accent-t)">+${l.pontos}</b></div>`).join('') + (log.slice(0, 15).reduce((a, l) => a + (+l.pontos || 0), 0) < (p.pontos || 0) ? `<p class="muted small mt">${t('Aqui aparecem só os mais recentes. Os antigos continuam no seu saldo.')}</p>` : '') : `<p class="muted mt">${t('Seu primeiro treino concluído já vale 50.')}</p>`}</div></div>`, 'pontos');
 };

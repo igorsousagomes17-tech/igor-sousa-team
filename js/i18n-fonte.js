@@ -1598,4 +1598,15 @@ export default {
   "{n} s correndo": ["{n} s running", "{n} s corriendo", "跑了 {n} 秒", "{n} सेकंड दौड़", "{n} s de course"],
   "{n} min correndo": ["{n} min running", "{n} min corriendo", "跑了 {n} 分钟", "{n} मिनट दौड़", "{n} min de course"],
   "{n}º": ["#{n}", "{n}º", "第 {n} 次", "#{n}", "n° {n}"],
+  // 26/11: prêmios novos (camiseta do time + plano trimestral)
+  "Prêmios": ["Prizes", "Premios", "奖品", "इनाम", "Récompenses"],
+  "Seus pontos não zeram.": ["Your points never reset.", "Tus puntos no se reinician.", "你的积分不会清零。", "तुम्हारे पॉइंट्स कभी ज़ीरो नहीं होते।", "Tes points ne sont jamais remis à zéro."],
+  "Camiseta do time": ["Team T-shirt", "Camiseta del equipo", "团队T恤", "टीम की टी-शर्ट", "T-shirt de l'équipe"],
+  "Plano trimestral da consultoria": ["3-month coaching plan", "Plan trimestral de asesoría", "三个月教练计划", "3 महीने का कोचिंग प्लान", "Plan de coaching de 3 mois"],
+  "Você escolhe o modelo. Logo na frente, estampa nas costas.": ["You pick the design. Logo on the front, print on the back.", "Tú eliges el modelo. Logo al frente, estampado en la espalda.", "款式你来选。正面是标志，背面是图案。", "डिज़ाइन तुम चुनो। आगे लोगो, पीछे प्रिंट।", "Tu choisis le modèle. Logo devant, imprimé dans le dos."],
+  "3 meses de treino com o Igor, pagos com os seus pontos.": ["3 months of training with Igor, paid with your points.", "3 meses de entrenamiento con Igor, pagados con tus puntos.", "和Igor一起训练3个月，用你的积分兑换。", "Igor के साथ 3 महीने की ट्रेनिंग, तुम्हारे पॉइंट्स से।", "3 mois d'entraînement avec Igor, payés avec tes points."],
+  "meses de consultoria": ["months of coaching", "meses de asesoría", "个月教练服务", "महीने की कोचिंग", "mois de coaching"],
+  "Camiseta {x}, costas": ["{x} T-shirt, back", "Camiseta {x}, espalda", "{x} T恤，背面", "{x} टी-शर्ट, पीछे से", "T-shirt {x}, dos"],
+  "Faltam <b style=\"color:var(--fg)\">{n} pts</b> pra camiseta do time.": ["<b style=\"color:var(--fg)\">{n} pts</b> to go for the team T-shirt.", "Faltan <b style=\"color:var(--fg)\">{n} pts</b> para la camiseta del equipo.", "还差 <b style=\"color:var(--fg)\">{n} 分</b> 就能换团队T恤。", "टीम की टी-शर्ट के लिए <b style=\"color:var(--fg)\">{n} पॉइंट्स</b> बाकी।", "Encore <b style=\"color:var(--fg)\">{n} pts</b> pour le T-shirt de l'équipe."],
+  "Faltam <b style=\"color:var(--fg)\">{n} pts</b> pro plano trimestral.": ["<b style=\"color:var(--fg)\">{n} pts</b> to go for the 3-month plan.", "Faltan <b style=\"color:var(--fg)\">{n} pts</b> para el plan trimestral.", "还差 <b style=\"color:var(--fg)\">{n} 分</b> 就能换三个月计划。", "3 महीने के प्लान के लिए <b style=\"color:var(--fg)\">{n} पॉइंट्स</b> बाकी।", "Encore <b style=\"color:var(--fg)\">{n} pts</b> pour le plan de 3 mois."],
 }

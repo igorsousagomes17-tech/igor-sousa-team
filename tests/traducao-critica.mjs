@@ -57,7 +57,7 @@ for (const L of ['en', 'fr']) {
   ok(cabe, `${L}/videos: placeholder da busca cabe ("${ph}")`);
   await p.fill('#busca', 'bulg'); await espera(300); ok((await p.$$('.vid')).length > 0, `${L}/videos: busca acha`); await p.fill('#busca', ''); await espera(200);
   await p.click('.tabs [data-go="pontos"]'); await espera(800); await confere('pontos');
-  ok(await p.$$eval('.pontos-premios .lib', ls => ls.every(l => l.querySelector('span[aria-hidden]')?.textContent.trim())), `${L}/pontos: prêmios com ícone`);
+  ok(await p.$$eval('.pontos-premios .premio', ps => ps.length === 2 && ps[0].querySelectorAll('.premio-camisas img').length === 3), `${L}/pontos: 2 prêmios, camiseta com os 3 modelos`);
   await p.click('.tabs [data-go="perfil"]'); await espera(900); txt = await confere('perfil');
   ok(txt.includes(RESP) && txt.includes('Vi que sentiu a lombar no búlgaro'), `${L}/perfil: feedback e resposta em português`);
   ok(!/atenção/.test(txt), `${L}/perfil: anamnese sem "atenção" em português`);

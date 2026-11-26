@@ -10,7 +10,7 @@ const LINGUAS = (process.env.IDIOMAS || 'pt,en,es,zh,hi,fr').split(',');
 // Frases da interface que não podem aparecer em português nos outros idiomas (o que o Igor digita fica de fora)
 const FRASES = ['Bora,', 'Treino de hoje', 'Meta da semana', 'Programas extras', 'Abrir treino', 'Iniciar treino', 'Baixar treino em PDF', 'Encerrar treino',
   'Exercício concluído', 'Bi-set concluído', 'exercícios feitos', 'Pausar', 'Terminou a série', 'Pular', 'anotar', 'Mandou bem', 'Boa, registrado', 'Quanto esforço',
-  'Enviar e gerar', 'Postar no story', 'Meus pontos', 'Como ganhar', 'Prêmios do trimestre', 'Minha evolução', 'Treinos por mês', 'Minhas cargas',
+  'Enviar e gerar', 'Postar no story', 'Meus pontos', 'Como ganhar', 'Camiseta do time', 'Plano trimestral', 'Minha evolução', 'Treinos por mês', 'Minhas cargas',
   'Minha anamnese', 'Respostas do Igor', 'Indique uma amiga', 'Lembretes', 'Chamar o Igor', 'Como fazer cada exercício', 'em gravação', 'Tira-dúvidas',
   'Sou a assistente', 'Início', 'Evolução', 'Pontos', 'Vídeos', 'Perfil', 'Descanso', 'Faltam', 'Nenhuma série', 'Continuar treino', 'Treino feito', 'semanas', 'séries'];
 const b = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' });

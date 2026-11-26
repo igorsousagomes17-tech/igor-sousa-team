@@ -241,7 +241,17 @@ details.mais>summary{display:flex;align-items:center;min-height:44px;color:var(-
 .chat.noTabs .chatbar{bottom:calc(64px + var(--sab))}
 .chat-top{position:sticky;top:0;z-index:3;background:var(--bg);margin:calc(-12px - var(--sat)) -16px 0;padding:calc(6px + var(--sat)) 16px 6px}
 .chatbar textarea{max-height:40vh}
-.pontos-premios .lib{aspect-ratio:auto;min-height:140px;justify-content:flex-end}
+.pontos-premios{display:flex;flex-direction:column;gap:12px}
+/* 26/11: prêmios = camiseta do time (3 modelos) + plano trimestral */
+.premio{display:flex;flex-direction:column;gap:8px;margin:0}
+.premio-nome{font-family:var(--display);font-size:1.1875rem;text-transform:uppercase;letter-spacing:.3px;line-height:1.15}
+.premio-camisas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.premio-camisas figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.premio-camisas img{width:100%;height:auto;background:#e7e2da;border-radius:12px;padding:8px 6px;box-sizing:border-box}
+.premio-camisas figcaption{font-size:.8125rem;color:var(--muted);text-align:center;line-height:1.2}
+.premio-plano{border-radius:12px;padding:14px 16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--accent-ink);display:flex;align-items:baseline;gap:10px}
+.premio-plano b{font-family:var(--display);font-size:3rem;line-height:1;font-weight:800}
+.premio-plano span{font-family:var(--display);font-size:1.25rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
 @media (max-width:300px){.tabs .tab span{font-size:clamp(.75rem,3.5vw,.8125rem);letter-spacing:-.2px}.tabs .tab{min-height:48px;justify-content:center;padding:0 1px}} /* nome embaixo de todas (estrela sozinha não diz "Pontos") */
 
 /* Lista dos exercícios no topo do treino: toca e vai direto (aparelho ocupado) */
@@ -547,11 +557,11 @@ html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
 :root[data-tema="claro"] .spin-trilha i.pe{background:#e0782a}
 
 /* 10/11 (2): branco de verdade — prêmios e cartões sem foto também claros */
-:root[data-tema="claro"] .pontos-premios .lib{background:#fff;color:#111;--fg:#111;--muted:#62626a;--accent-t:#c24d00;box-shadow:0 0 0 1px var(--line)}
-:root[data-tema="claro"] .pontos-premios .lib::before{display:none}
+:root[data-tema="claro"] .premio{--accent-t:#c24d00}
+:root[data-tema="claro"] .premio .bar{background:#e4e4e7}
 :root[data-tema="claro"] .tabs{background:#fff;border-top-color:#e4e4e7}
 :root[data-tema="claro"] .modal .box{background:#fff}
-:root[data-tema="claro"] .pontos-premios .lib span{color:#52525b}
+:root[data-tema="claro"] .premio-camisas figcaption{color:#52525b}
 
 .trocado-hoje{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 2px}.trocado-hoje .small{color:var(--accent-t);font-weight:700}
 .toast.topo.sess:not(.fixo){padding:9px 12px;font-size:.875rem;opacity:.94}
