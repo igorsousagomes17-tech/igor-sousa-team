@@ -51,7 +51,7 @@ const pularMob = async p => { await p.click('#pular'); await w(p, 400); }; // mo
 // 4. Pontos: incompleto aparece como "Treino (3 de 7)"; regras com o proporcional e o presencial; Início não diz "feito ✓"
 { const { ctx, p } = await nova(); await entrar(p);
   await p.evaluate(async () => { const db = await import('/js/db-mock.js'); const s = await db.iniciarSessao('x', { titulo: 'Treino A', total: 7 }); await db.finalizarSessao(s.id, { exercicios_feitos: 4, exercicios_total: 7, duracao_s: 900 }); });
-  await p.click('.tabs [data-go="pontos"]'); await w(p, 900); const v = await p.innerText('.view');
+  await p.click('.tabs [data-go="evolucao"]'); await p.waitForTimeout(900); await p.click('.topbar [data-go="pontos"]'); await w(p, 900); const v = await p.innerText('.view');
   ok(/Treino \(4 de 7\)/.test(v), 'histórico: "Treino (4 de 7)" em vez de "Treino completo"'); ok(/Treino presencial com o Igor/.test(v) && /3 de 7 = \+20/.test(v), 'como ganhar: proporcional e presencial');
   await shot(p, 'pontos');
   await p.click('.tabs [data-go="home"]'); await w(p, 900); const h = await p.innerText('.view');
@@ -87,7 +87,7 @@ const pularMob = async p => { await p.click('#pular'); await w(p, 400); }; // mo
 
 // 8. Vídeos: trocar exercício troca o vídeo; aba Vídeos separa vídeo do Igor de animação; lista do bi-set sem "descanso" no A1
 { const { ctx, p } = await nova(); await entrar(p); await p.click('.tabs [data-go="videos"]'); await w(p, 800);
-  ok(/com vídeo do Igor/.test(await p.innerText('.view')) && !/já gravados/.test(await p.innerText('.view')), 'Vídeos: conta vídeo do Igor e animação separados');
+  ok(!/\b0 com vídeo do Igor/.test(await p.innerText('.view')) && !/já gravados/.test(await p.innerText('.view')), 'Vídeos: sem "0 com vídeo do Igor" (crítica 25/11)');
   await p.click('.tabs [data-go="treino"]'); await w(p); await p.click('[data-go="treino"][data-arg="A"]'); await w(p, 500);
   const l = await p.$$eval('.ex .t > span:first-of-type', s => s.slice(1, 3).map(x => x.textContent)); ok(!/descanso/.test(l[0]) && /depois do par/.test(l[1]), `lista: A1 sem descanso, A2 "descanso depois do par" (${l.join(' | ').slice(0, 120)})`);
   await p.click('#ini'); await w(p, 700); await pularMob(p);

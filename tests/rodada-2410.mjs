@@ -19,7 +19,7 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
 const estado = p => p.evaluate(() => JSON.parse(localStorage.getItem('demo:state')));
 async function login(p, email = 'ana@demo.com') { await p.goto('http://app.local/?demo'); await espera(p, 600); await p.click('text=ENTRAR'); await p.fill('#em', email); await p.press('#pw', 'Enter'); await espera(p, 1000); }
 async function abrirTreino(p, l = 'A') { await p.click('.tabs [data-go="treino"]'); await espera(p); await p.click(`[data-go="treino"][data-arg="${l}"]`); await espera(p); await p.click('#ini'); await espera(p, 700); }
-async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); if (await p.$('#toast.on')) await p.evaluate(() => document.querySelector('#toast').classList.remove('on')); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900); }
+async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); if (await p.$('#toast.on')) await p.evaluate(() => document.querySelector('#toast').classList.remove('on')); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900); }
 
 // 1. Treino esquecido: "Registrar" → "Voltar pro treino" não vira 840 min e fica no dia em que ela parou; tem "Continuar"
 { const T = new Date('2026-10-23T19:00:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p); await abrirTreino(p, 'B');
@@ -101,7 +101,7 @@ async function encerrar(p) { if (await p.$('#rest:not(.mini) #rest-x')) await p.
   await p.goBack(); await espera(p, 400); ok(!(await p.innerText('#overlay')).trim(), 'voltar do celular fecha a revisão');
   await p.click('#out'); await espera(p, 400); ok(/Sair do app/i.test(await p.innerText('#overlay')), 'Sair pergunta antes'); await p.click('#q-s'); await espera(p, 300);
   ok(/Perfil/i.test(await txt(p, '.view')), '"Ficar" continua logada');
-  await p.click('.tabs [data-go="pontos"]'); await espera(p, 600); ok(/Faltam .* pts pra /i.test(await txt(p, '.view')) && !/print/i.test(await txt(p, '.view')), 'Pontos: quanto falta e sem contradição do print'); await shot(p, 'pontos'); await ctx.close(); }
+  await p.click('.tabs [data-go="evolucao"]'); await p.waitForTimeout(900); await p.click('.topbar [data-go="pontos"]'); await espera(p, 600); ok(/Faltam .* pts pra /i.test(await txt(p, '.view')) && !/print/i.test(await txt(p, '.view')), 'Pontos: quanto falta e sem contradição do print'); await shot(p, 'pontos'); await ctx.close(); }
 
 // 11. Tira-dúvidas mostra a conversa guardada na hora; login: e-mail incompleto no "esqueci"
 { const { ctx, p } = await nova(); await login(p); await p.evaluate(() => localStorage.setItem('demo:chat', JSON.stringify([{ papel: 'user', texto: 'pergunta velha' }, { papel: 'assistant', texto: 'resposta velha' }])));

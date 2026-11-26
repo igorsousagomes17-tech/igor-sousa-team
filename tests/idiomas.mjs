@@ -74,11 +74,11 @@ for (const L of LINGUAS) {
   await p.click('#rest-x'); await espera(300); await tela('descanso-mini');
   await p.click('#fim'); await espera(400); await tela('confirma-fim');
   await p.click('#enc'); await espera(600);
-  await p.click('#esf button >> nth=7'); await p.click('#nota button >> nth=9'); await tela('feedback');
+  await p.click('#esf button >> nth=3'); await p.click('#nota button >> nth=4'); await tela('feedback');
   await p.click('#env'); await espera(1000); await tela('card');
   const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); if (await p.$('#share')) { await p.click('#share'); await dl; } /* treino incompleto não tem story (crítica 30/10) */ await espera(600);
-  await p.click('.tabs [data-go="pontos"]'); await espera(700); await tela('pontos');
   await p.click('.tabs [data-go="evolucao"]'); await espera(800); await tela('evolucao');
+  await p.click('.topbar [data-go="pontos"]'); await espera(700); await tela('pontos'); await p.click('.tabs [data-go="evolucao"]'); await espera(800);
   await p.click('#add'); await espera(400); await tela('registro-mes'); await p.click('#c'); await espera(200);
   await p.click('.tabs [data-go="videos"]'); await espera(700); await tela('videos');
   await p.click('.vid >> nth=0'); await espera(400); await tela('video'); await p.click('#vm-close'); await espera(200);

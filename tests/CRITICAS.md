@@ -678,3 +678,18 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - [x] Tela: linha do bônus e do desempate no Ranking do mês, linha nova no "Como ganhar", histórico "1º lugar no ranking do mês". 5 idiomas. SW v85.
 - [ ] Igor rodar a migração 027 no SQL Editor antes de 30/11 (sem ela os pontos não caem).
 - [ ] Publicar a função assistente.
+## 25/11/2026 — Crítica "sem dó" da experiência da aluna (Igor: "pode fazer tudo")
+- [x] Tela do exercício: aparelho ocupado, + série / − série e regulagem dentro de "⋯ Mais opções" (fechado); ficam à vista kg, reps, ✓, Execução, Dúvida, Senti dor e histórico.
+- [x] Sem o interruptor "Exercício concluído?": marcou a última série, passa sozinho (já fazia); fez só parte, o botão de baixo vira "Próximo exercício" e pergunta se esqueceu de marcar.
+- [x] Aviso da sessão cobre a barra de cima inteira (não fica texto em cima do "1 de 7 exercícios feitos").
+- [x] Explicação do bi-set/circuito só nos 2 primeiros que ela vê.
+- [x] Início: um card do Igor por vez (resposta nova esconde o recado); Tira-dúvidas e O time lado a lado; "Sua semana passada" mais embaixo.
+- [x] Card de treino que não pontuou (menos de 10 min / nada completo): sem "Postar no story", mostra "Voltar pro início".
+- [x] Vídeos: some o "0 com vídeo do Igor" enquanto não tiver vídeo dele.
+- [x] Feedback: 5 carinhas (quanto cansou) e 5 estrelas (curtiu?), gravando 2/4/6/8/10 (mesma escala do painel).
+- [x] Abas: 5 (Pontos foi pra dentro de Evolução, com o atalho "⭐ pts ›" no topo e "‹ Evolução" na tela de pontos).
+- [x] Perfil: configurações (cronômetro, Strava, letra, tema, idioma, lembretes, time, passeio, senha, sair, excluir) dentro de "⚙️ Configurações".
+- [x] Prêmios: botão "Quero esse" em cada prêmio liberado (WhatsApp já com o nome do prêmio e os pontos).
+- [x] Letra cinza mais clara (escuro #aca79f, claro #55555c).
+- O aviso "Seu navegador não aceita lembrete" já não aparecia no app das lojas.
+- SW v84.

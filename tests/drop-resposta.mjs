@@ -12,7 +12,7 @@ const entrar = async email => { await p.goto('http://app.local/?demo'); await w(
 const treinoB = async () => { await p.click('.tabs [data-go="treino"]'); await w(400); await p.click('[data-go="treino"][data-arg="B"]'); await w(400); await p.click('#ini'); await w(700); if (await p.locator('#m [data-o]').count()) { await p.locator('#m [data-o]').last().click(); await w(500); } };
 const abducao = async () => { const j = await p.$$eval('[data-passo]', bs => bs.findIndex(x => /Abdu/i.test(x.getAttribute('aria-label') || ''))); await p.click(`[data-passo="${j}"]`); await w(500); return j; };
 const pularDescanso = async () => { if (await p.locator('#rest-skip').count()) { await p.click('#rest-skip'); await w(300); } };
-const fechar = async () => { await p.click('#fim'); await w(400); if (await p.locator('#enc').count()) { await p.click('#enc'); await w(600); } await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await w(1200); };
+const fechar = async () => { await p.click('#fim'); await w(400); if (await p.locator('#enc').count()) { await p.click('#enc'); await w(600); } await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await w(1200); };
 const serieSalva = () => p.evaluate(() => { const st = JSON.parse(localStorage.getItem('demo:state') || '{}'); return (st.series || []).filter(x => /Abdu/.test(x.exercicio_nome)); });
 
 await entrar('ana@demo.com');

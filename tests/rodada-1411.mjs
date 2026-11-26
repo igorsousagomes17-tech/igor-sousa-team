@@ -96,7 +96,7 @@ const estado = (p, fn) => p.evaluate(f => { const s = JSON.parse(localStorage.ge
 // 6. Painel do Igor: Responder mostra as cargas dela
 { const { ctx, p } = await nova({ w: 390 }); await entrar(p); await treino(p, 'A'); await p.click('#pular'); await w(p, 400);
   await p.fill('.set[data-i="1"][data-k="0"] input[data-f="kg"]', '20'); await p.click('.set[data-i="1"][data-k="0"] .rest'); await w(p, 500);
-  await p.click('#fim'); await w(p, 400); await p.click('#enc'); await w(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.fill('#fb', 'senti o smith').catch(() => {}); await p.click('#env'); await w(p, 900);
+  await p.click('#fim'); await w(p, 400); await p.click('#enc'); await w(p, 500); await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.fill('#fb', 'senti o smith').catch(() => {}); await p.click('#env'); await w(p, 900);
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.logado = false; localStorage.setItem('demo:state', JSON.stringify(s)); });
   await entrar(p, 'igor@demo.com'); await w(p, 800);
   if (await p.$('#a-fb')) { await p.click('#a-fb'); await w(p, 600); } else if (await p.$('#t-fb')) { await p.click('#t-fb'); await w(p, 600); }

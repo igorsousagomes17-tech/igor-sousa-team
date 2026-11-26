@@ -28,18 +28,18 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
   const rel = await p.innerText('#clock'); ok(/^0:\d\d$/.test(rel), 'pausa de 10 min não conta no relógio (' + rel + ')');
   await p.click('#sair'); await espera(p); await p.clock.fastForward('13:00:00'); await p.reload(); await espera(p, 1200);
   ok(/pela metade/i.test(await p.innerText('#overlay')), '13h depois pergunta "Treino pela metade" (não apaga)'); await shot(p, 'treino-velho');
-  await p.click('[data-o="0"]'); await espera(p, 600); ok(/esforço/i.test(await txt(p, '.view')), 'registrar o que fiz abre o feedback'); await ctx.close(); }
+  await p.click('[data-o="0"]'); await espera(p, 600); ok(/cansou|esforço/i.test(await txt(p, '.view')), 'registrar o que fiz abre o feedback'); await ctx.close(); }
 
 // 2. Feedback: voltar pro treino funciona e o texto não some; chave sem série pergunta
 { const { ctx, p } = await nova(); await login(p); await abrirTreinoA(p);
-  await p.click('#pular'); await espera(p); await p.click('#sw'); await espera(p, 500);
-  ok(/Nenhuma série marcada/i.test(await p.innerText('#overlay')), 'chave sem série marcada pergunta antes de contar'); await p.click('#q-n'); await espera(p, 400);
+  await p.click('#pular'); await espera(p); await p.click('#pular'); await espera(p, 500);
+  ok(!(await p.$('#m')), 'pular sem série marcada só pula (sem pergunta)');
   await p.click('.set[data-k="0"] .rest'); await espera(p, 500); await p.click('#rest-x'); await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500);
-  await p.fill('#fb', 'meu filho chamou no meio'); await p.click('#esf button >> nth=6'); await p.click('#volta'); await espera(p, 500);
-  ok(await p.$('#sw') !== null, 'voltar pro treino volta pra sessão');
+  await p.fill('#fb', 'meu filho chamou no meio'); await p.click('#esf button >> nth=2'); await p.click('#volta'); await espera(p, 500);
+  ok(await p.$('.sessao') !== null, 'voltar pro treino volta pra sessão');
   await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500);
   ok(await p.inputValue('#fb') === 'meu filho chamou no meio' && await p.$('#esf .on') !== null, 'texto e esforço continuam lá');
-  await p.goBack(); await espera(p, 500); ok(await p.$('#sw') !== null, 'voltar do celular no feedback volta pro treino'); await ctx.close(); }
+  await p.goBack(); await espera(p, 500); ok(await p.$('.sessao') !== null, 'voltar do celular no feedback volta pro treino'); await ctx.close(); }
 
 // 3. Um descanso só: voltar minimiza, novo descanso substitui o antigo
 { const { ctx, p } = await nova(); await login(p); await abrirTreinoA(p); await p.click('#pular'); await espera(p); await p.click('#pular'); await espera(p);
@@ -83,8 +83,8 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
 // 7. Story: sem compartilhar, avisa onde ficou a imagem; exercício "cada lado" de tempo conta 2x
 { const { ctx, p } = await nova(); await login(p); await abrirTreinoA(p);
   ok(/1.min cada lado/i.test(await p.innerText('.rest.tm')), 'mobilidade "1 min cada lado" mostra "1 min cada lado" (não 2×1:00)');
-  await p.click('#sw'); await espera(p, 300); await p.click('#q-s'); await espera(p, 800); for (let j = 0; j < 14 && await p.$('#sw'); j++) { await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 700); } } /* termina o treino inteiro: card de treino incompleto não tem story (crítica 30/10) */
-  await p.click('#esf button >> nth=5'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await terminarTudo(p); /* termina o treino inteiro: card de treino incompleto não tem story (crítica 30/10) */
+  await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900);
   const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#share'); await dl; await espera(p, 700);
   ok(/Downloads|Galeria/.test(await p.innerText('#toast')), 'story sem compartilhar diz onde a imagem ficou'); await shot(p, 'story');
   // story com a foto dela de fundo: arte sem fundo (PNG transparente) pra colar por cima
@@ -96,8 +96,8 @@ const txt = async (p, s) => (await p.innerText(s)).replace(/\s+/g, ' ');
 
 // 8. Android (Samsung): arte sem fundo vai pra GALERIA como PNG (compartilhar direto pro Instagram vira o fundo preto do story)
 { const { ctx, p } = await nova(0, 'Mozilla/5.0 (Linux; Android 15; SM-S721B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36'); await login(p); await abrirTreinoA(p);
-  await p.click('#sw'); await espera(p, 300); await p.click('#q-s'); await espera(p, 800); for (let j = 0; j < 14 && await p.$('#sw'); j++) { await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 700); } }
-  await p.click('#esf button >> nth=5'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await terminarTudo(p);
+  await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900);
   await p.click('#shareFoto'); await espera(p, 1500);
   ok(!(await p.$('#copiaArte')), 'Android: sem botão de copiar (Instagram do Android não cola imagem)');
   ok(/Salvar na galeria/i.test(await p.innerText('#salvaArte')), 'Android: botão diz "Salvar na galeria"');

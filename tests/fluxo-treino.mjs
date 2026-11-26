@@ -30,10 +30,10 @@ await p.reload(); await p.waitForTimeout(1200); console.log('apos reload:', awai
 console.log('retomou, serie feita?', await p.$eval('.set[data-i="1"][data-k="0"]', e=>e.className));
 await p.goBack(); await p.waitForTimeout(600); console.log('voltar:', await p.evaluate(()=>location.hash), await txt('.view')); await shot('home-retomar');
 await p.click('[data-go="sessao"]'); await p.waitForTimeout(500);
-await p.click('#pular'); await p.waitForTimeout(400); console.log('pulou p/', await txt('h1'));
+await p.click('#pular'); await p.waitForTimeout(400); if (await p.$('#m [data-o="1"]')) { await p.click('#m [data-o="1"]'); await p.waitForTimeout(500); } // fez parte: "Próximo" pergunta se esqueceu de marcar console.log('pulou p/', await txt('h1'));
 await p.evaluate(()=>document.querySelectorAll('details.mais').forEach(d=>d.open=true)); const sw=await p.$('.swap'); if(sw){ await sw.click(); await p.waitForTimeout(500); console.log('trocado:', await txt('h1')); await shot('trocado'); await p.click('.swap'); await p.waitForTimeout(500); console.log('desfeito:', await txt('h1')); }
 await p.click('#prev'); await p.waitForTimeout(300); await p.click('#prev'); await p.waitForTimeout(300); console.log('anterior:', await txt('.row.between'));
 await p.click('#fim'); await p.waitForTimeout(400); await shot('confirma-fim'); console.log('confirma:', await txt('#m h2'));
 await p.click('#enc'); await p.waitForTimeout(500); await p.click('#env'); await p.waitForTimeout(300); console.log('sem nota:', await p.isVisible('#e'));
-await p.click('#esf button >> nth=7'); await p.click('#nota button >> nth=9'); await shot('feedback'); await p.click('#env'); await p.waitForTimeout(800); await shot('card'); console.log('card:', await txt('.view'));
+await p.click('#esf button >> nth=3'); await p.click('#nota button >> nth=4'); await shot('feedback'); await p.click('#env'); await p.waitForTimeout(800); await shot('card'); console.log('card:', await txt('.view'));
 console.log('erros:', errs); await b.close(); if (errs.length) process.exit(1);

@@ -20,7 +20,7 @@ async function login(p, email = 'ana@demo.com') { await p.goto('http://app.local
 async function abrirTreino(p, l = 'A') { await p.click('.tabs [data-go="treino"]'); await espera(p); await p.click(`[data-go="treino"][data-arg="${l}"]`); await espera(p); await p.click('#ini'); await espera(p, 700); }
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
-async function terminar(p, { nota = 8 } = {}) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=6'); await p.click(`#nota button >> nth=${nota}`); await p.click('#env'); await espera(p, 900); }
+async function terminar(p, { nota = 8 } = {}) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=2'); await p.click(`#nota button >> nth=${Math.max(0, Math.min(4, Math.ceil(nota / 2) - 1))}`); await p.click('#env'); await espera(p, 900); }
 const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env'); await espera(p, 1600); return txt(p, '#msgs'); };
 
 const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('demo:state')));
@@ -66,7 +66,7 @@ async function clica(p, sel) { for (let t = 0; t < 3; t++) { if (await p.$('#res
   await p.click('#corr'); await espera(p, 400); await espera(p, 1100); if (await p.$('#rest:not(.mini) #rest-x')) { await p.click('#rest-x'); await espera(p, 300); }
   await clica(p, `.set[data-i="${i}"][data-k="1"] .rest`); await espera(p, 500);
   const s = await sessao(p); ok(!s.feito[i], 'série desmarcada: exercício volta a faltar');
-  ok(!(await p.$eval('#sw', b => b.classList.contains('on'))), 'chave desligada depois de desmarcar');
+  ok(!(await sessao(p)).feito[i], 'desmarcou: exercício não fica como concluído');
   await p.fill(`.set[data-i="${i}"][data-k="1"] input[data-f="reps"]`, '12'); await p.click('#fim'); await espera(p, 500);
   ok(/preenchida sem marcar/i.test(await txt(p, '#m')), 'fim pergunta da série preenchida sem ✓');
   await p.click('#m [data-o="0"]'); await espera(p, 600); const s2 = await sessao(p); ok(s2.sets[i][1].done, 'marcou a série preenchida');

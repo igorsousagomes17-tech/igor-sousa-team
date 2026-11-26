@@ -24,7 +24,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'C');
   await p.click('#pular'); await espera(p, 300); // passo 2 = Supino (o bi-set Dead bug + Abs é o 1)
   await p.click('.set[data-k="0"] .rest'); await espera(p, 500); if (await p.$('#rest:not(.mini)')) await p.click('#rest-skip'); await espera(p, 300);
-  const p0 = (await sessao(p)).p; await p.dblclick('#sw'); await espera(p, 500); if (await p.$('#m [data-o="1"]')) { await p.click('#m [data-o="1"]'); await espera(p, 700); } // série pela metade: "Só as que marquei"
+  const p0 = (await sessao(p)).p; await p.dblclick('#pular'); await espera(p, 500); if (await p.$('#m [data-o="1"]')) { await p.click('#m [data-o="1"]'); await espera(p, 700); } // série pela metade: "Só as que marquei"
   const s = await sessao(p); ok(s.p === p0 + 1 && !s.feito[3], `toque duplo na chave avança 1 exercício só (${p0}→${s.p})`);
   await ctx.close(); }
 
@@ -44,7 +44,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 // 3. Cardio de 20 min: minimizar não apaga; "Já fiz" no meio registra os minutos feitos; tela apagada conta o tempo
 { const T = new Date('2026-10-25T09:00:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p); await abrirTreino(p, 'B');
   for (let i = 0; i < 7; i++) { await p.click('#pular'); await espera(p, 200); }
-  ok(/HIIT/.test(await txt(p, 'h1')) && !!(await p.$('#fin')) && /É o último/.test(await txt(p, '.view')), 'último exercício mostra "Finalizar treino" e "marca que eu fecho"');
+  ok(/HIIT/.test(await txt(p, 'h1')) && !!(await p.$('#fin')) && !(await p.$('#pular')), 'último exercício mostra só "Finalizar treino"');
   await p.click('.rest.tm'); await espera(p, 400);
   ok(/Forte/i.test(await p.innerText('#rest-t')), 'HIIT 30s forte / 30s leve mostra "Forte!" no cronômetro');
   await p.goBack(); await espera(p, 400); ok(!!(await p.$('#rest.mini')), 'voltar do celular só minimiza o cardio');
@@ -100,7 +100,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 // 7. Painel: nota baixa sem comentário chega pro Igor; bi-set aparece no editor; botões cabem com zoom
 { const { ctx, p } = await nova(null, 288); await login(p); await abrirTreino(p, 'C');
   await p.click('#pular'); await espera(p, 300); await p.click('.set[data-k="0"] .rest'); await espera(p, 400); if (await p.$('#rest:not(.mini)')) await p.click('#rest-x');
-  await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=9'); await p.click('#nota button >> nth=2'); await p.click('#env'); await espera(p, 900);
+  await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=4'); await p.click('#nota button >> nth=0'); await p.click('#env'); await espera(p, 900);
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.logado = false; localStorage.setItem('demo:state', JSON.stringify(s)); });
   await p.goto('http://app.local/?demo'); await espera(p, 600); if (await p.$('text=ENTRAR')) { await p.click('text=ENTRAR'); await p.press('#pw', 'Enter'); await espera(p, 1200); }
   if (!/PAINEL/.test(await txt(p, '.view'))) { await login(p, 'igor@demo.com'); }
@@ -115,9 +115,9 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
   ok(/Agachamento Smith 28 kg/.test(await txt(p, '.view')), 'Minhas cargas mostra o Smith (28 kg) mesmo sem nada guardado no celular');
   await p.click('.tabs [data-go="home"]'); await espera(p, 600); await p.click('[data-go="programa"][data-arg="corrida"]'); await espera(p, 500);
   ok(/Agachamento búlgaro/.test(await txt(p, '.view')), 'programa extra lista os exercícios antes de começar');
-  await p.click('.tabs [data-go="pontos"]'); await espera(p, 600); const pv = await txt(p, '.view');
+  await p.click('.tabs [data-go="evolucao"]'); await p.waitForTimeout(900); await p.click('.topbar [data-go="pontos"]'); await espera(p, 600); const pv = await txt(p, '.view');
   ok(!/pode trocar!/.test(pv) && /pts pra/.test(pv), 'pontos dizem quanto falta pro próximo prêmio sem "pode trocar!" em todos');
-  await abrirTreino(p, 'A'); await p.click('.rest.tm'); await espera(p, 500); await p.click('#rest-skip'); await espera(p, 600); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 600); } for (let j = 0; j < 14 && await p.$('#sw'); j++) { await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 700); } } /* termina o treino inteiro: card de treino incompleto não tem story (crítica 30/10) */ await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await abrirTreino(p, 'A'); await p.click('.rest.tm'); await espera(p, 500); await p.click('#rest-skip'); await espera(p, 600); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 600); } await terminarTudo(p); /* termina o treino inteiro: card de treino incompleto não tem story (crítica 30/10) */ await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900);
   const dl = p.waitForEvent('download', { timeout: 5000 }).catch(() => null); await p.click('#share'); const d = await dl;
   ok(d && /\.jpg$/.test(d.suggestedFilename()), `imagem do story em JPEG (${d?.suggestedFilename()})`);
   await ctx.close(); }
