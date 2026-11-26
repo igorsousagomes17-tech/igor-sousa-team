@@ -665,3 +665,9 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - Testes: corrida, fluxo-treino, regressao (375 e 360), hyrox, express, bibliotecas, rodada-2111, idiomas (6 línguas) — todos passando.
 - [ ] Fase 2 (relógios), caminho escolhido pelo Igor: direto com cada marca (grátis). Ordem: Garmin (Training + Activity API, cadastro dele) e Apple Watch (WorkoutKit/HealthKit no app iPhone, nova revisão da Apple); depois COROS, Suunto, Amazfit/Zepp (cadastros de parceiro) e Polar (AccessLink, só puxar).
 - [ ] Painel do Igor ver/ajustar o plano de cada aluna: precisa guardar o plano no banco (hoje fica só no celular dela) — migração a mostrar antes.
+
+## 2026-11-25 (noite) — Prêmios novos (ramo premios-plano-camiseta, lançado à noite com o ok do Igor)
+- [x] Prêmios de pontos agora são só dois: camiseta do time (3.500 pts, modelos Essencial, Treino Feito e Constância, fotos das costas em icons/premios/) e plano trimestral da consultoria (12.000 pts). Valores escolhidos pelo Igor.
+- [x] Sai o "vale até" do trimestre: os pontos não zeram. Troca continua pelo WhatsApp. Barra de progresso por prêmio. SW v84.
+- [x] Traduções nos 5 idiomas; traducao-critica e idiomas ajustados. Testes de navegador não rodaram (sem Chromium nesta máquina).
+- [ ] Publicar a função assistente (texto dos prêmios novos) no Supabase.
