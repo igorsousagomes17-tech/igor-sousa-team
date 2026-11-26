@@ -693,3 +693,11 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - [x] Letra cinza mais clara (escuro #aca79f, claro #55555c).
 - O aviso "Seu navegador não aceita lembrete" já não aparecia no app das lojas.
 - SW v84.
+
+## 26/11/2026 — Crítica de fora + correções (ramo `critica-2611`, NÃO lançado: sobe à noite com o ok do Igor)
+- [x] Água: letras dos dias da semana seguiam o idioma do celular, não o do app (agora usam o idioma escolhido).
+- [x] Pular descanso: a trava de 8 s ("acabou de pular, tá só anotando") vazava pra outro exercício e a série seguinte ficava sem descanso. Agora só vale no mesmo exercício.
+- [x] Botões do cronômetro de descanso não quebram mais o texto ("+15s") em tela estreita.
+- [ ] Migração 028 (pronta, NÃO rodada, decisão do Igor): pontos de treino só 1 vez por dia; meta da semana e desafio do mês contam dias, não sessões. Hoje dá pra acumular +50 por sessão sem limite.
+- [ ] Senha inicial = número do WhatsApp: adivinhável até a aluna trocar. Avaliar link de primeiro acesso.
+- SW v87.
