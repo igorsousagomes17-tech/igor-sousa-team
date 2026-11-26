@@ -185,13 +185,16 @@ export function cardVolta(perfil, sessoes, prox) {
 export const voltaVisto = () => LSset('volta', new Date().toDateString());
 
 // 5) O TIME (comunidade) -----------------------------------------------------------------
+// Bônus do ranking do mês (Igor, 25/11/2026): 1º, 2º e 3º lugar. Quem paga é o banco no dia 1º (migração 027).
+export const BONUS_RANKING = [700, 400, 200];
 const quanto = d => { const m = Math.max(1, Math.round((Date.now() - new Date(d)) / 60000)); return m < 60 ? t('há {n} min', { n: m }) : m < 1440 ? tp(Math.round(m / 60), 'há {n} hora', 'há {n} horas') : tp(Math.round(m / 1440), 'há {n} dia', 'há {n} dias'); };
 const iniciais = n => String(n || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
 const nomeSessao = x => /^Treino [A-Z]$/.test(x || '') ? t('o Treino {l}', { l: x.slice(-1) }) : (String(x || '').split(' · ')[0] || t('um treino'));
-// Empate = mesma posição; mostra o top 5 e, se ela estiver mais pra baixo, a linha dela.
+// Mostra o top 5 e, se ela estiver mais pra baixo, a linha dela.
+// Com o bônus do mês (migração 027) o banco manda a posição já desempatada (quem chegou primeiro); sem ela, empate = mesma posição.
 function rankComEmpate(d) {
   const lista = d.ranking || []; let pos = -1, ant = null;
-  const comPos = lista.map(r => { if (r.n !== ant) { pos++; ant = r.n; } return { r, i: pos }; }); // empate: 🥇🥇🥈 (ninguém fica sem a prata)
+  const comPos = lista.map(r => { if (r.pos) return { r, i: r.pos - 1 }; if (r.n !== ant) { pos++; ant = r.n; } return { r, i: pos }; }); // empate: 🥇🥇🥈 (ninguém fica sem a prata)
   const top = comPos.filter(x => x.i < 5); const eu = comPos.find(x => x.r.eu && x.i >= 5) || (d.minha && !comPos.some(x => x.r.eu) ? { r: { nome: t('você'), n: d.minha.n, eu: true }, i: d.minha.pos - 1 } : null);
   return eu && !top.includes(eu) ? [...top, eu] : top;
 }
@@ -203,6 +206,8 @@ export function htmlTime(d) {
       <p style="font-weight:600">${tp(d.hoje || 0, 'menina do time já treinou hoje', 'meninas do time já treinaram hoje')}</p>
       <p class="small" style="margin-top:6px;font-weight:600;opacity:.8">${t('Juntas: {n} treinos esse mês', { n: num(d.mes || 0) })}</p></div>
     <div class="card"><h3>${t('Ranking do mês')}</h3><p class="muted small">${t('Quem mais treinou no mês. Vale presença, não carga.')}</p>
+      <p class="small rk-bonus">${t('Bônus do mês: 🥇 +{a} · 🥈 +{b} · 🥉 +{c} pontos. Caem sozinhos na conta no dia 1º.', { a: num(BONUS_RANKING[0]), b: num(BONUS_RANKING[1]), c: num(BONUS_RANKING[2]) })}</p>
+      <p class="muted small">${t('Empate: fica na frente quem chegou primeiro ao número de treinos.')}</p>
       ${(d.ranking || []).length ? `<div class="rank">${rankComEmpate(d).map(({ r, i }) => `<div class="rk ${r.eu ? 'eu' : ''}"><span class="md">${medalha(i)}</span><span class="av">${esc(iniciais(r.nome))}</span><b>${esc(r.nome)}${r.eu ? ` <span class="pill on" style="font-size:0.6875rem">${t('você')}</span>` : ''}</b><span class="n">${tp(r.n, '{n} treino', '{n} treinos')}</span></div>`).join('')}</div>${resto(d) ? `<p class="muted small mt">${tp(resto(d), '+ {n} menina treinando firme 💪', '+ {n} meninas treinando firme 💪')}</p>` : ''}` : `<p class="muted mt">${t('O ranking começa com o primeiro treino do mês.')}</p>`}</div>
     <div class="card"><h3>${t('Quem treinou hoje')}</h3>
       ${(d.feed || []).length ? `<div class="feed">${d.feed.slice(0, 20).map(f => `<div class="fd"><span class="av">${esc(iniciais(f.nome))}</span><div><b>${esc(f.nome)}</b> ${t('fez {x}', { x: esc(nomeSessao(f.titulo)) })} 💪<span class="muted small" style="display:block">${quanto(f.finalizada_em)}</span></div></div>`).join('')}</div>` : `<p class="muted mt">${t('Ninguém treinou ainda hoje. Bora ser a primeira? 😉')}</p>`}</div>

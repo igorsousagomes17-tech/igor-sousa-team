@@ -671,3 +671,10 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - [x] Sai o "vale até" do trimestre: os pontos não zeram. Troca continua pelo WhatsApp. Barra de progresso por prêmio. SW v84.
 - [x] Traduções nos 5 idiomas; traducao-critica e idiomas ajustados. Testes de navegador não rodaram (sem Chromium nesta máquina).
 - [ ] Publicar a função assistente (texto dos prêmios novos) no Supabase.
+
+## 2026-11-25 (noite) — Bônus do ranking do mês (ramo ranking-bonus)
+- [x] 1º lugar +700, 2º +400, 3º +200 (valores do Igor). Empate: na frente quem chegou primeiro ao número de dias. Só quem aparece no time (ativa e sem sair do ranking).
+- [x] supabase/migracao-027-bonus-ranking.sql: fn_ranking_mes (ordem com desempate), fn_bonus_ranking (paga o mês que acabou, sem pagar duas vezes), fn_comunidade devolve pos e bonus, pg_cron dia 1º 00:05 de Brasília. Testada num Postgres 16 local (pg_cron simulado): 3 pagas, segunda rodada paga 0, aluna fora do time e sessão sem exercício não contam, virada do mês no fuso certo.
+- [x] Tela: linha do bônus e do desempate no Ranking do mês, linha nova no "Como ganhar", histórico "1º lugar no ranking do mês". 5 idiomas. SW v85.
+- [ ] Igor rodar a migração 027 no SQL Editor antes de 30/11 (sem ela os pontos não caem).
+- [ ] Publicar a função assistente.
