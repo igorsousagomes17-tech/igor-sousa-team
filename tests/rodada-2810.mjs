@@ -32,7 +32,7 @@ const pergunta = async (p, q) => { await p.fill('#tx', q); await p.click('#env')
   const s0 = await sessao(p); const i = s0.exs.findIndex((e, j) => j > 0 && !e.biset_com && !s0.exs.some(x => x.biset_com === j + 1) && !/mobilidade|alonga|prancha|hiit|cardio/i.test(e.nome) && !/s$/.test(String(e.reps).trim()) && e.carga !== false); const nome = s0.exs[i].nome, antes = (await cargas(p))[nome]?.kg ?? null;
   await irPara(p, i); await p.fill(`.set[data-i="${i}"][data-k="0"] input[data-f="kg"]`, '77');
   for (let k = 0; k < s0.exs[i].series; k++) { if (!(await p.$(`.set[data-i="${i}"][data-k="${k}"] input[data-f="kg"]`))) break; await p.fill(`.set[data-i="${i}"][data-k="${k}"] input[data-f="kg"]`, '77'); await p.click(`.set[data-i="${i}"][data-k="${k}"] .rest`); await espera(p, 400); if (await p.$('#m #q-n')) { await p.click('#q-n'); await espera(p, 300); } await fechaDescanso(p); }
-  if (await p.$('#sw:not(.on)')) { await p.click('#sw'); await espera(p, 500); } if (await p.$('#m #q-s')) { await p.click('#q-s'); await espera(p, 400); } await fechaDescanso(p);
+  if (await p.$('#m #q-s')) { await p.click('#q-s'); await espera(p, 400); } await fechaDescanso(p);
   ok(+(await cargas(p))[nome]?.kg === 77, 'carga do treino aberto fica guardada (' + nome + ')');
   await p.click('#sair'); await espera(p, 600); await p.click('#desc'); await espera(p, 300); await p.click('#q-n'); /* 14/11: Manter em destaque, Descartar embaixo */ await espera(p, 600);
   const depois = (await cargas(p))[nome]?.kg ?? null; ok(depois === antes, `descartar volta a "Última" pra de antes (${antes} → ${depois})`); await ctx.close(); }
@@ -80,7 +80,7 @@ const pergunta = async (p, q) => { await p.fill('#tx', q); await p.click('#env')
 // 8) Pausar o treino direto do descanso
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'A'); const i = await idx(p, /./); const s0 = await sessao(p);
   const j = s0.exs.findIndex((e, k) => k > 0 && e.descanso_s && !/s$/.test(String(e.reps).trim())); await irPara(p, j);
-  const alvo = (s0.exs[j].biset_com || s0.exs[j + 1]?.biset_com === s0.exs[j].ordem) ? j + 1 : j; /* bi-set vai e volta: o A2 só aparece depois de marcar o A1 */ await p.fill(`.set[data-i="${j}"][data-k="0"] input[data-f="kg"]`, '20'); await p.click(`.set[data-i="${j}"][data-k="0"] .rest`); await espera(p, 400);
+  const alvo = (s0.exs[j].biset_com || s0.exs[j + 1]?.biset_com === s0.exs[j].ordem) ? j + 1 : j; /* bi-set vai e volta: o A2 só aparece depois de marcar o A1 */ await p.fill(`.set[data-i="${j}"][data-k="0"] input[data-f="kg"]`, '20'); await p.click(`.set[data-i="${j}"][data-k="0"] .rest`); await espera(p, 700); /* 2º toque em menos de 0,45 s cai na proteção "Toca de novo" */
   if (alvo !== j) { if (await p.$('#m #q-n')) await p.click('#q-n'); await p.click(`.set[data-i="${alvo}"][data-k="0"] .rest`); await espera(p, 500); }
   ok(!!(await p.$('#rest-pt')), 'descanso tem "Pausar o treino"'); await shot(p, 'descanso-pausar');
   if (await p.$('#rest-pt')) { await p.click('#rest-pt'); await espera(p, 600); ok(/#home/.test(p.url()) && !!(await sessao(p))?.pausadoEm, 'tocar pausa o treino e volta pro Início'); }
@@ -90,7 +90,7 @@ const pergunta = async (p, q) => { await p.fill('#tx', q); await p.click('#env')
 { const { ctx, p } = await nova(); await login(p); await abrirTreino(p, 'A'); const s0 = await sessao(p);
   const j = s0.exs.findIndex((e, k) => k > 0 && !/s$/.test(String(e.reps).trim()) && e.carga !== false && !/mobilidade/i.test(e.nome)); await irPara(p, j);
   await p.fill(`.set[data-i="${j}"][data-k="0"] input[data-f="kg"]`, '21'); await p.click(`.set[data-i="${j}"][data-k="0"] .rest`); await espera(p, 400); if (await p.$('#m #q-n')) await p.click('#q-n'); await fechaDescanso(p);
-  await p.click('#fim'); await espera(p, 400); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await p.click('#fim'); await espera(p, 400); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900);
   const card = await txt(p, '.view'); ok(/<1/.test(card) || /&lt;1/.test(card), 'card de treino de segundos mostra "<1 min"'); ok(!/\d\/\d+ exercício\b/i.test(card), "card sem \"1/N exercício\" no singular"); await shot(p, 'card');
   await p.click('.tabs [data-go="evolucao"], [data-go="home"]').catch(() => {}); await p.goto('http://app.local/?demo#evolucao'); await espera(p, 1200);
   if (!(await p.$('[data-dia="0"]'))) { await p.click('.tabs [data-go="evolucao"]'); await espera(p, 900); }

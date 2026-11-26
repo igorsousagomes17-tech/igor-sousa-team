@@ -38,7 +38,7 @@ for (const L of ['en', 'fr']) {
   }
   let txt = await confere('inicio');
   ok(txt.includes('Vi que sentiu a lombar no búlgaro. Na próxima faz com a perna de trás mais baixa'), `${L}/inicio: resposta do Igor inteira, em português`);
-  ok(txt.includes(RECADO), `${L}/inicio: recado do Igor inteiro, em português`);
+  ok(!txt.includes(RECADO), `${L}/inicio: com resposta nova do Igor, o recado espera (um card do Igor por vez, crítica 25/11)`);
   ok(!/[^.]\.\.(?!\.)/.test(txt), `${L}/inicio: aviso de vencimento sem ponto duplo`);
   for (const l of ['A', 'B', 'C', 'D']) {
     await p.click('.tabs [data-go="treino"]'); await espera(500); await p.click(`[data-go="treino"][data-arg="${l}"]`); await espera(600);
@@ -56,7 +56,7 @@ for (const L of ['en', 'fr']) {
   const ph = await p.getAttribute('#busca', 'placeholder'); const cabe = await p.$eval('#busca', e => { const c = document.createElement('canvas').getContext('2d'); c.font = getComputedStyle(e).font; return c.measureText(e.placeholder).width < e.clientWidth - 20; });
   ok(cabe, `${L}/videos: placeholder da busca cabe ("${ph}")`);
   await p.fill('#busca', 'bulg'); await espera(300); ok((await p.$$('.vid')).length > 0, `${L}/videos: busca acha`); await p.fill('#busca', ''); await espera(200);
-  await p.click('.tabs [data-go="pontos"]'); await espera(800); await confere('pontos');
+  await p.click('.tabs [data-go="evolucao"]'); await p.waitForTimeout(900); await p.click('.topbar [data-go="pontos"]'); await espera(800); await confere('pontos');
   ok(await p.$$eval('.pontos-premios .lib', ls => ls.every(l => l.querySelector('span[aria-hidden]')?.textContent.trim())), `${L}/pontos: prêmios com ícone`);
   await p.click('.tabs [data-go="perfil"]'); await espera(900); txt = await confere('perfil');
   ok(txt.includes(RESP) && txt.includes('Vi que sentiu a lombar no búlgaro'), `${L}/perfil: feedback e resposta em português`);

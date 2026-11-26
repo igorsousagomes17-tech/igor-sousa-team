@@ -20,7 +20,7 @@ async function login(p, email = 'ana@demo.com') { await p.goto('http://app.local
 async function abrirTreino(p, l = 'A') { await p.click('.tabs [data-go="treino"]'); await espera(p); await p.click(`[data-go="treino"][data-arg="${l}"]`); await espera(p); await p.click('#ini'); await espera(p, 700); }
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
-async function terminar(p, { nota = 8 } = {}) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=6'); await p.click(`#nota button >> nth=${nota}`); await p.click('#env'); await espera(p, 900); }
+async function terminar(p, { nota = 8 } = {}) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=2'); await p.click(`#nota button >> nth=${Math.max(0, Math.min(4, Math.ceil(nota / 2) - 1))}`); await p.click('#env'); await espera(p, 900); }
 const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env'); await espera(p, 1600); return txt(p, '#msgs'); };
 
 // 1. Respostas do demo: emergência manda parar e ligar 192; "dormi mal" não vira resposta de dor; pergunta não some
@@ -37,9 +37,9 @@ const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env
 // 2. Botão de cardio do fim do treino: envia sozinho e oferece "Começar cardio de 20 min" com cronômetro
 { const T = new Date('2026-10-25T09:00:00-03:00').getTime(); const { ctx, p } = await nova(T); await login(p); await abrirTreino(p, 'C');
   // treino completo (sem o HIIT opcional): só treino completo oferece o cardio de 20 min no card
-  for (let k = 0; k < 14; k++) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); if (!(await p.$('#sw'))) break; if (/opcional/i.test(await txt(p, '.bloco h1'))) { await p.click('#fin'); await espera(p, 600); break; } await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 800); } }
+  await terminarTudo(p, { semOpcional: true });
   if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); }
-  await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900);
   await p.click('[data-go="assistente"]:has-text("cardio")'); await espera(p, 1800);
   const m = await txt(p, '.view'); ok(/cardio de 20 minutos pra fazer agora/.test(m) && /30s forte/.test(m), 'botão do card envia sozinho e a resposta traz o cardio');
   ok(!!(await p.$('#cardioJa')), 'resposta tem "▶ Começar cardio de 20 min"');
@@ -61,7 +61,7 @@ const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env
   await p.click('[data-dor]'); await espera(p, 300); await p.click('#d-m'); await espera(p, 300); ok(/Anotei: dor em/.test(await p.innerText('#toast')), 'aviso "Anotei: dor em …"');
   await p.click('#fim'); await espera(p); ok(/Avisar o Igor da dor/i.test(await txt(p, '#m')), 'encerrar sem série oferece "Avisar o Igor da dor e encerrar"');
   await p.click('#enc'); await espera(p, 500); ok(/Você anotou dor em/.test(await txt(p, '.view')), 'feedback mostra a dor anotada em cima');
-  await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=6'); await p.click('#env'); await espera(p, 900);
+  await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=2'); await p.click('#env'); await espera(p, 900);
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.logado = false; localStorage.setItem('demo:state', JSON.stringify(s)); });
   await login(p, 'igor@demo.com'); await p.click('#a-fb'); await espera(p, 300); const pv = await txt(p, '.view'); ok(/⚠ dor: Dead Bug/i.test(pv) && /\bDOR\b/.test(pv), 'painel do Igor recebe a dor com selo');
   await ctx.close(); }

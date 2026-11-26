@@ -20,7 +20,7 @@ async function login(p, email = 'ana@demo.com') { await p.goto('http://app.local
 async function abrirTreino(p, l = 'A') { await p.click('.tabs [data-go="treino"]'); await espera(p); await p.click(`[data-go="treino"][data-arg="${l}"]`); await espera(p); await p.click('#ini'); await espera(p, 700); }
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
-async function terminar(p, { nota = 8 } = {}) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=6'); await p.click(`#nota button >> nth=${nota}`); await p.click('#env'); await espera(p, 900); }
+async function terminar(p, { nota = 8 } = {}) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=2'); await p.click(`#nota button >> nth=${Math.max(0, Math.min(4, Math.ceil(nota / 2) - 1))}`); await p.click('#env'); await espera(p, 900); }
 const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env'); await espera(p, 1600); return txt(p, '#msgs'); };
 const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('demo:state')));
 const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) { await p.click('#rest-x'); await espera(p, 400); } };
@@ -50,19 +50,19 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   if (await p.$(kgSel)) { await p.fill(kgSel, '40kg'); ok(await p.inputValue(kgSel) === '40', '"40kg" vira 40 no campo'); }
   const rp = '.set[data-k="0"] input[data-f="reps"]'; if (await p.$(rp)) { await p.fill(rp, '12+4+4'); }
   await p.click('.set[data-k="0"] .rest'); await espera(p, 500); await fecharDescanso(p);
-  await p.click('#sw'); await espera(p, 500); ok(/Falta marcar \d séries?/i.test(await txt(p, '#overlay')), 'chave com séries pela metade pergunta se fez todas'); await shot(p, 'chave-metade');
+  await p.click('#pular'); await espera(p, 500); ok(/Falta marcar \d séries?/i.test(await txt(p, '#overlay')), 'chave com séries pela metade pergunta se fez todas'); await shot(p, 'chave-metade');
   await p.click('#m [data-o="0"]'); await espera(p, 800);
   const s = await sessao(p); ok(s.sets[0].every(x => x.done) && s.p === 1, '"Fiz todas" marca as que faltavam e segue');
   await p.click('#fim'); await espera(p); ok(/Faltam 6 exercícios/i.test(await txt(p, '#overlay')), 'pop-up conta como o topo (Faltam 6 com 1 de 7 feito)');
   await p.click('#enc'); await espera(p, 600); ok(/1 de 7 feitos/i.test(await txt(p, '.view')) && /Só fica registrado quando você tocar em Enviar/i.test(await txt(p, '.view')), 'feedback pela metade: "Boa! 1 de 7 feitos" e avisa que falta tocar em Enviar');
-  await p.click('#esf button >> nth=5'); await p.click('.tabs [data-go="home"]').catch(() => {}); await p.goto('http://app.local/?demo#home'); await espera(p, 1200);
+  await p.click('#esf button >> nth=2'); await p.click('.tabs [data-go="home"]').catch(() => {}); await p.goto('http://app.local/?demo#home'); await espera(p, 1200);
   ok(/Falta enviar/i.test(await txt(p, '.view')), 'saiu do feedback sem enviar: Início avisa "Falta enviar"'); await shot(p, 'falta-enviar');
-  await p.click('[data-go="fim"]'); await espera(p, 600); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 1000);
+  await p.click('[data-go="fim"]'); await espera(p, 600); await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 1000);
   const ab = (await st(p)).series.filter(x => x.reps === 20); ok(ab.length >= 1, `reps "12+4+4" salvas como 20 (${ab.length})`); await ctx.close(); }
 
 // 4. Treino parado bem no começo: Início oferece repetir (não diz "feito" nem pula pro próximo)
 { const { ctx, p } = await nova(); await login(p); const pts0 = (await st(p)).perfil.pontos; await abrirTreino(p, 'B'); await p.click('.set[data-k="0"] .rest'); await espera(p, 500); await fecharDescanso(p);
-  await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await p.click('#fim'); await espera(p); await p.click('#enc'); await espera(p, 500); await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900);
   ok(/Treino registrado/i.test(await txt(p, '.view')), 'card com nada completo diz "Treino registrado" (não "1 exercício")');
   ok(!/\+\d+ pts/i.test(await txt(p, '.view')) && (await st(p)).perfil.pontos === pts0, 'nenhum exercício completo e poucos minutos: registra sem pontos (migração 022)');
   await p.click('.topbar [data-go="home"]'); await espera(p, 900); const v = await txt(p, '.view');
@@ -88,7 +88,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
 
 // 7. Story: compartilhar que falha (não foi ela que cancelou) baixa a imagem
 { const { ctx, p } = await nova(); await p.addInitScript(() => { navigator.canShare = () => true; navigator.share = async () => { const e = new Error('x'); e.name = 'NotAllowedError'; throw e; }; });
-  await login(p); await abrirTreino(p, 'C'); await p.click('#sw'); await espera(p, 400); await p.click('#q-s'); await espera(p, 700); for (let j = 0; j < 14 && await p.$('#sw'); j++) { await p.click('#sw'); await espera(p, 450); if (await p.$('#q-s')) { await p.click('#q-s'); await espera(p, 700); } } /* termina o treino inteiro: card de treino incompleto não tem story (crítica 30/10) */ await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await espera(p, 900);
+  await login(p); await abrirTreino(p, 'C'); await terminarTudo(p); /* termina o treino inteiro: card de treino incompleto não tem story (crítica 30/10) */ await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 900);
   const dl = p.waitForEvent('download', { timeout: 8000 }).catch(() => null); await p.click('#share'); ok(!!(await dl), 'compartilhar falhou: a imagem é baixada'); await ctx.close(); }
 
 // 8. Painel: responder mostra o que ela escreveu; parou no meio aparece; ficha da anamnese

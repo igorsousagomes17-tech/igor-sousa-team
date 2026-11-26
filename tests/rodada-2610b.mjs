@@ -21,7 +21,7 @@ async function login(p, email = 'ana@demo.com') { await p.goto('http://app.local
 async function abrirTreino(p, l = 'A') { await p.click('.tabs [data-go="treino"]'); await espera(p); await p.click(`[data-go="treino"][data-arg="${l}"]`); await espera(p); await p.click('#ini'); await espera(p, 700); }
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
-async function terminar(p, { nota = 8 } = {}) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=6'); await p.click(`#nota button >> nth=${nota}`); await p.click('#env'); await espera(p, 900); }
+async function terminar(p, { nota = 8 } = {}) { if (await p.$('#rest:not(.mini) #rest-x')) await p.click('#rest-x'); await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); } await p.click('#esf button >> nth=2'); await p.click(`#nota button >> nth=${Math.max(0, Math.min(4, Math.ceil(nota / 2) - 1))}`); await p.click('#env'); await espera(p, 900); }
 const perguntaIA = async (p, q) => { await p.fill('#tx', q); await p.click('#env'); await espera(p, 1600); return txt(p, '#msgs'); };
 const st = p => p.evaluate(() => JSON.parse(localStorage.getItem('demo:state')));
 const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) { await p.click('#rest-x'); await espera(p, 400); } };
@@ -97,7 +97,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   await espera(p, 600); await fecharDescanso(p);
   await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); }
   ok(/\+\d+ pontos|vale 50 pontos/i.test(await txt(p, '.view')), 'feedback incompleto explica os pontos (proporcional, sem punir)');
-  await p.click('#esf button >> nth=6'); await p.click('#env'); await espera(p, 400); ok(/Falta a nota/i.test(await txt(p, '#e')), 'feedback diz qual escala falta ("Falta a nota")');
+  await p.click('#esf button >> nth=2'); await p.click('#env'); await espera(p, 400); ok(/Falta a nota/i.test(await txt(p, '#e')), 'feedback diz qual escala falta ("Falta a nota")');
   await ctx.close(); }
 
 // 5. Celular largado 10 min sem toque: pausa sozinho e o tempo parado não conta
@@ -112,7 +112,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
 
 // 6. Evolução com letra grande em 300 px não estoura a tela; story do resumo da semana pontua
 { const { ctx, p } = await nova(null, 300); await login(p); await p.evaluate(() => { document.documentElement.style.fontSize = '130%'; });
-  for (const aba of ['evolucao', 'pontos', 'perfil', 'treino', 'home']) { await p.click(`.tabs [data-go="${aba}"]`); await espera(p, 700); const w = await p.evaluate(() => document.documentElement.scrollWidth); ok(w <= 300, `${aba} cabe em 300 px com letra 130% (${w})`); }
+  for (const aba of ['evolucao', 'perfil', 'treino', 'home']) { await p.click(`.tabs [data-go="${aba}"]`); await espera(p, 700); const w = await p.evaluate(() => document.documentElement.scrollWidth); ok(w <= 300, `${aba} cabe em 300 px com letra 130% (${w})`); }
   ok(await p.evaluate(() => [...document.querySelectorAll('.tabs .tab')].every(b => [...b.querySelectorAll('span')].some(s => getComputedStyle(s).display !== 'none' && s.textContent.trim()))), 'abas com nome embaixo em 300 px');
   await shot(p, 'evolucao-300'); await ctx.close(); }
 { const { ctx, p } = await nova(new Date('2026-11-02T10:00:00-03:00').getTime()); await login(p); const pts0 = (await st(p)).perfil.pontos;

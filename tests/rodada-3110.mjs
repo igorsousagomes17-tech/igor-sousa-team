@@ -16,7 +16,7 @@ const entrar = async (p, email = 'ana@demo.com') => { await p.goto('http://app.l
 const treino = async (p, l) => { await p.click('.tabs [data-go="treino"]'); await w(p); await p.click(`[data-go="treino"][data-arg="${l}"]`); await w(p); await p.click('#ini'); await w(p, 700); if (await p.locator('#m [data-o]').count()) { await p.locator('#m [data-o]').last().click(); await w(p, 500); } };
 const passo = async (p, rx) => { const j = await p.$$eval('[data-passo]', (bs, s) => bs.findIndex(x => new RegExp(s, 'i').test(x.getAttribute('aria-label') || '')), rx); await p.click(`[data-passo="${j}"]`); await w(p, 500); return j; };
 const estado = p => p.evaluate(() => JSON.parse(localStorage.getItem('demo:state') || '{}'));
-const fechar = async p => { if (await p.locator('#rest-skip').count()) { await p.click('#rest-skip'); await w(p, 300); } await p.click('#fim'); await w(p); if (await p.locator('#enc').count()) { await p.click('#enc'); await w(p, 600); } await p.click('#esf button >> nth=6'); await p.click('#nota button >> nth=8'); await p.click('#env'); await w(p, 1200); };
+const fechar = async p => { if (await p.locator('#rest-skip').count()) { await p.click('#rest-skip'); await w(p, 300); } await p.click('#fim'); await w(p); if (await p.locator('#enc').count()) { await p.click('#enc'); await w(p, 600); } await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await w(p, 1200); };
 
 // 1. Drop (Carla): "12+4+4" nas reps + quedas anotadas não conta as reps em dobro; quedas já aparecem com as reps do Igor
 { const { ctx, p } = await nova(); await entrar(p); await treino(p, 'B'); await passo(p, 'Abdu');
