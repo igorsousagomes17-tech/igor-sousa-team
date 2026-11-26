@@ -10,6 +10,10 @@ const wa = (num, txt) => `https://wa.me/55${String(num || '').replace(/\D/g, '')
 let db;
 // Precisa da resposta do Igor: comentou, ou deu nota baixa / esforço no limite sem escrever nada
 const precisa = f => !f.resposta_igor && !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4) || (f.esforco != null && f.esforco >= 9));
+// Dos que esperam: com texto dela ou nota baixa, o Igor escreve. Só "No limite" sem texto: regra dele (igual no Mfit) é responder com 👏, num toque.
+const escrever = f => precisa(f) && !!(String(f.comentario || '').trim() || (f.nota != null && f.nota <= 4));
+const soAplauso = f => precisa(f) && !escrever(f);
+const APLAUSO = '👏';
 const DOR = /⚠ dor|\bdor(es)?\b|doeu|doendo|les[aã]o|machuc|incomod|senti (a|o|na|no|minha|meu) (lombar|joelho|ombro|coluna|costas|quadril|tornozelo|punho|cotovelo|pesco[cç]o)|\blombar\b|\bpain|hurt|dolor|duel|doli|douleur|疼|痛|दर्द/i; // "senti a lombar" também é dor (Renata 07/11)
 const parou = f => f.exercicios_total > 0 && (f.exercicios_feitos ?? 0) / f.exercicios_total < 0.6;
 const selo = f => (parou(f) ? ' <span class="pill warn">parou no meio</span>' : '') + seloDor(f);
@@ -47,7 +51,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   const dia = d => { d = new Date(d); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; }; // dia no fuso do celular
   const treinaramHoje = ativas.filter(a => a.ultimo_treino && dia(a.ultimo_treino) === dia(Date.now())).length;
   const atencao = ativas.filter(a => a.dias_sem_treinar >= 4).sort((a, b) => b.dias_sem_treinar - a.dias_sem_treinar);
-  const semResposta = fb.filter(precisa), delasNovas = fb.filter(f => f.resposta_aluna && !f.resposta_aluna_lida_em); // ela respondeu a resposta dele (migração 020)
+  let semResposta = fb.filter(precisa), delasNovas = fb.filter(f => f.resposta_aluna && !f.resposta_aluna_lida_em); // ela respondeu a resposta dele (migração 020)
   // Atualizações (igual ao Mfit): treino vencido ou vencendo em até 3 dias. Pendentes = ainda não marcou como lida.
   const hojeD = new Date(); hojeD.setHours(12, 0, 0, 0);
   let pendentes = [], resolvidas = [];
@@ -60,7 +64,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
   const semTreino = alunas.filter(a => a.ativa && semPlano(a));
   // Filtros da lista (pra 130 alunas não ficar só na ordem alfabética). Personalizado só aparece se alguma tiver esse plano.
   const FILTROS = [['todas', 'Todas', () => true], ['vencendo', 'Vencendo', a => a.ativa && diasPraVencer(a) != null && diasPraVencer(a) <= 7], ['parada', 'Sem treinar 7+ dias', a => a.ativa && a.dias_sem_treinar >= 7], ['semplano', 'Sem plano', a => a.ativa && semPlano(a)], ...(alunas.some(a => a.plano === 'personalizado') ? [['personalizado', 'Personalizado', a => a.plano === 'personalizado']] : [])];
-  const comSaude = alunas.filter(a => alertaSaude(fichas.get(a.id)));
+  const comSaude = () => alunas.filter(a => a.ativa && alertaPendente(fichas.get(a.id)));
   let duvidas = null; // carrega quando abre
   let recarregar = false;
 
@@ -93,9 +97,9 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
         <button class="tile" id="t-modelos"><span class="ico">${svg('libT')}</span><b>Biblioteca de treinos</b></button>
         <button class="tile" id="t-exercicios"><span class="ico">${svg('libE')}</span><b>Biblioteca de exercícios</b></button>
         <button class="tile" id="t-treino"><span class="ico">${svg('treino')}</span><b>Montar treino da aluna</b></button>
-        <button class="tile" id="t-ficha"><span class="ico">${svg('anam')}</span><b>Anamneses</b>${comSaude.length ? `<span class="pill warn" style="align-self:flex-start">${comSaude.length} ⚠ saúde</span>` : ''}</button>
+        <button class="tile" id="t-ficha"><span class="ico">${svg('anam')}</span><b>Anamneses</b>${comSaude().length ? `<span class="pill warn" style="align-self:flex-start">${comSaude().length} ⚠ saúde</span>` : ''}</button>
         <button class="tile" id="t-postural"><span class="ico">${svg('post')}</span><b>Avaliação postural</b></button>
-        <button class="tile" id="t-fb"><span class="ico">${svg('fb')}</span><b>Feedbacks dos treinos</b>${semResposta.length ? `<span class="pill warn quebra" style="align-self:flex-start;max-width:100%">${semResposta.length} pra responder</span>` : ''}${delasNovas.length ? `<span class="pill on quebra" style="align-self:flex-start;max-width:100%">${pl(delasNovas.length, 'resposta nova', 'respostas novas')}</span>` : ''}</button>
+        <button class="tile" id="t-fb"><span class="ico">${svg('fb')}</span><b>Feedbacks dos treinos</b>${semResposta.filter(escrever).length ? `<span class="pill warn quebra" style="align-self:flex-start;max-width:100%">${semResposta.filter(escrever).length} pra responder</span>` : ''}${semResposta.filter(soAplauso).length ? `<span class="pill quebra" style="align-self:flex-start;max-width:100%">${semResposta.filter(soAplauso).length} só 👏</span>` : ''}${delasNovas.length ? `<span class="pill on quebra" style="align-self:flex-start;max-width:100%">${pl(delasNovas.length, 'resposta nova', 'respostas novas')}</span>` : ''}</button>
       </div>
       ${semTreino.length ? `<button class="linhacard mt" id="ir-semplano"><span>${svg('alerta')}<b>${pl(semTreino.length, 'aluna ainda sem plano', 'alunas ainda sem plano')} de treino</b></span><span class="muted">montar ${svg('seta')}</span></button>` : ''}
     </section>
@@ -107,7 +111,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     const fi = fichas.get(a.id), attr = modo === 'treino' ? `data-treino="${a.id}" data-n="${esc(a.nome)}"` : modo === 'ficha' ? (fi ? `data-ficha="${a.id}"` : `data-semficha="${a.id}"`) : modo === 'postural' ? `data-postural="${a.id}"` : `data-aluna="${a.id}"`;
     const dv = diasPraVencer(a), fim = planoDa.get(a.id)?.fim, venceTxt = !vencOk ? '' : semPlano(a) ? ' · sem plano' : fim ? ` · ${dv < 0 ? 'venceu' : 'vence'} ${brDia(fim).slice(0, 5)}` : '';
     const sub = modo === 'ficha' && !fi ? 'ainda não respondeu a anamnese' : `${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : a.dias_sem_treinar === 0 ? 'treinou hoje' : pl(a.dias_sem_treinar, 'dia', 'dias') + ' sem treinar'} · ${pl(a.treinos_mes, 'treino', 'treinos')} no mês${venceTxt}`;
-    return `<button class="aluna" ${attr} data-nome="${esc(a.nome.toLowerCase())}"><span class="av">${esc(a.nome.trim()[0] || '?').toUpperCase()}</span><span class="t"><b>${esc(a.nome)}</b><span>${sub}</span><span class="row wrap" style="gap:4px">${a.plano === 'personalizado' ? '<span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : '<span class="pill">pausada</span>'}${a.ativa && dv != null && dv <= 7 ? `<span class="pill warn">${dv < 0 ? 'vencido' : dv === 0 ? 'vence hoje' : 'vencendo'}</span>` : ''}${alertaSaude(fi) ? '<span class="pill warn">⚠ saúde</span>' : ''}</span></span>${svg('seta')}</button>`;
+    return `<button class="aluna" ${attr} data-nome="${esc(a.nome.toLowerCase())}"><span class="av">${esc(a.nome.trim()[0] || '?').toUpperCase()}</span><span class="t"><b>${esc(a.nome)}</b><span>${sub}</span><span class="row wrap" style="gap:4px">${a.plano === 'personalizado' ? '<span class="pill">Personalizado</span>' : ''}${a.ativa ? '' : '<span class="pill">pausada</span>'}${a.ativa && dv != null && dv <= 7 ? `<span class="pill warn">${dv < 0 ? 'vencido' : dv === 0 ? 'vence hoje' : 'vencendo'}</span>` : ''}${alertaPendente(fi) ? '<span class="pill warn">⚠ saúde</span>' : ''}</span></span>${svg('seta')}</button>`;
   }
   function telaAlunas() {
     const [tit, dica] = MODOS[modo] || ['Alunas', ''];
@@ -124,9 +128,13 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     <div class="card">${atencao.length ? atencao.map(a => `<div class="r"><div><b>${esc(a.nome)}</b><span>${a.dias_sem_treinar === 999 ? 'nunca treinou no app' : pl(a.dias_sem_treinar, 'dia', 'dias') + ' sem treinar'} · ${a.treinos_mes} no mês</span></div><span class="pill ${a.dias_sem_treinar >= 7 ? 'warn' : ''}">${a.dias_sem_treinar >= 7 ? '7+ dias' : '4-6 dias'}</span><a class="btn wa sm" style="padding:7px 10px;font-size:13px" href="${wa(a.whatsapp, msgInativa(a.nome, a.dias_sem_treinar === 999 ? 'uns' : a.dias_sem_treinar))}" target="_blank" rel="noopener">WhatsApp</a></div>`).join('') : '<p class="muted">Todo mundo em dia 🔥</p>'}</div>`;
   }
   function telaFeedbacks() {
-    const ord = [...semResposta, ...delasNovas.filter(f => !precisa(f)), ...fb.filter(f => !precisa(f) && !delasNovas.includes(f))];
-    return `${topo('Feedbacks')}<p class="muted">${semResposta.length ? pl(semResposta.length, 'feedback esperando sua resposta', 'feedbacks esperando sua resposta') + ' (em cima).' : 'Tudo respondido ✓'}${delasNovas.length ? ' ' + pl(delasNovas.length, 'aluna te respondeu', 'alunas te responderam') + '.' : ''}</p>
-    <div class="card">${ord.length ? ord.map(f => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${f.duracao_s < 60 ? "&lt;1" : Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent-t);padding:6px 4px">editar</button>` : ''}${f.resposta_aluna ? `<br>↳ ${esc(String(f.profiles?.nome || 'ela').split(' ')[0])}: "${esc(f.resposta_aluna)}"${f.resposta_aluna_lida_em ? '' : ` <span class="pill on">nova</span> <button class="back small" data-lida="${f.id}" style="color:var(--accent-t);padding:6px 4px;min-height:40px">já vi</button>`} <button class="back small" data-resp2="${f.id}" style="color:var(--accent-t);padding:6px 4px;min-height:40px">responder ela</button>` : ''}</span></div>${precisa(f) ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px" data-resp="${f.id}">Responder</button>` : ''}</div>`).join('') : '<p class="muted">Nenhum feedback ainda.</p>'}</div>
+    const esc1 = semResposta.filter(escrever), aplau = semResposta.filter(soAplauso);
+    const ord = [...esc1, ...aplau, ...delasNovas.filter(f => !precisa(f)), ...fb.filter(f => !precisa(f) && !delasNovas.includes(f))];
+    // Botões embaixo do texto (linha inteira), pra nunca ficarem espremidos no canto em tela de celular
+    const acoes = f => precisa(f) ? `<div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" style="flex:1;min-height:44px" data-resp="${f.id}">Responder</button><button class="btn ghost sm" style="flex:0 0 auto;width:auto;min-height:44px;padding:7px 14px" data-aplaude="${f.id}" aria-label="Responder com palmas">${APLAUSO}</button></div>` : '';
+    return `${topo('Feedbacks')}<p class="muted">${esc1.length ? pl(esc1.length, 'feedback com texto ou nota baixa esperando sua resposta', 'feedbacks com texto ou nota baixa esperando sua resposta') + ' (em cima).' : semResposta.length ? '' : 'Tudo respondido ✓'}${delasNovas.length ? ' ' + pl(delasNovas.length, 'aluna te respondeu', 'alunas te responderam') + '.' : ''}</p>
+    ${aplau.length ? `<div class="card" style="display:flex;flex-direction:column;gap:8px"><b>${pl(aplau.length, 'treino marcado "No limite" sem nada escrito', 'treinos marcados "No limite" sem nada escrito')}</b><span class="muted small">Do jeito que você faz no Mfit: responde com ${APLAUSO} e sai da lista. A aluna vê as palmas na tela inicial dela.</span><button class="btn sm" id="aplaudeTodos" style="min-height:44px">${APLAUSO} Responder ${aplau.length === 1 ? 'esse' : 'os ' + aplau.length} com palmas</button></div>` : ''}
+    <div class="card">${ord.length ? ord.map(f => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(f.profiles?.nome || '')}${f.profiles?.plano === 'personalizado' ? ' <span class="pill">Personalizado</span>' : ''} · ${esc(f.titulo)}${selo(f)}</b><span>${fmtData(f.finalizada_em)} · esforço ${f.esforco ?? '–'} · nota ${f.nota ?? '–'}${f.exercicios_total ? ` · ${f.exercicios_feitos ?? 0} de ${f.exercicios_total} exercícios` : ''}${f.duracao_s ? ` · ${f.duracao_s < 60 ? "&lt;1" : Math.round(f.duracao_s / 60)} min` : ''}${f.comentario ? ' · "' + esc(f.comentario) + '"' : ''}${f.resposta_igor ? `<br>↳ você: ${esc(f.resposta_igor)} <button class="back small" data-edita="${f.id}" style="color:var(--accent-t);padding:6px 4px">editar</button>` : ''}${f.resposta_aluna ? `<br>↳ ${esc(String(f.profiles?.nome || 'ela').split(' ')[0])}: "${esc(f.resposta_aluna)}"${f.resposta_aluna_lida_em ? '' : ` <span class="pill on">nova</span> <button class="back small" data-lida="${f.id}" style="color:var(--accent-t);padding:6px 4px;min-height:40px">já vi</button>`} <button class="back small" data-resp2="${f.id}" style="color:var(--accent-t);padding:6px 4px;min-height:40px">responder ela</button>` : ''}</span>${acoes(f)}</div></div>`).join('') : '<p class="muted">Nenhum feedback ainda.</p>'}</div>
     <h3 class="mt">🤝 Treinos presenciais (últimos 30 dias)</h3><p class="muted small">A aluna registra o dia que treinou com você, com uma foto de prova.</p>
     <div class="card">${pres.length ? pres.map(x => `<div class="r" style="grid-template-columns:1fr auto"><div><b>${esc(x.profiles?.nome || '')}</b><span>${fmtData(x.finalizada_em)}</span></div>${x.foto_path ? `<button class="btn ghost sm" style="padding:7px 10px;font-size:13px;min-height:40px" data-pfoto="${esc(x.foto_path)}" data-pnome="${esc(x.profiles?.nome || '')}">📸 Ver foto</button>` : '<span class="muted small">sem foto</span>'}</div>`).join('') : '<p class="muted">Nenhum treino presencial registrado ainda.</p>'}</div>`;
   }
@@ -179,11 +187,15 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     on('#nova', () => formAluna(null, go)); on('#lote', () => formLote(go)); on('#recado', recado);
     const bu = $('#busca'); if (bu) bu.oninput = () => { const q = bu.value.toLowerCase().trim(); $$('#lista .aluna').forEach(r => r.hidden = !r.dataset.nome.includes(q)); };
     $$('[data-aluna]').forEach(b => b.onclick = () => fichaAluna(alunas.find(x => x.id === b.dataset.aluna)));
-    $$('[data-ficha]').forEach(b => b.onclick = () => fichaAnamnese(fichas.get(b.dataset.ficha)));
+    $$('[data-ficha]').forEach(b => b.onclick = () => fichaAnamnese(fichas.get(b.dataset.ficha), desenhar));
     $$('[data-semficha]').forEach(b => b.onclick = () => toast('Ela ainda não respondeu a anamnese. Ela vê o aviso quando entra no app.'));
     $$('[data-postural]').forEach(b => b.onclick = () => avaliacaoPostural(alunas.find(x => x.id === b.dataset.postural)));
     $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go, { renovar: b.dataset.renova === '1' }));
     $$('[data-resp],[data-edita],[data-resp2]').forEach(b => b.onclick = () => responder(b));
+    // 👏 num toque (um ou todos os "No limite" sem texto): grava a resposta e já tira da contagem
+    const aplaudir = async (ids, b) => { if (b) b.disabled = true; try { await db.admin.aplaudir(ids); const agora = new Date().toISOString(); fb.forEach(f => { if (ids.includes(f.id)) { f.resposta_igor = APLAUSO; f.respondida_em = agora; } }); semResposta = fb.filter(precisa); toast(ids.length > 1 ? `${APLAUSO} Respondido em ${ids.length} treinos ✓` : `${APLAUSO} Respondido ✓`); desenhar(); } catch (e) { if (b) b.disabled = false; toast(e.message, true); } };
+    $$('[data-aplaude]').forEach(b => b.onclick = () => { const f = fb.find(x => String(x.id) === b.dataset.aplaude); if (f) aplaudir([f.id], b); });
+    on('#aplaudeTodos', () => aplaudir(semResposta.filter(soAplauso).map(f => f.id), $('#aplaudeTodos')));
     $$('[data-pfoto]').forEach(b => b.onclick = async () => { const url = await db.fotoUrl(b.dataset.pfoto).catch(() => null); if (!url) return toast('Não consegui abrir a foto agora.', true); overlay(`<div class="modal" id="pm"><div class="box" style="padding:12px;display:flex;flex-direction:column;gap:10px"><b>${esc(b.dataset.pnome)} · treino presencial</b><img src="${url}" alt="" style="width:100%;max-height:70vh;object-fit:contain;border-radius:10px"><button class="btn ghost sm" id="pmX">Fechar</button></div></div>`); $('#pmX').onclick = closeOverlay; $('#pm').addEventListener('click', e => { if (e.target.id === 'pm') closeOverlay(); }); });
     $$('[data-lida]').forEach(b => b.onclick = async () => { const f = fb.find(x => String(x.id) === b.dataset.lida); try { await db.admin.marcarRespostaLida(b.dataset.lida); if (f) f.resposta_aluna_lida_em = new Date().toISOString(); const i = delasNovas.indexOf(f); if (i >= 0) delasNovas.splice(i, 1); desenhar(); } catch (e) { toast(e.message, true); } });
     if (secao === 'duvidas') carregarDuvidas();
@@ -214,7 +226,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     $('#c').onclick = closeOverlay;
     const box = $('#m');
     box.querySelector('[data-treino]').onclick = () => { closeOverlay(); editorTreino(a.id, a.nome, go); };
-    box.querySelector('[data-ficha],[data-semficha]').onclick = () => { if (fi) { closeOverlay(); fichaAnamnese(fi); } else toast('Ela ainda não respondeu a anamnese.'); };
+    box.querySelector('[data-ficha],[data-semficha]').onclick = () => { if (fi) { closeOverlay(); fichaAnamnese(fi, desenhar); } else toast('Ela ainda não respondeu a anamnese.'); };
     box.querySelector('[data-postural]').onclick = () => { closeOverlay(); avaliacaoPostural(a); };
     box.querySelector('[data-ac]').onclick = () => { closeOverlay(); acesso(a).catch(e => toast('Não abriu o acesso: ' + (e?.message || e), true)); };
   }
@@ -378,13 +390,24 @@ async function salvarComoModelo(treinos, nomeAluna) {
 }
 
 // Anamnese com problema de saúde ou gestação: o Igor precisa ver antes de passar HIIT/carga
-const SAUDE_ALERTA = /press[aã]o|card[ií]ac|diabet|cirurgia|medica[cç][aã]o|asma|peito|desmai|acompanhamento/i;
-const alertaSaude = fi => !!fi && (((fi.saude || []).some(x => x !== 'Nenhuma' && SAUDE_ALERTA.test(x))) || (fi.gestacao && fi.gestacao !== 'nao'));
-function fichaAnamnese(fi) {
+// Antes (até 26/11) entrava tudo: medicação contínua, asma, pressão, cirurgia estética, pós-parto... e o selo virava ruído (20 "⚠ saúde").
+// Agora o alerta é só o que pede liberação médica de verdade (triagem PAR-Q): dor no peito, tontura/desmaio, médico pediu acompanhamento,
+// problema cardíaco, grávida. O resto aparece na ficha como "cuidado", sem contar no painel.
+const SAUDE_SERIO = /peito|desmai|acompanhamento|card[ií]ac/i;
+const SAUDE_CUIDADO = /press[aã]o|diabet|cirurgia|medica[cç][aã]o|asma/i;
+const alertaSaude = fi => !!fi && (((fi.saude || []).some(x => x !== 'Nenhuma' && SAUDE_SERIO.test(x))) || fi.gestacao === 'gravida');
+const cuidadosSaude = fi => !fi ? [] : [...(fi.saude || []).filter(x => x !== 'Nenhuma' && !SAUDE_SERIO.test(x) && SAUDE_CUIDADO.test(x)), ...(fi.gestacao === 'pos_parto' ? ['Pós-parto'] : [])];
+// "Já vi" fica guardado no aparelho do Igor, por aluna e pela data da anamnese: se ela refizer a anamnese, o alerta volta
+const vistoKey = fi => fi.id + '|' + (fi.anamnese_em || '');
+const saudeVista = fi => !!(db?.LS?.get('saudeVista', {}) || {})[vistoKey(fi)];
+const marcarSaudeVista = fi => { const m = db?.LS?.get('saudeVista', {}) || {}; m[vistoKey(fi)] = new Date().toISOString(); db?.LS?.set('saudeVista', m); };
+const alertaPendente = fi => alertaSaude(fi) && !saudeVista(fi);
+function fichaAnamnese(fi, aoVer) {
   if (!fi) return;
   const linhas = [['Objetivo', fi.objetivo], ['Dias por semana', fi.dias_semana], ['Tempo por treino', fi.tempo_treino_min && fi.tempo_treino_min + ' min'], ['Sexo', { F: 'mulher', M: 'homem' }[fi.sexo]], ['Horário', { cedo: 'manhã cedo', manha: 'manhã', almoco: 'almoço', tarde: 'tarde', noite: 'noite', varia: 'varia' }[fi.horario]], ['Onde treina', fi.local_treino], ['Academia', { rede: 'grande, de rede', bairro: 'de bairro', condominio: 'de prédio/condomínio' }[fi.academia_tipo]], ['Tem em casa', (fi.equipamento || []).join(', ')], ['Experiência', fi.experiencia], ['Foco', (fi.foco || []).join(', ')], ['Mais incomoda', fi.incomoda], ['Cardio no fim', { sim: 'topa sempre', as_vezes: 'às vezes', nao: 'prefere não' }[fi.cardio]], ['Dor / lesão', fi.limitacoes], ['Não gosta / não consegue', fi.evita], ['Saúde', (fi.saude || []).join(', ')], ['Gestação', { nao: 'não', gravida: 'grávida', pos_parto: 'pós-parto' }[fi.gestacao] || fi.gestacao], ['Ciclo', { regular: 'regular', irregular: 'irregular', anticoncepcional: 'anticoncepcional', nao: 'não menstrua', nd: 'prefere não dizer' }[fi.ciclo]], ['Sono e estresse (1-5)', fi.sono_estresse], ['Dia a dia', fi.atividade], ['Nascimento', fi.nascimento && fmtData(fi.nascimento)], ['Nutricionista', fi.nutri], ['Já desistiu por', fi.desistiu], ['Peso / altura', [fi.peso_kg && fi.peso_kg + ' kg', fi.altura_m && fi.altura_m + ' m'].filter(Boolean).join(' · ')], ['Respondeu em', fi.anamnese_em && fmtData(fi.anamnese_em)]].filter(([, v]) => v != null && v !== '');
-  overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:8px;margin-top:20px"><h2>${esc(fi.nome || 'Anamnese')}</h2>${alertaSaude(fi) ? '<p class="pill warn" style="align-self:flex-start">⚠ pede liberação médica antes de HIIT/carga alta</p>' : ''}${linhas.map(([k, v]) => `<div class="r" style="grid-template-columns:1fr"><div><span>${esc(k)}</span><b style="font-weight:600">${esc(v)}</b></div></div>`).join('')}<button class="btn ghost sm" id="c">Fechar</button></div></div>`);
+  overlay(`<div class="modal" id="m" style="align-items:flex-start;overflow:auto"><div class="box" style="padding:16px;display:flex;flex-direction:column;gap:8px;margin-top:20px"><h2>${esc(fi.nome || 'Anamnese')}</h2>${alertaSaude(fi) ? '<p class="pill warn" style="align-self:flex-start">⚠ pede liberação médica antes de HIIT/carga alta</p>' : ''}${cuidadosSaude(fi).length ? `<p class="small muted" style="margin:0">Cuidado (sem alerta no painel): ${esc(cuidadosSaude(fi).join(', '))}</p>` : ''}${alertaSaude(fi) && !saudeVista(fi) ? '<button class="btn ghost sm" id="saudeOk">✓ Já vi, tá tudo certo</button>' : ''}${linhas.map(([k, v]) => `<div class="r" style="grid-template-columns:1fr"><div><span>${esc(k)}</span><b style="font-weight:600">${esc(v)}</b></div></div>`).join('')}<button class="btn ghost sm" id="c">Fechar</button></div></div>`);
   $('#c').onclick = closeOverlay;
+  const ok = $('#saudeOk'); if (ok) ok.onclick = () => { marcarSaudeVista(fi); closeOverlay(); toast('Ok, saiu do alerta de saúde ✓'); aoVer?.(); };
 }
 
 // AVALIAÇÃO POSTURAL (só o Igor): as fotos da evolução dela com grade e linha de prumo por cima,
