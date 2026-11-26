@@ -135,7 +135,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     const quando = v => v.dias < 0 ? `venceu em ${dd(v)} (há ${pl(-v.dias, 'dia', 'dias')})` : v.dias === 0 ? `vence hoje (${dd(v)})` : `vence em ${dd(v)} (${v.dias === 1 ? 'falta 1 dia' : `faltam ${v.dias} dias`})`;
     return `${topo('Atualizações')}<p class="muted">Treinos vencidos ou que vencem em até 3 dias. Toca em Renovar: o novo treino começa no dia seguinte ao vencimento e já sai da lista.</p>
     <div class="row" style="gap:8px"><button class="pill big-pill ${vtab === 'pend' ? 'on' : ''}" data-vtab="pend">Pendentes (${pendentes.length})</button><button class="pill big-pill ${vtab === 'res' ? 'on' : ''}" data-vtab="res">Resolvidas (${resolvidas.length})</button></div>
-    <div class="card">${lista.length ? lista.map(v => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(v.nome)}</b><span>${esc(v.titulo || 'Treino')} · ${quando(v)}</span></div><div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" style="flex:1;white-space:nowrap" data-treino="${v.aluna_id}" data-n="${esc(v.nome)}" data-renova="1">Renovar</button><button class="btn ghost sm" style="flex:1;white-space:nowrap" data-visto="${v.id}" data-v="${v.visto_em ? 0 : 1}">${v.visto_em ? 'Reabrir' : 'Já resolvi'}</button></div></div>`).join('') : `<p class="muted">${vtab === 'pend' ? 'Nenhum treino vencendo agora ✓' : 'Nada resolvido ainda.'}</p>`}</div>`;
+    <div class="card">${lista.length ? lista.map(v => `<div class="r" style="grid-template-columns:1fr"><div><b>${esc(v.nome)}</b><span>${esc(v.titulo || 'Treino')} · ${quando(v)}</span></div><div class="row" style="gap:8px;margin-top:8px"><button class="btn sm" style="flex:1;white-space:nowrap" data-treino="${v.aluna_id}" data-n="${esc(v.nome)}" data-renova="1" data-slot="${v.slot || 1}">Renovar</button><button class="btn ghost sm" style="flex:1;white-space:nowrap" data-visto="${v.id}" data-v="${v.visto_em ? 0 : 1}">${v.visto_em ? 'Reabrir' : 'Já resolvi'}</button></div></div>`).join('') : `<p class="muted">${vtab === 'pend' ? 'Nenhum treino vencendo agora ✓' : 'Nada resolvido ainda.'}</p>`}</div>`;
   }
   const telaExercicios = () => `${topo('Biblioteca de exercícios')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
   const telaModelos = () => `${topo('Biblioteca de treinos')}<div id="bib" class="painel-sec"><p class="muted">Carregando…</p></div>`;
@@ -182,7 +182,7 @@ export async function adminView(S, { render, go, anamneseForm, db: _db }) {
     $$('[data-ficha]').forEach(b => b.onclick = () => fichaAnamnese(fichas.get(b.dataset.ficha)));
     $$('[data-semficha]').forEach(b => b.onclick = () => toast('Ela ainda não respondeu a anamnese. Ela vê o aviso quando entra no app.'));
     $$('[data-postural]').forEach(b => b.onclick = () => avaliacaoPostural(alunas.find(x => x.id === b.dataset.postural)));
-    $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go, { renovar: b.dataset.renova === '1' }));
+    $$('[data-treino]').forEach(b => b.onclick = () => editorTreino(b.dataset.treino, b.dataset.n, go, { renovar: b.dataset.renova === '1', slot: +b.dataset.slot || 1 }));
     $$('[data-resp],[data-edita],[data-resp2]').forEach(b => b.onclick = () => responder(b));
     $$('[data-pfoto]').forEach(b => b.onclick = async () => { const url = await db.fotoUrl(b.dataset.pfoto).catch(() => null); if (!url) return toast('Não consegui abrir a foto agora.', true); overlay(`<div class="modal" id="pm"><div class="box" style="padding:12px;display:flex;flex-direction:column;gap:10px"><b>${esc(b.dataset.pnome)} · treino presencial</b><img src="${url}" alt="" style="width:100%;max-height:70vh;object-fit:contain;border-radius:10px"><button class="btn ghost sm" id="pmX">Fechar</button></div></div>`); $('#pmX').onclick = closeOverlay; $('#pm').addEventListener('click', e => { if (e.target.id === 'pm') closeOverlay(); }); });
     $$('[data-lida]').forEach(b => b.onclick = async () => { const f = fb.find(x => String(x.id) === b.dataset.lida); try { await db.admin.marcarRespostaLida(b.dataset.lida); if (f) f.resposta_aluna_lida_em = new Date().toISOString(); const i = delasNovas.indexOf(f); if (i >= 0) delasNovas.splice(i, 1); desenhar(); } catch (e) { toast(e.message, true); } });
@@ -336,8 +336,14 @@ function parseTreinos(txt) {
 function serializar(plano) {
   return plano.treinos.map(t => `# ${t.letra} | ${t.nome} | ${t.duracao_min || 40}\n` + t.exercicios.sort((a, b) => a.ordem - b.ordem).map(e => [e.nome, e.series, e.reps, e.descanso_s, e.video_url || '', e.dica || '', e.alternativa || '', e.biset_com ? 'bi ' + e.biset_com : ''].join(' | ').replace(/( \| )+$/, '')).join('\n')).join('\n\n');
 }
-async function editorTreino(alunaId, nome, go, { renovar = false } = {}) {
-  const atual = await db.admin.planoDe(alunaId);
+// Até 3 planilhas por aluna (027): Academia, Em casa, Viagem... Cada uma tem nome e datas próprias; ela escolhe qual usar no app.
+const NOME_PADRAO = 'Treino mensal';
+async function editorTreino(alunaId, nome, go, { renovar = false, slot = 1 } = {}) {
+  const [atual, planilhas] = await Promise.all([db.admin.planoDe(alunaId, slot), db.admin.planilhasDe ? db.admin.planilhasDe(alunaId).catch(() => []) : []]);
+  const livre = [1, 2, 3].find(n => !planilhas.some(x => x.slot === n));
+  const nomeAtual = atual?.titulo && atual.titulo !== NOME_PADRAO ? atual.titulo : '';
+  const seletor = `<div class="cab-planilhas" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"><span class="muted small">Planilhas dela (até 3)</span><div class="row" style="gap:6px;flex-wrap:wrap">${planilhas.map(x => `<button type="button" class="pill ${x.slot === slot ? 'on' : ''}" data-plslot="${x.slot}">${x.slot} · ${esc(x.titulo && x.titulo !== NOME_PADRAO ? x.titulo : 'Planilha ' + x.slot)}</button>`).join('')}${!planilhas.some(x => x.slot === slot) ? `<span class="pill on">${slot} · nova</span>` : ''}${livre && planilhas.some(x => x.slot === slot) ? `<button type="button" class="pill" data-plslot="${livre}">＋ nova planilha</button>` : ''}</div>
+    <label class="campo">Nome da planilha (ela vê no app)<input class="input" id="plTit" maxlength="30" placeholder="Ex.: Academia, Em casa, Viagem" value="${esc(nomeAtual)}"></label></div>`;
   const hojeStr = hojeIso();
   // Igual ao Mfit: início + duração = vencimento. Treino já vencido ou sem datas começa hoje; senão mantém as datas dela.
   // Vindo das Atualizações (renovar): começa no dia seguinte ao vencimento, com a mesma duração do anterior.
@@ -350,14 +356,15 @@ async function editorTreino(alunaId, nome, go, { renovar = false } = {}) {
   const sem0b = renovar || !venceu ? sem0 : 4;
   construtor({
     db, titulo: `Treino de ${nome.split(' ')[0]}`, treinos: atual?.treinos || [], salvarTxt: 'Publicar pra aluna',
-    cabecalho: camposDatas(ini0, sem0b) + (renovar && depois ? `<p class="muted small">Renovação: o anterior vence em ${brDia(atual.fim)}.</p>` : ''),
+    cabecalho: seletor + camposDatas(ini0, sem0b) + (renovar && depois ? `<p class="muted small">Renovação: o anterior vence em ${brDia(atual.fim)}.</p>` : ''),
     textoParaTreinos: parseTreinos, treinosParaTexto: tr => serializar({ treinos: tr.map(t => ({ ...t, exercicios: t.exercicios.map((e, j) => ({ ...e, ordem: j + 1 })) })) }),
     extras: [
       { id: 'usarLib', txt: '📚 usar da biblioteca', fn: est => escolherModelo(est) },
       { id: 'pAlib', txt: '💾 salvar na biblioteca', fn: est => salvarComoModelo(est.get(), nome) }
     ],
-    onSalvar: async treinos => { const ini = $('#ini').value || hojeStr, fim = somaFim(ini, +$('#sem').value || 4); await db.admin.salvarPlano(alunaId, ini.slice(0, 7) + '-01', treinos, { inicio: ini, fim }); toast(`Publicado ✓ ${treinos.length} treinos, ${treinos.reduce((n, t) => n + t.exercicios.length, 0)} exercícios · vence em ${brDia(fim)}`); go('admin'); }
+    onSalvar: async treinos => { const ini = $('#ini').value || hojeStr, fim = somaFim(ini, +$('#sem').value || 4); await db.admin.salvarPlano(alunaId, ini.slice(0, 7) + '-01', treinos, { inicio: ini, fim, slot, titulo: ($('#plTit')?.value || '').trim() || (slot === 1 ? NOME_PADRAO : 'Planilha ' + slot) }); toast(`Publicado ✓ ${treinos.length} treinos, ${treinos.reduce((n, t) => n + t.exercicios.length, 0)} exercícios · vence em ${brDia(fim)}`); go('admin'); }
   });
+  $$('[data-plslot]', $('#mt')).forEach(b => b.onclick = () => { closeOverlay(); editorTreino(alunaId, nome, go, { slot: +b.dataset.plslot }); }); // troca de planilha (o que não foi publicado nessa se perde, igual fechar)
   ligarDatas($('#mt')); // escuta no pop-up do editor (antes somava um listener no document a cada abertura)
 }
 async function escolherModelo(est) {

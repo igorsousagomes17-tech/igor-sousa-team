@@ -608,3 +608,6 @@ details.cfg{min-width:0;max-width:100%}details.cfg .cfg-box{grid-template-column
 :root[data-tema="claro"] .scale5 button.on{background:var(--accent);color:var(--accent-ink)}
 .home-rank .rk .md{font-size:1.125rem}
 .foto-story{display:block;width:100%;max-height:52vh;object-fit:contain;border-radius:14px;background:#000}
+/* Até 3 planilhas por aluna (27/11): seletor no Início e no Treino */
+.planilhas{display:flex;flex-direction:column;gap:6px}.planilhas .pill{min-height:40px;padding:0 14px}
+.planilhas{padding:10px 12px;border:1px solid var(--line);border-radius:14px}

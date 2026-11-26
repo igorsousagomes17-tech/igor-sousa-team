@@ -5,7 +5,7 @@ begin
   select id into uid from auth.users where email = 'igorsousagomes17@gmail.com';
   insert into planos (aluna_id, mes, titulo, obs)
   values (uid, date_trunc('month', now())::date, 'Treino do mês · 4x', 'Redução de gordura/hipertrofia · Intermediário')
-  on conflict (aluna_id, mes) do update set titulo = excluded.titulo, obs = excluded.obs
+  on conflict (aluna_id, mes, slot) do update set titulo = excluded.titulo, obs = excluded.obs
   returning id into pid;
   delete from treinos where plano_id = pid;
 

@@ -44,7 +44,8 @@ create table if not exists planos (
   titulo text default 'Treino mensal',
   obs text,
   created_at timestamptz default now(),
-  unique (aluna_id, mes)
+  slot smallint not null default 1 check (slot between 1 and 3), -- até 3 planilhas por aluna (027)
+  unique (aluna_id, mes, slot)
 );
 
 create table if not exists treinos (

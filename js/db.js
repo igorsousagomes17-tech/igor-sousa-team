@@ -54,13 +54,18 @@ export async function salvarPerfil(patch) {
 
 // Plano do mês com treinos e exercícios (uma consulta, cacheada).
 const mesLocal1 = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; };
+// Até 3 planilhas por aluna (027): pega a mais recente de cada "slot" e entrega a que ela escolheu (padrão: a 1).
+// p.opcoes lista as planilhas pra ela trocar no app; trocar só muda LS 'slot', não mexe no banco.
 export async function planoAtual(alunaId) {
   const mesStr = mesLocal1();
   const { data, error } = await sb.from('planos')
-    .select('id,mes,titulo,obs,inicio,fim,treinos(id,letra,nome,duracao_min,ordem,exercicios(id,ordem,nome,series,reps,descanso_s,video_url,dica,alternativa,biset_com))')
-    .eq('aluna_id', alunaId).lte('mes', mesStr).order('mes', { ascending: false }).limit(1);
+    .select('id,mes,slot,titulo,obs,inicio,fim,treinos(id,letra,nome,duracao_min,ordem,exercicios(id,ordem,nome,series,reps,descanso_s,video_url,dica,alternativa,biset_com))')
+    .eq('aluna_id', alunaId).lte('mes', mesStr).order('mes', { ascending: false }).limit(12);
   if (error || !data?.length) return comAnimacoes(LS.get('plano'));
-  const p = data[0];
+  const porSlot = new Map(); data.forEach(x => { const k = x.slot || 1; if (!porSlot.has(k)) porSlot.set(k, x); });
+  const lista = [...porSlot.values()].sort((a, b) => (a.slot || 1) - (b.slot || 1));
+  const quero = +LS.get('slot', 0), p = lista.find(x => (x.slot || 1) === quero) || lista[0];
+  p.opcoes = lista.map(x => ({ slot: x.slot || 1, titulo: x.titulo || null, treinos: x.treinos.length }));
   p.treinos.sort((a, b) => a.ordem - b.ordem || a.letra.localeCompare(b.letra));
   p.treinos.forEach(t => { t.exercicios.sort((a, b) => a.ordem - b.ordem); t.exercicios.forEach(e => { const aq = aqDe(e.dica); if (aq) { e.aq = aq; e.dica = semAq(e.dica); } }); });
   comAnimacoes(p); LS.set('plano', p); return p;
@@ -318,13 +323,18 @@ export const admin = {
   async marcarRespostaLida(sessaoId) { const { error } = await sb.rpc('marcar_resposta_aluna_lida', { p_sessao: sessaoId }); if (error) throw error; },
   async responder(sessaoId, texto) { const { error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId); if (error) throw error; },
   async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,sexo,horario,academia_tipo,equipamento,cardio,evita,ciclo,dias_semana,tempo_treino_min,local_treino,experiencia,foco,incomoda,limitacoes,saude,gestacao,sono_estresse,atividade,nascimento,nutri,desistiu,peso_kg,altura_m,anamnese_em,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(500); return data || []; },
-  async planoDe(alunaId) {
-    const { data } = await sb.from('planos').select('id,mes,titulo,inicio,fim,treinos(id,letra,nome,ordem,exercicios(*))').eq('aluna_id', alunaId).order('mes', { ascending: false }).limit(1);
+  async planoDe(alunaId, slot = 1) {
+    const { data } = await sb.from('planos').select('id,mes,slot,titulo,inicio,fim,treinos(id,letra,nome,ordem,exercicios(*))').eq('aluna_id', alunaId).eq('slot', slot).order('mes', { ascending: false }).limit(1);
     return data?.[0] || null;
   },
+  // As planilhas dela (até 3): a mais recente de cada slot, pro seletor do editor
+  async planilhasDe(alunaId) {
+    const { data, error } = await sb.from('planos').select('id,mes,slot,titulo,inicio,fim').eq('aluna_id', alunaId).order('mes', { ascending: false }); if (error) throw error;
+    const m = new Map(); (data || []).forEach(x => { if (!m.has(x.slot || 1)) m.set(x.slot || 1, x); }); return [...m.values()].sort((a, b) => a.slot - b.slot);
+  },
   async salvarPlano(alunaId, mesStr, treinos, datas = {}) {
-    // treinos: [{letra,nome,duracao_min,exercicios:[{nome,series,reps,descanso_s,video_url,dica,alternativa}]}]
-    const { data: plano, error } = await sb.from('planos').upsert({ aluna_id: alunaId, mes: mesStr, inicio: datas.inicio || null, fim: datas.fim || null, visto_em: null }, { onConflict: 'aluna_id,mes' }).select().single();
+    // treinos: [{letra,nome,duracao_min,exercicios:[{nome,series,reps,descanso_s,video_url,dica,alternativa}]}]; datas.slot (1-3) e datas.titulo = qual planilha
+    const { data: plano, error } = await sb.from('planos').upsert({ aluna_id: alunaId, mes: mesStr, slot: datas.slot || 1, titulo: datas.titulo || null, inicio: datas.inicio || null, fim: datas.fim || null, visto_em: null }, { onConflict: 'aluna_id,mes,slot' }).select().single();
     if (error) throw error;
     await sb.from('treinos').delete().eq('plano_id', plano.id);
     for (const [i, t] of treinos.entries()) {
@@ -336,7 +346,7 @@ export const admin = {
     return plano;
   },
   // Atualizações (igual ao Mfit): último treino de cada aluna com o vencimento. visto_em = "marcar como lida"
-  async vencimentos() { const { data, error } = await sb.from('planos').select('id,aluna_id,mes,titulo,inicio,fim,visto_em').order('mes', { ascending: false }); if (error) throw error; const vistas = new Set(); return (data || []).filter(p => !vistas.has(p.aluna_id) && vistas.add(p.aluna_id)); },
+  async vencimentos() { const { data, error } = await sb.from('planos').select('id,aluna_id,mes,slot,titulo,inicio,fim,visto_em').order('mes', { ascending: false }); if (error) throw error; const vistas = new Set(); return (data || []).filter(p => { const k = p.aluna_id + ':' + (p.slot || 1); return !vistas.has(k) && vistas.add(k); }); },
   async marcarVisto(planoId, visto) { const { error } = await sb.from('planos').update({ visto_em: visto ? new Date().toISOString() : null }).eq('id', planoId); if (error) throw error; },
   async publicarRecado(texto, midia_url) { const { error } = await sb.from('recados').insert({ texto, midia_url }); if (error) throw error; },
   async setAtiva(id, ativa) { const { error } = await sb.from('profiles').update({ ativa }).eq('id', id); if (error) throw error; },

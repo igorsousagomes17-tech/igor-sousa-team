@@ -287,6 +287,7 @@ routes.home = async () => {
   <div><p class="muted">${hoje()}${p.plano === 'personalizado' ? ` <span class="pill" style="vertical-align:middle">${t('Personalizado')}</span>` : ''}</p><h1>${t('Bora, {nome}?', { nome: esc(primeiroNome(p.nome)) })}</h1></div>
   ${avisoVencimento(plano)}
   ${!p.anamnese_em && p.role !== 'admin' ? (p.objetivo ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1rem">${t('Confere sua anamnese')}</b><p class="muted">${t('O Igor já preencheu o que você respondeu antes. É só conferir e completar o que faltar.')}</p><button class="btn sm mt" id="anam" style="width:100%">${t('Conferir agora')}</button></div>` : `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1rem">${t('Falta me contar de você')}</b><p class="muted">${t('Perguntas rápidas (uns 3 min) pro Igor montar o seu treino.')}</p><button class="btn sm mt" id="anam" style="width:100%">${t('Responder agora')}</button></div>`) : ''}
+  ${!sa ? seletorPlanilha(plano) : ''}
   ${sa && sa.fimEm ? `<div class="card hero"><span class="pill" style="background:rgba(0,0,0,.18);color:#1a0d00">${t('Falta enviar')}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}</div><p style="color:#1a0d00;font-weight:600">${t('Seu treino ainda não foi registrado: falta tocar em Enviar (o esforço e o recado pro Igor).')}</p><button class="btn dark" style="margin-top:8px" data-go="fim">${t('Enviar agora')}</button></div>`
     : sa ? `<div class="card hero"><span class="pill" id="pausaPill" style="background:rgba(0,0,0,.18);color:#1a0d00">${pillPausa(sa)}</span><div class="logo" style="font-size:1.75rem;margin:8px 0 4px;color:#1a0d00">${esc(nomeTreino(sa.titulo))}${sa.express ? ` <span style="font-size:1rem">⚡ ${t('Express')}</span>` : ''}</div><p style="color:#1a0d00;font-weight:600">${tp(sf, '{n} série feita', '{n} séries feitas')} · ${t('{a} de {b} exercícios · tudo salvo', contaObr(sa))}</p><button class="btn dark" style="margin-top:8px" data-go="sessao">${t('Continuar de onde parei')}</button><button class="back" id="desc" style="color:#1a0d00;margin-top:18px;text-decoration:underline">${t('descartar esse treino')}</button></div>`
     : perguntaSemana(plano, sessoes) || (feitoHoje && prox ? `<div class="card" style="border:1px solid var(--accent)"><b style="font-size:1.0625rem">${feitoInc ? t('{x} registrado ({a} de {b})', { x: esc(nomeTreino(feitoHoje.titulo)), a: feitoHoje.exercicios_feitos, b: feitoHoje.exercicios_total }) : t('Treino de hoje feito ✓')}</b><p class="muted">${feitoInc ? tp(feitoHoje.exercicios_total - feitoHoje.exercicios_feitos, 'Faltou {n} exercício. Completo vale 50 e conta na meta: se der, faz ele inteiro na próxima. O próximo é o {y}.', 'Faltaram {n} exercícios. Completo vale 50 e conta na meta: se der, faz ele inteiro na próxima. O próximo é o {y}.', { y: t('Treino {l}', { l: esc(prox.letra) }) }) : t('{x} registrado. Descansa e volta amanhã: o próximo é o {y}.', { x: esc(nomeTreino(feitoHoje.titulo)), y: t('Treino {l}', { l: esc(prox.letra) }) })}</p><button class="btn ghost sm mt" style="width:100%" data-go="treino" data-arg="${esc(prox.letra)}">${t('Ver o Treino {l}', { l: esc(prox.letra) })}</button></div>`
@@ -318,6 +319,7 @@ routes.home = async () => {
   if ($('#resumoSem')) $('#resumoSem').onclick = () => { A.resumoVisto(resumoAnt.semanaKey); go('semana', resumoAnt.semanaKey + '|home'); };
   if ($('.volta-x')) $('.volta-x').onclick = () => { A.voltaVisto(); $('#volta')?.remove(); };
   const ult = sessoes.find(s => s.finalizada_em); A.avisarSW({ ultimo: ult?.finalizada_em || null, nome: primeiroNome(p.nome), proximo: prox ? t('Treino {l}', { l: prox.letra }) : t('treino') });
+  ligaSeletorPlanilha(() => routes.home());
   rapido(db.comunidade(), null, 6000).then(d => { const el = $('#rankHome'); if (el && rotaAtual === 'home') el.innerHTML = d ? A.htmlRankHome(d) : `<b style="font-size:0.9375rem">🏆 ${t('Ranking do mês')}</b><p class="muted">${t('Toca pra ver o ranking e quem treinou hoje.')}</p>`; });
   if (A.passeioPendente(p) && !S.fotosPend && !$('#overlay')?.innerHTML && !document.querySelector('.bv')) setTimeout(() => { if (rotaAtual === 'home' && !S.fotosPend && !$('#overlay')?.innerHTML && !document.querySelector('.tour')) A.passeio(p); }, 500);
   $$('.semop').forEach(b => b.onclick = () => { db.LS.set('inicioSemana', { semana: isoWeek(new Date()), letra: b.dataset.letra }); routes.home(); toast(t('Semana começa pelo Treino {l} ✓', { l: b.dataset.letra })); });
@@ -412,6 +414,19 @@ async function registrarPresencial() {
     if (fila) toast(t('Sem sinal agora: a foto ficou guardada no celular. Envio sozinha quando a internet voltar.'));
   };
 }
+// Até 3 planilhas (Academia, Em casa, Viagem...): ela escolhe qual usar. A escolha fica no celular (LS 'slot').
+const NOME_PADRAO_PLANO = 'Treino mensal';
+const nomePlanilha = o => o.titulo && o.titulo !== NOME_PADRAO_PLANO ? tlivre(o.titulo) : t('Planilha {n}', { n: o.slot });
+function seletorPlanilha(plano) {
+  const op = plano?.opcoes || []; if (op.length < 2) return '';
+  return `<div class="planilhas"><span class="muted small">${t('Qual planilha hoje?')}</span><div class="row" style="gap:6px;flex-wrap:wrap">${op.map(o => `<button class="pill ${o.slot === (plano.slot || 1) ? 'on' : ''}" data-planilha="${o.slot}">${esc(nomePlanilha(o))}</button>`).join('')}</div></div>`;
+}
+function ligaSeletorPlanilha(depois) {
+  $$('[data-planilha]').forEach(b => b.onclick = () => {
+    if (S.sessao) return toast(t('Você tem um treino em andamento. Termina ele antes de trocar de planilha.'), true);
+    db.LS.set('slot', +b.dataset.planilha); S.plano = null; delete fresco['plano@' + S.perfil.id]; depois();
+  });
+}
 routes.treino = async (letra) => {
   const plano = S.plano || await rapido(db.planoAtual(S.perfil.id), db.LS.get('plano')); S.plano = plano;
   if (!plano?.treinos?.length) return render(`<div class="view"><div class="topbar"><h2>${t('Treino mensal')}</h2></div><div class="card"><b>${t('Ainda não tem treino montado.')}</b><p class="muted">${t('Assim que o Igor liberar, aparece aqui e você recebe um aviso.')}</p></div></div>`, 'treino');
@@ -426,6 +441,7 @@ routes.treino = async (letra) => {
   const mes = plano.fim ? t('até {d}', { d: dataLocal(plano.fim + 'T12:00', { day: 'numeric', month: 'numeric' }) }) : dataLocal(plano.mes + 'T12:00', { month: 'long' });
   const semPend = !S.sessao && !!perguntaSemana(plano, S.sessoes || []); // segunda sem escolher: o treino que ela iniciar vira o começo da semana
   render(`<div class="view fx"><div class="topbar"><button class="back" data-go="home">‹ ${t('Início')}</button><span class="row" style="gap:6px">${S.perfil.plano === 'personalizado' ? `<span class="pill">${t('Personalizado')}</span>` : ''}<span class="pill" style="${plano.fim ? '' : 'text-transform:capitalize'}">${esc(mes)}</span></span></div>
+  ${seletorPlanilha(plano)}
   <div class="hscroll" style="gap:6px">${plano.treinos.map(x => `<button class="pill big-pill ${x.letra === tr.letra ? 'on' : ''}" style="flex-shrink:0;white-space:nowrap" data-go="treino" data-arg="${esc(x.letra)}">${t('Treino {l}', { l: esc(x.letra) })}</button>`).join('')}</div>
   <div><h1>${t('Treino {l}', { l: esc(tr.letra) })}</h1><p class="muted">${esc(tc(tr.nome))} · ${tp(exs.length, '{n} exercício', '{n} exercícios')} · ~${t('{n} min', { n: dur })}${kcalTxt(K.kcalTreino(S.perfil, exs, dur, { express: expr }))}</p>${K.faltaDado(S.perfil) ? `<button class="back small" id="kcalDado" style="color:var(--accent-t);text-decoration:underline;margin-top:2px">${t('Ver quantas kcal você gasta: completa peso, altura e nascimento')}</button>` : ''}<div class="versao" role="group" aria-label="${t('Versão do treino')}"><button class="${expr ? '' : 'on'}" data-ver="0">${t('Completo')} <small>~${t('{n} min', { n: tr.duracao_min || 40 })}</small></button><button class="${expr ? 'on' : ''}" data-ver="1">⚡ ${t('Express')} <small>~${t('{n} min', { n: Math.max(15, Math.round((tr.duracao_min || 40) * 0.6 / 5) * 5) })}</small></button></div>${expr ? `<p class="small mt" style="color:var(--accent-t)">${t('Express: mesmos exercícios, menos séries e descanso mais curto. Pra dia corrido, sem culpa.')}</p>` : ''}<p class="muted small mt">${t('Toca no nome do exercício pra ver como fazer e suas cargas.')}</p>${semPend ? `<p class="small mt" style="color:var(--accent-t)">${t('Semana nova: o treino que você iniciar aqui vira o começo da sua semana.')}</p>` : ''}</div>
   ${plano.obs ? `<div class="card" style="padding:10px 14px"><p class="muted"><b style="color:var(--fg)">${t('Do Igor:')}</b> ${esc(tlivre(plano.obs))}</p></div>` : ''}
@@ -437,6 +453,7 @@ routes.treino = async (letra) => {
   exs.forEach(e => { if (!tempo(e.reps)) cache3('ult@' + S.perfil.id + e.nome, () => db.ultimaCarga(S.perfil.id, e.nome)).then(u => mostraUlt(e.nome, ultimaValida(u, e.reps))).catch(() => {}); });
   $('#ini').onclick = () => { if (semPend) db.LS.set('inicioSemana', { semana: isoWeek(new Date()), letra: tr.letra }); const b = $('#ini'), rot = b.textContent; b.disabled = true; b.textContent = t('Abrindo…'); iniciarSessao({ titulo: `Treino ${tr.letra}`, treino_id: tr.id, exercicios: exs, duracao_min: dur, express: expr }).finally(() => { if (document.body.contains(b)) { b.disabled = false; b.textContent = rot; } }); };
   $$('[data-ficha]').forEach(b => b.onclick = () => abrirHistorico(exs[+b.dataset.ficha].nome, exs[+b.dataset.ficha]));
+  ligaSeletorPlanilha(() => routes.treino());
   $('#pdf').onclick = () => baixarPdf($('#pdf'), plano); $('#presencial').onclick = registrarPresencial;
   if ($('#kcalDado')) $('#kcalDado').onclick = () => anamneseForm(S.perfil, () => routes.treino(tr.letra));
   $$('[data-ver]').forEach(b => b.onclick = () => { db.LS.set('versaoExpress', b.dataset.ver === '1' ? diaLocal() : false); routes.treino(tr.letra); });
