@@ -1,4 +1,4 @@
--- Migração 028 (proposta em 26/11/2026, NÃO RODADA: precisa do ok do Igor antes do SQL Editor).
+-- Migração 028 (26/11/2026, aprovada pelo Igor: "Pode pôr tudo"). Rodar no SQL Editor do Supabase junto com o lançamento da noite.
 -- Problema: hoje cada sessão finalizada dá +50, sem limite por dia. Como a aluna grava as próprias sessões
 -- (RLS "sessoes: aluna" é for all), dá pra repetir treino curto ou criar sessão "completa" direto pela API
 -- e acumular pontos, e o desafio do mês (16 treinos) pode ser batido num dia só. Com prêmio de verdade, isso é risco.
