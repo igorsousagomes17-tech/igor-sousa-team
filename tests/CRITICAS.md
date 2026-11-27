@@ -708,3 +708,11 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - [ ] Migração 028 (pronta, NÃO rodada, decisão do Igor): pontos de treino só 1 vez por dia; meta da semana e desafio do mês contam dias, não sessões. Hoje dá pra acumular +50 por sessão sem limite.
 - [ ] Senha inicial = número do WhatsApp: adivinhável até a aluna trocar. Avaliar link de primeiro acesso.
 - SW v89 (junto com as correções do dia).
+
+## 26/11 (2ª rodada do crítico)
+- Etiquetas curtas no lugar do texto longo de técnica (Bi-set, Pirâmide, Drop, Parciais, Opcional).
+- Chips da sessão numerados, verdes quando feitos; HIIT/Extra nomeados.
+- Pular pergunta sobre séries não marcadas; título do feedback curto ("Treino registrado (a de b)").
+- Nota só com estrelas; "Como ganhar pontos" recolhido; foto vazia compacta; filtros por grupo nos vídeos.
+- Aviso de vencimento em linha; meta de água visível também pro admin.
+- Testes ajustados ao novo texto/estrutura (preload abre <details>).

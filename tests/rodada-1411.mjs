@@ -54,7 +54,7 @@ const estado = (p, fn) => p.evaluate(f => { const s = JSON.parse(localStorage.ge
 { const { ctx, p } = await nova(); await entrar(p); await treino(p, 'A');
   const s0 = await sess(p), h = s0.exs.findIndex(e => /hiit/i.test(e.nome));
   if (h >= 0) { await mudaSess(p, `s.sets[${h}] = s.sets[${h}] || [{kg:'',reps:''}]; s.sets[${h}][0] = { ...s.sets[${h}][0], done: true, seg: 35 }`); await p.reload(); await w(p, 1200);
-    const chip = await p.$eval(`[data-passo]:last-child`, e => e.className + '|' + e.textContent); ok(!/\bok\b/.test(chip) && /♥/.test(chip) && /chopc/.test(chip), `HIIT 0:35 de 20:00 não fica ✓ e o chip é ♥ tracejado (${chip})`); }
+    const chip = await p.$eval(`[data-passo]:last-child`, e => e.className + '|' + e.textContent); ok(!/\bok\b/.test(chip) && /HIIT/.test(chip) && /chopc/.test(chip), `HIIT 0:35 de 20:00 não fica ✓ e o chip é "HIIT" tracejado (${chip})`); }
   const tops = await p.$$eval('[data-passo]', l => [...new Set(l.map(e => Math.round(e.getBoundingClientRect().top)))]); ok(tops.length === 1, `chips dos exercícios numa linha só em ${W}px (${tops.length})`);
   // "Boa! 0 de 7" só com exercício completo (Márcia marcou 1 série e encerrou)
   await p.click('[data-passo="1"]'); await w(p, 400); await p.fill('.set[data-i="1"][data-k="0"] input[data-f="kg"]', '20'); await p.click('.set[data-i="1"][data-k="0"] .rest'); await w(p, 500); if (await p.$('#m #q-n')) { await p.click('#m #q-n'); await w(p, 300); }

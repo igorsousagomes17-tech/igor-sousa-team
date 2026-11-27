@@ -54,7 +54,7 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   await p.click('#m [data-o="0"]'); await espera(p, 800);
   const s = await sessao(p); ok(s.sets[0].every(x => x.done) && s.p === 1, '"Fiz todas" marca as que faltavam e segue');
   await p.click('#fim'); await espera(p); ok(/Faltam 6 exercícios/i.test(await txt(p, '#overlay')), 'pop-up conta como o topo (Faltam 6 com 1 de 7 feito)');
-  await p.click('#enc'); await espera(p, 600); ok(/1 de 7 feitos/i.test(await txt(p, '.view')) && /Só fica registrado quando você tocar em Enviar/i.test(await txt(p, '.view')), 'feedback pela metade: "Boa! 1 de 7 feitos" e avisa que falta tocar em Enviar');
+  await p.click('#enc'); await espera(p, 600); ok(/1 de 7 ?(feitos|\))/i.test(await txt(p, '.view')) && /Só fica registrado quando você tocar em Enviar/i.test(await txt(p, '.view')), 'feedback pela metade: "1 de 7" (curto: "Treino registrado") e avisa que falta tocar em Enviar');
   await p.click('#esf button >> nth=2'); await p.click('.tabs [data-go="home"]').catch(() => {}); await p.goto('http://app.local/?demo#home'); await espera(p, 1200);
   ok(/Falta enviar/i.test(await txt(p, '.view')), 'saiu do feedback sem enviar: Início avisa "Falta enviar"'); await shot(p, 'falta-enviar');
   await p.click('[data-go="fim"]'); await espera(p, 600); await p.click('#esf button >> nth=2'); await p.click('#nota button >> nth=3'); await p.click('#env'); await espera(p, 1000);
@@ -82,8 +82,8 @@ const fecharDescanso = async p => { if (await p.$('#rest:not(.mini) #rest-x')) {
   await p.setInputFiles('#f-frente', { name: 'foto.heic', mimeType: 'image/heic', buffer: Buffer.from('nao e imagem') }); await espera(p, 600);
   ok(/não abriu/i.test(await txt(p, '#overlay')), 'foto que o celular não abre avisa na hora'); await p.click('#c'); await espera(p, 300);
   if (await p.$('[data-dia]')) { await p.click('[data-dia="0"]'); await espera(p, 600); ok(/Fechar/i.test(await txt(p, '#overlay')), 'Meus treinos abre o treino do dia'); await p.click('#c'); }
-  await p.click('.tabs [data-go="treino"]'); await espera(p, 600); const info = await p.$('.play.info');
-  ok(!!info, 'exercício sem vídeo mostra "i" (não promete vídeo)'); if (info) { await info.click(); await espera(p, 500); ok(/Tirar dúvida/i.test(await txt(p, '#overlay')), 'ficha sem vídeo oferece a IA'); }
+  await p.click('.tabs [data-go="treino"]'); await espera(p, 600); const info = await p.$('.ex .play[data-ficha]');
+  ok(!!info, 'exercício sem vídeo: botão abre a ficha (crítica 26/11: mesmo botão em todos)'); if (info) { await info.click(); await espera(p, 500); ok(/Tirar dúvida/i.test(await txt(p, '#overlay')), 'ficha sem vídeo oferece a IA'); }
   await ctx.close(); }
 
 // 7. Story: compartilhar que falha (não foi ela que cancelou) baixa a imagem

@@ -52,7 +52,7 @@ const pularMob = async p => { await p.click('#pular'); await w(p, 400); }; // mo
 { const { ctx, p } = await nova(); await entrar(p);
   await p.evaluate(async () => { const db = await import('/js/db-mock.js'); const s = await db.iniciarSessao('x', { titulo: 'Treino A', total: 7 }); await db.finalizarSessao(s.id, { exercicios_feitos: 4, exercicios_total: 7, duracao_s: 900 }); });
   await p.click('.tabs [data-go="evolucao"]'); await p.waitForTimeout(900); await p.click('.topbar [data-go="pontos"]'); await w(p, 900); const v = await p.innerText('.view');
-  ok(/Treino \(4 de 7\)/.test(v), 'histórico: "Treino (4 de 7)" em vez de "Treino completo"'); ok(/Treino presencial com o Igor/.test(v) && /3 de 7 = \+20/.test(v), 'como ganhar: proporcional e presencial');
+  ok(/Treino \(4 de 7\)/.test(v), 'histórico: "Treino (4 de 7)" em vez de "Treino completo"'); { const g = await p.$eval('details.ganhar', d => d.textContent).catch(() => v); ok(/Treino presencial com o Igor/.test(g) && /3 de 7 = \+20/.test(g), 'como ganhar (fechado num botão): proporcional e presencial'); }
   await shot(p, 'pontos');
   await p.click('.tabs [data-go="home"]'); await w(p, 900); const h = await p.innerText('.view');
   ok(!/Treino de hoje feito/.test(h) && /registrado \(4 de 7\)/.test(h), 'Início: treino pela metade não vira "feito ✓"');

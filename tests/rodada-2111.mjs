@@ -76,6 +76,7 @@ const sessao = p => p.evaluate(() => JSON.parse(localStorage.getItem('demo:sessa
   await p.evaluate(() => { const s = JSON.parse(localStorage.getItem('demo:state')); s.perfil.local_treino = 'casa'; localStorage.setItem('demo:state', JSON.stringify(s)); }); await p.reload(); await w(p, 1200);
   ok(await p.locator('[data-go="programa"]').filter({ hasText: /Treino em casa/ }).count() >= 1, 'Início tem o atalho "Treino em casa"');
   await p.click('.tabs [data-go="evolucao"]'); await p.waitForTimeout(900); await p.click('.topbar [data-go="pontos"]').catch(() => p.evaluate(() => { location.hash = '#pontos'; })); await w(p, 900);
+  await p.evaluate(() => document.querySelectorAll('details.ganhar').forEach(d => { d.open = true; })); await p.waitForTimeout(200); // "Como ganhar" fechado num botão (crítica 26/11)
   const v = await p.innerText('.view'); ok(/Meta da semana batida \(\d treinos completos na semana\)/.test(v) && /Desafio do mês \(\d+ treinos completos no mês\)/.test(v), 'Pontos diz quantos treinos valem a semana e o desafio');
   await ctx.close(); }
 

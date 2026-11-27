@@ -76,7 +76,7 @@ const entrar = async (p, em) => { await p.goto('http://app.local/?demo'); await 
   await p.click('.tabs [data-go="treino"]'); await w(p); await p.click('[data-go="treino"][data-arg="A"]'); await w(p);
   const url = await p.getAttribute('.ex:has-text("Agachamento Smith") .play', 'data-url').catch(() => null);
   ok(url === './anim/agachamento-smith.mp4', `Agachamento Smith no treino tem play com a animação (${url})`);
-  ok(await p.locator('.ex:has-text("Goblet") .play.info').count() === 1, 'exercício sem animação continua com o "i" da dica');
+  ok(await p.locator('.ex:has-text("Goblet") .play[data-ficha]').count() === 1 && await p.locator('.ex .play.info').count() === 0, 'exercício sem animação: mesmo botão ▶, abre como fazer (crítica 26/11)');
   await p.click('.ex:has-text("Agachamento Smith") .play'); await w(p, 600);
   await p.waitForTimeout(400); ok(await p.locator('#vm .area.anim video[loop]').count() === 1 && /^(blob:|\.\/anim\/agachamento-smith\.mp4)/.test(await p.getAttribute('#vm .area.anim video', 'src') || ''), 'abre a animação em loop (baixada uma vez só)');
   ok(/Animação de como fazer/.test(await p.innerText('#vm')), 'avisa que é animação e o vídeo do Igor tá chegando');

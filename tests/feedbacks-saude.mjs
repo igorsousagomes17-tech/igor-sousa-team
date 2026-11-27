@@ -1,7 +1,7 @@
 // Teste sem navegador (26/11): regra dos feedbacks "pra responder" × "só 👏" e do alerta de saúde das anamneses no painel.
 // node tests/feedbacks-saude.mjs
 import { readFileSync } from 'node:fs';
-const src = readFileSync(new URL('../js/admin.js', import.meta.url), 'utf8');
+const src = readFileSync(process.env.APP ? process.env.APP + '/js/admin.js' : new URL('../js/admin.js', import.meta.url), 'utf8');
 const pega = nome => { const l = src.split('\n').find(x => x.startsWith(`const ${nome} =`)); if (!l) throw new Error('não achei ' + nome); return l; };
 const nomes = ['precisa', 'escrever', 'soAplauso', 'APLAUSO', 'SAUDE_SERIO', 'SAUDE_CUIDADO', 'alertaSaude', 'cuidadosSaude', 'vistoKey', 'saudeVista', 'marcarSaudeVista', 'alertaPendente'];
 const mem = {}; const db = { LS: { get: (k, d) => mem[k] ?? d, set: (k, v) => { mem[k] = v; } } };
