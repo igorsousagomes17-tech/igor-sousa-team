@@ -612,3 +612,14 @@ details.cfg{min-width:0;max-width:100%}details.cfg .cfg-box{grid-template-column
 /* Até 3 planilhas por aluna (27/11): seletor no Início e no Treino */
 .planilhas{display:flex;flex-direction:column;gap:6px}.planilhas .pill{min-height:40px;padding:0 14px}
 .planilhas{padding:10px 12px;border:1px solid var(--line);border-radius:14px}
+/* Crítica 26/11 (2ª rodada): aviso do treino sólido, cobrindo a barra de cima inteira (antes .94 deixava o "Pausar treino" aparecer por baixo) */
+.toast.topo.sess:not(.fixo){opacity:1;min-height:46px;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.toast.topo.sess.on:not(.fixo){display:flex;align-items:center}
+.ex .etqs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.ex .etq{font-size:.6875rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--accent-t);border:1px solid var(--accent-t);border-radius:999px;padding:1px 8px}
+/* Quadradinhos do treino (crítica 26/11): feito = número verde com risquinho; HIIT escrito por extenso */
+.passos button.ok:not(.on){color:#2fbf71;border-color:rgba(47,191,113,.55);background:rgba(47,191,113,.10);position:relative}
+.passos button.ok:not(.on)::after{content:'✓';position:absolute;top:1px;right:4px;font-size:.625rem;line-height:1}
+.passos button.chopc{max-width:64px;font-size:.8125rem;letter-spacing:.02em}
+details.ganhar>summary{list-style:none;cursor:pointer}details.ganhar>summary::-webkit-details-marker{display:none}details.ganhar>summary h3{margin:0}
+.vence-linha{font-size:.8125rem;color:var(--muted);margin-top:-4px;padding:0 4px}.vence-linha.venceu{color:var(--warn);font-weight:600}
+#nota.scale5 button span:not(.ic){display:none}#nota.scale5 button{min-height:52px}#nota.scale5 button .ic{font-size:.9375rem;letter-spacing:-1px}
