@@ -477,6 +477,7 @@ details.mais .rapidos{margin-top:8px}
 .photo.tem{box-shadow:inset 0 0 0 3px var(--accent)}
 /* Descanso com letra grande / tela estreita: "Pular descanso" desce sozinho em largura cheia, nada sai da tela */
 .rest-bts{flex-wrap:wrap}.rest-bts #rest-skip{flex:2 1 150px!important}.rest-bts #rest-menos,.rest-bts #rest-add,.rest-bts #rest-pausa{flex:1 1 64px!important}
+.rest-bts .btn{white-space:nowrap}
 /* Atalhos do exercício: com letra grande quebram em 2 linhas em vez de estourar o botão */
 .rapidos{flex-wrap:wrap}.rapidos .btn.sm{flex:1 1 92px;min-height:44px}
 /* Esforço/nota em tela estreita: 2 linhas (0–5 e 6–10) com botões largos */

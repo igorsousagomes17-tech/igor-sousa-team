@@ -1041,11 +1041,11 @@ routes.sessao = () => {
       return setTimeout(() => { if (S.sessao !== s || rotaAtual !== 'sessao' || s.p !== p0) return; const prx = s.passos[s.p + 1]; concluirPasso(); if (prx && e.descanso_s && S.sessao === s && rotaAtual === 'sessao') descanso(e.descanso_s, proxDescanso(s, null, s.p)); }, 450);
     }
     routes.sessao(); rolarProximo();
-    const atrasada = Date.now() - (s.pulouEm || 0) < 8000; // pulou o descanso e já marcou a seguinte: tá só anotando o que já fez
+    const atrasada = s.pulouEm?.i === i && Date.now() - s.pulouEm.em < 8000; // pulou o descanso e já marcou a seguinte: tá só anotando o que já fez
     if (ultimoDoPar && e.descanso_s && !atrasada) { // também depois de série de tempo (prancha 30s → descanso 20s)
       const txt = seguinte ? proxDescanso(s, seguinte) : s.passos[s.p + 1] ? proxDescanso(s, null, s.p + 1) : T('Última série!');
       const r = await descanso(e.descanso_s, txt);
-      if (r === false && S.sessao === s && !s.pausadoEm) s.pulouEm = Date.now();
+      if (r === false && S.sessao === s && !s.pausadoEm) s.pulouEm = { em: Date.now(), i }; // só vale pro mesmo exercício
       // HIIT/Tabata (tiro de tempo com descanso curto): acabou o descanso, o próximo tiro começa sozinho (celular no chão, mão suada)
       if (r === true && !document.hidden && t && seguinte && (e.descanso_s <= 30 || intervalosDe(e)) && S.sessao === s && rotaAtual === 'sessao' && !s.pausadoEm && s.passos[s.p]?.includes(seguinte[0]) && tempo(s.exs[seguinte[0]].reps) && !s.sets[seguinte[0]][seguinte[1]].done) return tocar(seguinte[0], seguinte[1]);
       if (S.sessao === s && rotaAtual === 'sessao') rolarProximo();

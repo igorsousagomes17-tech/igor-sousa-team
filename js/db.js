@@ -321,7 +321,10 @@ export const admin = {
   },
   // Igor marca a resposta da aluna como vista (sai do "pra ler")
   async marcarRespostaLida(sessaoId) { const { error } = await sb.rpc('marcar_resposta_aluna_lida', { p_sessao: sessaoId }); if (error) throw error; },
-  async responder(sessaoId, texto) { const { error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId); if (error) throw error; },
+  // Confere que gravou (o banco pode recusar em silêncio e devolver 0 linhas): sem isso o painel dizia "Respondido ✓" e o feedback voltava
+  async responder(sessaoId, texto) { const { data, error } = await sb.from('sessoes').update({ resposta_igor: texto, respondida_em: new Date().toISOString() }).eq('id', sessaoId).select('id'); if (error) throw error; if (!data?.length) throw new Error('Não consegui salvar a resposta. Sai e entra de novo no painel e tenta outra vez.'); },
+  // 👏 em vários de uma vez (só nos que ainda não têm resposta, pra não apagar uma resposta escrita)
+  async aplaudir(ids) { if (!ids?.length) return; const { data, error } = await sb.from('sessoes').update({ resposta_igor: '👏', respondida_em: new Date().toISOString() }).in('id', ids).is('resposta_igor', null).select('id'); if (error) throw error; if (!data?.length) throw new Error('Não consegui salvar as palmas. Sai e entra de novo no painel e tenta outra vez.'); },
   async anamneses() { const { data } = await sb.from('profiles').select('id,nome,whatsapp,objetivo,sexo,horario,academia_tipo,equipamento,cardio,evita,ciclo,dias_semana,tempo_treino_min,local_treino,experiencia,foco,incomoda,limitacoes,saude,gestacao,sono_estresse,atividade,nascimento,nutri,desistiu,peso_kg,altura_m,anamnese_em,created_at').eq('role', 'aluna').order('created_at', { ascending: false }).limit(500); return data || []; },
   async planoDe(alunaId, slot = 1) {
     const { data } = await sb.from('planos').select('id,mes,slot,titulo,inicio,fim,treinos(id,letra,nome,ordem,exercicios(*))').eq('aluna_id', alunaId).eq('slot', slot).order('mes', { ascending: false }).limit(1);

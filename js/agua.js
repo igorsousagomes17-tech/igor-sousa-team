@@ -3,7 +3,7 @@
 // Travas: nunca abaixo de 1,6 L (EFSA: água vinda de líquidos p/ mulheres) nem acima de 4 L. Sem peso: 2,0 L (EFSA mulheres).
 // Ela pode trocar a meta na mão (médico/nutri passou outro valor). Nunca tira ponto: só mostra progresso e a semana em bolinhas.
 // Fica guardado no celular (abre sem sinal); guarda só os últimos 14 dias.
-import { t, tp, dec } from './i18n.js';
+import { t, tp, dec, loc } from './i18n.js';
 
 const MIN = 1600, MAX = 4000, PADRAO = 2000;
 const arred = ml => Math.round(ml / 50) * 50;
@@ -35,7 +35,7 @@ export function desfazer(LS, meta, hoje = diaDe()) { const d = ler(LS); const h 
 // Últimos 7 dias (o de hoje por último): bateu a meta daquele dia?
 export function semana(LS, metaHoje, hoje = new Date()) {
   const d = ler(LS);
-  return Array.from({ length: 7 }, (_, i) => { const dia = new Date(hoje); dia.setDate(dia.getDate() - (6 - i)); const k = diaDe(dia), r = d[k]; const tot = totalDe(r); return { k, bateu: tot > 0 && tot >= (k === diaDe(hoje) ? metaHoje : (r?.meta || metaHoje)), hoje: i === 6, letra: dia.toLocaleDateString(undefined, { weekday: 'narrow' }) }; });
+  return Array.from({ length: 7 }, (_, i) => { const dia = new Date(hoje); dia.setDate(dia.getDate() - (6 - i)); const k = diaDe(dia), r = d[k]; const tot = totalDe(r); return { k, bateu: tot > 0 && tot >= (k === diaDe(hoje) ? metaHoje : (r?.meta || metaHoje)), hoje: i === 6, letra: dia.toLocaleDateString(loc(), { weekday: 'narrow' }) }; });
 }
 
 const L = ml => dec(Math.round(ml / 100) / 10) + ' L';

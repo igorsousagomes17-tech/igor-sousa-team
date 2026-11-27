@@ -700,3 +700,11 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - [x] "🎁 Loja do time" no Início (camiseta + quanto falta) e a tela de pontos com o título "Loja do time".
 - [x] Carinhas do "Quanto cansou?" no tema claro: a escolhida não mudava de cor (regra do claro ganhava do .on). Agora fica laranja.
 - Passeio guiado atualizado (ranking e loja no lugar do "O time"). SW v87. Teste: tests/fix-2611.mjs.
+
+## 26/11/2026 — Crítica de fora + correções (ramo `critica-2611`, lançado na noite de 26/11 com o ok do Igor)
+- [x] Água: letras dos dias da semana seguiam o idioma do celular, não o do app (agora usam o idioma escolhido).
+- [x] Pular descanso: a trava de 8 s ("acabou de pular, tá só anotando") vazava pra outro exercício e a série seguinte ficava sem descanso. Agora só vale no mesmo exercício.
+- [x] Botões do cronômetro de descanso não quebram mais o texto ("+15s") em tela estreita.
+- [ ] Migração 028 (pronta, NÃO rodada, decisão do Igor): pontos de treino só 1 vez por dia; meta da semana e desafio do mês contam dias, não sessões. Hoje dá pra acumular +50 por sessão sem limite.
+- [ ] Senha inicial = número do WhatsApp: adivinhável até a aluna trocar. Avaliar link de primeiro acesso.
+- SW v89 (junto com as correções do dia).
