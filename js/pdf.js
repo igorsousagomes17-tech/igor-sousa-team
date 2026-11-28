@@ -59,7 +59,8 @@ export async function gerarPdfTreino(plano, perfil, programa = null, ainda = nul
   if (programa) { doc.setFontSize(30); const ls = doc.splitTextToSize(limpa(programa).toUpperCase(), W - 2 * M - 70).slice(0, 2); doc.text(ls, M, 50); }
   else { const [c1, c2] = limpa(T('TREINO|DO MÊS')).split('|'); doc.setFontSize(34); doc.text(c1, M, 50); doc.setTextColor(...LARANJA); doc.text(c2, M, 64); }
   doc.setFontSize(13); doc.setTextColor(...CLARO); doc.setFont('helvetica', 'normal');
-  doc.text(limpa(programa ? T('Programa extra') : mes.charAt(0).toUpperCase() + mes.slice(1)), M, 76);
+  const planilha = !programa && plano.opcoes?.length > 1 && plano.titulo && plano.titulo !== 'Treino mensal' ? plano.titulo : ''; // 2ª/3ª planilha (Em casa...): nome na capa e no arquivo
+  doc.text(limpa(programa ? T('Programa extra') : mes.charAt(0).toUpperCase() + mes.slice(1) + (planilha ? ' · ' + tc(planilha) : '')), M, 76);
   if (perfil?.nome) { doc.setFontSize(11); doc.setTextColor(...CINZA); doc.text(limpa(T('Para {nome}', { nome: perfil.nome })), M, 84); }
   if (plano.obs) { doc.setFontSize(10); doc.setTextColor(...CINZA); doc.text(doc.splitTextToSize(limpa(plano.obs), 100), M, 92); }
 
@@ -77,21 +78,23 @@ export async function gerarPdfTreino(plano, perfil, programa = null, ainda = nul
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...CLARO);
   // "Como usar" só com o que existe nesse treino (mobilidade não fala de pirâmide nem de carga)
   const todos = plano.treinos.flatMap(t => t.exercicios), temCarga = todos.some(e => !semCarga(e) && !/\d\s*(s|seg|min)\b/i.test(e.reps || ''));
-  [...(programa ? [] : ['Siga a ordem A, B, C, D e recomece. Perdeu um dia? Continua de onde parou.']),
+  [...(programa || plano.treinos.length < 2 ? [] : plano.treinos.map(t => t.letra).join(', ') === 'A, B, C, D' ? ['Siga a ordem A, B, C, D e recomece. Perdeu um dia? Continua de onde parou.'] : [T('Siga a ordem {x} e recomece. Perdeu um dia? Continua de onde parou.', { x: plano.treinos.map(t => t.letra).join(', ') })]),
     ...(todos.some(e => e.biset_com) ? ['Bi-set (marcado em laranja): faz um exercício e emenda direto no outro, descansa só no fim.'] : []),
     ...(todos.some(e => /\d\s*\/\s*\d/.test(e.reps || '')) ? ['Pirâmide (ex.: 12/10/8): aumenta a carga a cada série e diminui as repetições.'] : []),
     ...(temCarga ? ['Bateu o topo das repetições com boa técnica? Sobe a carga na próxima.', 'No app você tem a dica de cada exercício, o cronômetro do descanso e registra a carga.'] : ['No app você tem a dica de cada exercício e o cronômetro do descanso.']),
     'Treino ficou leve ou pesado demais? Me fala no feedback do app que eu ajusto.']
     .forEach(l => { const ls = doc.splitTextToSize(limpa(T(l)), W - 2 * M - 6); doc.setFillColor(...LARANJA); doc.circle(M + 1.2, y - 1.2, 0.9, 'F'); doc.text(ls, M + 5, y); y += ls.length * 5 + 1.5; });
   rodape(true);
+  const yCapa = y; // programa curto: o 1º treino começa na própria capa se couber (não gasta folha com 3 linhas)
 
   // UMA PÁGINA POR TREINO ------------------------------------------------------
   // Programa extra com treinos curtos (HIIT): o treino seguinte continua na mesma folha se couber (não gasta 5 folhas pra 5 linhas)
-  let yFim = null;
+  let yFim = programa && plano.treinos.length === 1 && plano.treinos[0].exercicios.length <= 8 ? yCapa : null;
   plano.treinos.forEach((t, ti) => {
     const resumo = limpa(T('~{d} min', { d: t.duracao_min || 40 }) + '  ·  ' + tp(t.exercicios.length, '{n} exercício', '{n} exercícios'));
     let y;
-    if (programa && ti > 0 && yFim != null && yFim + 50 < H - 16) {
+    if (programa && yFim != null && yFim + 50 < H - 16) {
+      if (ti === 0) { doc.setFillColor(255, 255, 255); doc.rect(0, yFim + 2, W, H - yFim - 2, 'F'); } // na capa (fundo escuro): faixa branca pros exercícios, igual às outras folhas
       y = yFim + 10; doc.setFillColor(...LARANJA); doc.rect(M, y - 6, W - 2 * M, 0.8, 'F');
       doc.setFont('helvetica', 'bold'); doc.setTextColor(...LARANJA); doc.setFontSize(16); doc.text(limpa(t.nome), M, y + 4);
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...CINZA); doc.text(resumo, W - M, y + 4, { align: 'right' }); y += 16;
@@ -142,9 +145,9 @@ export async function gerarPdfTreino(plano, perfil, programa = null, ainda = nul
     yFim = y; const prox = plano.treinos[ti + 1]; if (!(programa && prox && y + 50 < H - 16)) rodape();
   });
 
-  const nome = (programa ? `${limpa(programa)}.pdf` : `${limpa(T('Treino'))} ${limpa(mes).replace(/\s+(de|del)\s+/, ' ')}.pdf`).replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const nome = (programa ? `${limpa(programa)}.pdf` : `${limpa(T('Treino'))} ${planilha ? limpa(tc(planilha)) + ' ' : ''}${limpa(mes).replace(/\s+(de|del)\s+/, ' ')}.pdf`).replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const blob = doc.output('blob');
-  const titulo = programa ? limpa(programa) : T('Meu treino do mês'); // programa extra: com o nome dele (antes "Meu treino do mês")
+  const titulo = programa ? limpa(programa) : T('Meu treino do mês') + (planilha ? ' · ' + tc(planilha) : ''); // programa extra: com o nome dele (antes "Meu treino do mês")
   if (ainda && !ainda()) return 'saiu';
   const nat = await compartilharNativo(blob, nome, titulo); if (nat === 'shared' || nat === 'cancel') return nat;
   const arquivo = new File([blob], nome, { type: 'application/pdf' });

@@ -97,7 +97,7 @@ const vis = (p, v) => p.evaluate(v => { Object.defineProperty(document, 'visibil
   await espera(p, 600); await fecharDescanso(p);
   await p.click('#fim'); await espera(p); if (await p.$('#enc')) { await p.click('#enc'); await espera(p, 500); }
   ok(/\+\d+ pontos|vale 50 pontos/i.test(await txt(p, '.view')), 'feedback incompleto explica os pontos (proporcional, sem punir)');
-  await p.click('#esf button >> nth=2'); await p.click('#env'); await espera(p, 400); ok(/Falta a nota/i.test(await txt(p, '#e')), 'feedback diz qual escala falta ("Falta a nota")');
+  await p.click('#esf button >> nth=2'); await p.click('#env'); await espera(p, 400); ok(/Falta responder: Curtiu o treino/i.test(await txt(p, '#e')), 'feedback diz qual escala falta ("Falta responder: Curtiu o treino?", o nome da tela)');
   await ctx.close(); }
 
 // 5. Celular largado 10 min sem toque: pausa sozinho e o tempo parado não conta

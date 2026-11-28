@@ -69,3 +69,8 @@ registro do mês com 1 foto salva o peso; aviso da arte do story no Android): `W
 `tests/rodada-2111.mjs` testa a rodada 21/11 ("Aa" sem apagar o que ela digitou, convite com "Repete a senha" e voltar do celular, reconhecimento fora da contagem e do histórico, chip R estreito,
 drop sem descanso antes das quedas, "Outro exercício" no Aparelho ocupado, anotação de regulagem, último exercício só com Finalizar, HIIT com forte/leve à vista,
 20 min fora = véu com relógio parado, atalho Treino em casa, Pontos com a meta da semana e o desafio): `W=360 OUT=/tmp/shots node tests/rodada-2111.mjs`.
+
+`tests/rodada-2811.mjs` testa a rodada 28/11 (e-mail incompleto no login, "7 exercícios + 1 opcional", Perfil sem "anamnese" e sem "mandar vídeo" quando o Igor é que manda,
+voltar do Android entre as abas, Resumo da semana volta pra Evolução, Meus treinos do demo com séries, pirâmide que não sugere menos que a série anterior, Express com treino pausado,
+"ver exercício" no descanso, feedback "Falta enviar" e estrelas em 288 px, "Postar no story" só com a foto, uma 🥇 no ranking, Loja com letra Maior, planilha "Em casa" e filtro "Em casa"):
+`W=360 OUT=/tmp/shots NODE_OPTIONS=--import=./tests/_abre-detalhes.mjs node tests/rodada-2811.mjs`.

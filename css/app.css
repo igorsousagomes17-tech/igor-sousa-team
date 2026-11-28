@@ -7,6 +7,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{font-size:100%}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
 button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
@@ -517,7 +518,7 @@ html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
    Fundo claro, letra preta, laranja da marca nos botões; laranja de TEXTO mais escuro pra dar leitura no branco. */
 :root[data-tema="claro"]{
   --bg:#f7f7f7;--panel:#ffffff;--panel2:#ffffff;--line:#e6e6e6;--fg:#111111;--muted:#55555c;
-  --accent-t:#c24d00;--n1:#ffffff;--n2:#ececec;--good:#1f9a4c;--warn:#b7791f;--bad:#d93636;
+  --accent-t:#a84300;--n1:#ffffff;--n2:#ececec;--good:#1f9a4c;--warn:#b7791f;--bad:#d93636;
   color-scheme:light;
 }
 :root[data-tema="claro"] .card{box-shadow:0 0 0 1px var(--line)}
@@ -571,6 +572,7 @@ html.letra-g{font-size:115%}html.letra-gg{font-size:130%}
 .passos{flex-wrap:wrap;gap:4px;overflow:visible}.passos button{flex:1 1 0;min-width:34px;max-width:52px;padding:0 2px}.passos button.chopc{border-style:dashed} /* opcional (HIIT) com contorno tracejado e ♥ (antes "+" parecia "adicionar"); 7 cabem em 360 px */
 .ult-serie{margin:-2px 0 6px 34px;font-size:.75rem;color:var(--muted)}
 .recado-igor{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--accent);margin:6px 0 8px;padding:10px 12px}
+.recado-igor.mini{display:block;padding:0 12px}.recado-igor.mini summary{min-height:44px;display:flex;align-items:center;cursor:pointer;list-style:none}.recado-igor.mini[open]{padding-bottom:10px}
 .sess-info{flex-wrap:wrap;gap:0 10px}
 .rest-lock{text-align:center;margin-top:10px;color:var(--muted)}.rest-lock .back{color:var(--accent-t);text-decoration:underline;display:inline;min-height:40px}
 :root[data-tema="claro"] .err{color:#b3261e}
@@ -588,13 +590,13 @@ html.letra-g .tabs .tab span.l,html.letra-gg .tabs .tab span.l,html.letra-g .tab
 /* Abas A1/A2 com zoom ou letra Maior: uma embaixo da outra (o nome inteiro cabe, sem "AGACHAMEN") */
 @media (max-width:300px){.bitabs{grid-template-columns:1fr!important}.bitab{min-height:44px}}
 @media (max-width:380px){html.letra-gg .bitabs{grid-template-columns:1fr!important}html.letra-gg .bitab{min-height:44px}}
-.passos button.chR{flex:0 0 24px;min-width:24px;max-width:24px;font-size:.75rem} /* aquecimento (R) estreito: 9 chips + ♥ numa linha em 360 px */
+.passos button.chR{flex:0 0 30px;min-width:30px;max-width:30px;font-size:.75rem} /* aquecimento (R) estreito: 9 chips + ♥ numa linha em 360 px */
 @media (max-width:380px){.passos:has(.chR) button:not(.chR){min-width:30px}}
 /* Crítica 25/11: "⋯ Mais opções" do exercício (aparelho ocupado, séries, regulagem) fechado; aviso da sessão cobre a barra de cima inteira (não fica texto em cima de texto) */
 details.mais.opc{margin-top:6px}details.mais.opc>summary{list-style:none;cursor:pointer;color:var(--accent-t);font-weight:700;font-size:.875rem;min-height:44px;display:flex;align-items:center}details.mais.opc>summary::-webkit-details-marker{display:none}
 details.mais.opc .opc-box{display:grid;gap:8px;padding:4px 0 6px}
 .toast.topo.sess{top:calc(6px + var(--sat))}
-.scale5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.scale5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .scale5 button{min-height:64px;border:0;border-radius:10px;background:#2a2a2e;color:var(--fg);font-weight:600;font-size:.75rem;line-height:1.15;padding:6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 .scale5 button .ic{font-size:1.375rem;line-height:1;letter-spacing:-2px;color:var(--accent-t)}#nota.scale5 button .ic{font-size:.8125rem;letter-spacing:0}
 .scale5 button.on{background:var(--accent);color:var(--accent-ink)}.scale5 button.on .ic{color:var(--accent-ink)}
@@ -623,3 +625,21 @@ details.cfg{min-width:0;max-width:100%}details.cfg .cfg-box{grid-template-column
 details.ganhar>summary{list-style:none;cursor:pointer}details.ganhar>summary::-webkit-details-marker{display:none}details.ganhar>summary h3{margin:0}
 .vence-linha{font-size:.8125rem;color:var(--muted);margin-top:-4px;padding:0 4px}.vence-linha.venceu{color:var(--warn);font-weight:600}
 #nota.scale5 button span:not(.ic){display:none}#nota.scale5 button{min-height:52px}#nota.scale5 button .ic{font-size:.9375rem;letter-spacing:-1px}
+/* 28/11 (rodada das 5 alunas): letra grande, toque e contraste */
+.scale5 button{min-width:0;overflow:hidden}#nota.scale5 button .ic{white-space:nowrap;font-size:min(.8125rem,3.3vw)}
+.passos button{white-space:nowrap}
+.chips .pill,.topbar>.pill[data-go]{min-height:44px;display:inline-flex;align-items:center}
+details.ganhar>summary{min-height:44px;display:flex;align-items:center}
+.premio .row.between{flex-wrap:wrap}.premio-nome{min-width:0;overflow-wrap:anywhere}.premio-plano{flex-wrap:wrap;min-width:0}.premio-plano span{min-width:0;overflow-wrap:anywhere}
+html.letra-g .ov:not(.mini) .x,html.letra-gg .ov:not(.mini) .x{position:static;align-self:flex-end;margin-top:env(safe-area-inset-top,0px)}
+html.letra-g .rest-bts #rest-skip,html.letra-gg .rest-bts #rest-skip{flex:1 1 100%!important}
+@media (max-width:340px){.rest-bts #rest-skip{flex:1 1 100%!important}}
+html.letra-gg .set .h{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.625rem;min-width:0}
+html.letra-gg .set .rest{white-space:nowrap;min-width:0;overflow:hidden;font-size:.8125rem}
+body:has(#rest-layer .ov:not(.mini)) .toast.topo{top:auto;bottom:calc(16px + env(safe-area-inset-bottom,0px))} /* descanso aberto: o aviso vai pra baixo, não cobre o "ver exercício" */
+:root[data-tema="claro"] .passos button.ok:not(.on){color:#17703d;border-color:#17703d;background:#e3f1ea}
+.passos button.ok:not(.on)::after{font-size:.75rem;font-weight:800}
+.err.okmsg,:root[data-tema] .err.okmsg{color:var(--good)}
+#nota.scale5 button{background:var(--panel2);box-shadow:inset 0 0 0 1px var(--line)}#nota.scale5 button .ic{font-size:1.75rem;letter-spacing:0;color:#5a5a60}
+#nota.scale5 button.ate .ic,#nota.scale5 button.on .ic{color:var(--accent)}#nota.scale5 button.on{background:var(--panel2);box-shadow:inset 0 0 0 2px var(--accent);color:var(--fg)}
+:root[data-tema="claro"] #nota.scale5 button{background:var(--panel2)}:root[data-tema="claro"] #nota.scale5 button .ic{color:#b9b9c0}:root[data-tema="claro"] #nota.scale5 button.ate .ic{color:var(--accent-t)}:root[data-tema="claro"] #nota.scale5 button.on{background:var(--panel2);color:var(--fg)}

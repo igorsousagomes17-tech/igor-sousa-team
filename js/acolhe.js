@@ -43,8 +43,8 @@ const PASSOS = [
   ['.card.hero', 'Treino de hoje', 'Aqui aparece o treino do dia. Toca em abrir e é só seguir: o app mostra o exercício, a sua última carga e o cronômetro do descanso.'],
   ['.home-ia', 'Tira-dúvidas 24h', 'Ficou com dúvida no meio do treino? Pergunta aqui. A IA do time responde na hora, com base no seu treino.'],
   ['.home-rank', 'Ranking do mês', 'Você não treina sozinha: aqui fica o ranking do mês. Toca pra ver o ranking inteiro e quem já treinou hoje.'],
-  ['.home-loja', 'Loja do time', 'Cada treino vale pontos. Aqui você vê quanto falta pra trocar pela camiseta do time ou pelo plano trimestral.'],
-  ['.tabs', 'As abas', 'Aqui embaixo: Treino (todos os seus treinos), Vídeos, Evolução (com seus pontos) e Perfil. No Perfil tem sua anamnese, as respostas do Igor e este passeio, se quiser ver de novo.'],
+  ['.home-loja', 'Loja do time', 'Treino completo vale 50 pontos. Aqui você vê quanto falta pra trocar pela camiseta do time ou pelo plano trimestral.'],
+  ['.tabs', 'As abas', 'Aqui embaixo: Treino (todos os seus treinos), Vídeos, Evolução (com seus pontos) e Perfil. No Perfil tem sua ficha, as respostas do Igor e este passeio, se quiser ver de novo.'],
 ];
 export const passeioPendente = perfil => !demoPula() && !LSget('tour@' + perfil.id) && !!perfil.objetivo;
 export function passeio(perfil) {

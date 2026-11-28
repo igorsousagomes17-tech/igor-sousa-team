@@ -716,3 +716,49 @@ Base antes de mexer: fluxo-treino, regressao ok. Foco novo: cadastro por convite
 - Nota só com estrelas; "Como ganhar pontos" recolhido; foto vazia compacta; filtros por grupo nos vídeos.
 - Aviso de vencimento em linha; meta de água visível também pro admin.
 - Testes ajustados ao novo texto/estrutura (preload abre <details>).
+
+## 2026-11-28 (rodada automática, 5 críticas: Júlia, Carla, Márcia, Renata, Bia · 50 pontos, ~46 únicos)
+Base antes de mexer: fluxo-treino e regressao ok. Foco novo: carga/pirâmide e histórico, letra grande depois do 25/11, conversa com o Igor, PDF das planilhas, dados no 4G.
+
+**Júlia (23, iniciante, iPhone):** treino "completo" em 27 s ganha +50, desafio e ranking; série sem kg sem aviso (dica da 1ª vez embaixo das séries); recado do Igor grudado em todo exercício; duas 🥇 no ranking do demo; Vídeos "com o Igor" e só boneco; 8 ou 7 exercícios?; no bi-set Execução/Dúvida/Senti dor iam pra baixo; passeio "cada treino vale pontos" e "anamnese"; "✎ anotar" pra ver o exercício; tira-dúvidas do demo sem reps/lado, sem mini band, drop junto com pirâmide.
+**Carla (34, Android lento, veio do Mfit):** "Fez as 12: tenta subir" com 12/10/7; pirâmide gravava a série 2 mais leve que a 1 de hoje; treino de 44 s com +50 e recorde; caixa de corrigir série quebrada em 360; corrigir exercício de tempo pedia kg; Meus treinos do demo "7 de 7" vazio; aviso do bi-set cobrindo o descanso; voltar do Android preso entre abas; Resumo da semana com "‹ Início" vindo da Evolução; pirâmide sem as reps da última vez.
+**Márcia (52, letra grande):** feedback dizia "Treino registrado" antes de enviar; 1★ lasquinha e 5★ vazando; letra Maior estourando a sessão; Loja rolando de lado; descanso com botão em cima do título e +15s sozinho; erro do feedback com "esforço/nota" (não está na tela); "anamnese" em 4 lugares; e-mail sem ".com" virava "senha errada"; contraste do tema claro (chip verde 2:1, laranja 4:1); toques < 44 px (filtros, pts, "Como ganhar", chip R).
+**Renata (29, mãe, Personalizado):** ranking conta dia com 1 série de 6 s; botão "Mandar vídeo" quando é o Igor que vai mandar; conversa com o Igor com a fala nova no fim; "faltou: …" aparecendo como se ela tivesse escrito; Express ignorado ao continuar treino pausado; exercício de tempo feito antes de 10+ min fora sumia sem perguntar; "Ficou N min fora" menor que o real; fotos com 3 dias de diferença viram Antes/Agora e +80 duas vezes; foto só de frente "sumia" do card; "faz uma série leve" seguido de "bora a próxima série".
+**Bia (19, celular velho, sinal ruim):** "Postar no story" aparecia antes da foto e não fazia nada; PDF "Em casa" mandando seguir A, B, C, D e com o mesmo nome do da academia; vídeo do Leg Press com 3 MB avisando 1,5 MB; 1ª abertura lenta só com o logo; "Abdominal infra" e "90/90" sem animação; Vídeos sem "Em casa" à mão; Início de quem treina em casa mandando o treino da academia; PDF de programa curto em 2 folhas; capa preta sem sinal; camisetas da Loja em PNG pesado.
+
+### Corrigido
+- [x] Pirâmide: a sugestão da série nunca fica abaixo da série anterior de hoje (subiu na 1ª, a 2ª não grava mais leve); a "última vez" da série (kg × reps) aparece antes de digitar.
+- [x] "Fez as 12: tenta subir" só quando TODAS as séries bateram o topo; senão "Fez 12/10/7: mantém o peso e busca as 12 em todas".
+- [x] Feedback: título "Falta enviar · a de b feitos" até tocar em Enviar; erro com os nomes da tela ("Falta responder: Quanto cansou?…").
+- [x] Nota do treino: uma estrela por botão, acende até a escolhida (cabe em 288 px).
+- [x] `[hidden]` sempre esconde: "Postar no story" só aparece depois de escolher a foto.
+- [x] PDF: planilha "Em casa" com o nome na capa e no arquivo ("Treino-Em-casa-novembro") e a ordem só com as letras que existem; programa curto (1 treino, até 8 exercícios) cabe na capa (1 folha).
+- [x] Leg Press 45 recodificado em 540p (3 MB → 1,4 MB), igual aos outros vídeos.
+- [x] Cronômetro de exercício que acaba com o app de lado espera ela voltar e pergunta "Fez tudo?" (não some atrás da tela "Pausei seu treino"); depois da tela de pausa não vem "bora a próxima série"; "Ficou N min fora: tirei M min parados" com o tempo real.
+- [x] Treino pausado: tocar em Express avisa que ele já começou no Completo (antes trocava só na tela e continuava o longo).
+- [x] Conversa com o Igor: o card do Início mostra só a fala nova dele; no Perfil o nome dela vira "Você:"; "⏸ pausas · faltou: …" não aparece mais como se ela tivesse escrito (continua indo pro Igor).
+- [x] "📎 Mandar vídeo/foto" só quando o Igor pede o vídeo DELA (não com "te mando o vídeo").
+- [x] Recado do Igor inteiro no 1º exercício e no exercício que ele cita; nos outros, uma linha "💬 Recado do Igor ›".
+- [x] Lista do treino: "7 exercícios + 1 opcional".
+- [x] Bi-set: Execução/Dúvida/Senti dor sempre logo embaixo do nome; dica "1ª vez nesse? anota o peso" em cima das séries (o "Anotar o peso?" depois do ✓ já existia).
+- [x] "anamnese" → "ficha" (convite, Início, Evolução, Perfil "Minha ficha (saúde e objetivo)", passeio); passeio "Treino completo vale 50 pontos".
+- [x] Descanso: "▾ ver exercício" (antes "✎ anotar"); com letra grande o botão sai de cima do título e Pular fica sozinho com −15s/+15s juntos embaixo; aviso do bi-set vai pra baixo com o descanso aberto.
+- [x] Login: e-mail incompleto diz "Confere o e-mail" (não gasta tentativa); "Esqueci a senha" avisa embaixo do botão (não cobre o ‹ Voltar e o Aa).
+- [x] Evolução: foto só de frente mostra "Frente ✓ · falta lado, costas"; corrigir série com campos e botões do app (360 px ok); exercício de tempo sem ✎.
+- [x] Voltar do Android: Início → aba empilha, aba → aba troca no lugar, aba → Início volta; Resumo da semana "‹ Voltar" volta de onde veio.
+- [x] Vídeos: texto "animação em todos, e os vídeos do Igor vão entrando aqui"; quem treina em casa tem "Em casa" logo depois de "Todos".
+- [x] Quem treina em casa e tem a planilha "Em casa" já abre nela no Início (1ª vez, sem escolha guardada).
+- [x] Animação pra "Abdominal infra", "Abs infra" e "90/90".
+- [x] Capa dos programas/Hyrox/Corrida com o degradê laranja sem sinal (não fica preta).
+- [x] Camisetas da Loja em WebP (93 KB → 36 KB).
+- [x] Aviso de "internet lenta" na 1ª abertura começa a contar antes do CSS baixar.
+- [x] Letra Maior: Loja sem rolar de lado, chips sem quebrar "1-2", cabeçalho REPS sem cobrir FEITO, chip R 30 px; toques de 44 px (filtros dos Vídeos, "⭐ pts", "Como ganhar"); tema claro: laranja de texto #a84300 (5:1) e chip feito verde escuro.
+- [x] Demo: ranking desempatado como no banco (uma 🥇 só); Meus treinos de exemplo com as séries; tira-dúvidas responde drop (separado da pirâmide), reps/lado, sem mini band, nome de exercício do treino; resposta de "esqueci de marcar" sem a chave que saiu.
+- [x] SW v91. Teste novo `tests/rodada-2811.mjs`.
+
+### Pendente
+- [ ] Treino "completo" em menos de 10 min ganha +50, conta no desafio e no ranking (Júlia/Carla): regra de pontos do Igor + banco (os pontos são dados pelo banco). Proposta: completo com menos de 10 min = "registrado", sem pontos. Junto da decisão da migração 028.
+- [ ] Ranking do mês conta dia com 1 série de 6 s (Renata): `supabase/migracao-029-ranking-so-treino-que-conta.sql` PRONTA, NÃO RODADA — decisão do Igor (só conta o dia com treino que pontua). No schema.sql ficou comentada.
+- [ ] Fotos do registro com 3 dias de diferença viram Antes/Agora e dão +80 de novo (vira o mês): regra de pontos do Igor (sugestão: próximo registro só 25-30 dias depois).
+- [ ] 1ª abertura no 4G fraco: o app inteiro (corrida, spinning, Hyrox, story) baixa junto com o login. Dividir em pedaços é mudança grande; nesta rodada só o aviso de internet lenta ficou mais cedo.
+- [ ] Seguem os de antes: migrações 027 (antes de 30/11!) e 028, publicar a função `assistente`, WhatsApp, vídeos, fotos dos prêmios, link da Kiwify, aviso no celular quando o Igor responde.

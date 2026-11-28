@@ -55,9 +55,14 @@ export async function finalizarSessao(sessaoId, patch) { const s = state.sessoes
 export async function historicoCarga(_, nome, limit = 5) {
   const por = {}; filtraEx(nome, state.series.filter(x => x.kg)).forEach(x => { const s = state.sessoes.find(z => z.id === x.sessao_id); const a = por[x.sessao_id] || (por[x.sessao_id] = { kg: x.kg, reps: x.reps, data: s?.finalizada_em || iso(new Date()), sessao_id: x.sessao_id, sets: [], express: /^⚡ Express/.test(s?.comentario || '') }); const reps = x.drops?.length && x.reps != null ? Math.max(0, x.reps - x.drops.reduce((t, d) => t + (+d.reps || 0), 0)) || x.reps : x.reps, drops = x.drops?.length ? x.drops : undefined; if (!a.sets.length) { a.reps = reps; a.drops = drops; } a.sets.push({ n: x.n, kg: +x.kg, reps, drops }); if (+x.kg > +a.kg) { a.kg = x.kg; a.reps = reps; a.drops = drops; } });
   const mine = Object.values(por).sort((a, b) => a.data.localeCompare(b.data));
+  const demo = demoHist(nome);
+  return [...mine.reverse(), ...demo].slice(0, limit);
+}
+// Histórico de exemplo do demo (Smith em pirâmide e Puxada): o mesmo aparece em "Meus treinos" do dia
+function demoHist(nome) {
   const demo = nome === 'Agachamento Smith' ? [{ kg: 28, reps: 10, data: iso(daysAgo(1)) }, { kg: 26, reps: 10, data: iso(daysAgo(8)) }, { kg: 26, reps: 10, data: iso(daysAgo(15)) }, { kg: 24, reps: 12, data: iso(daysAgo(29)) }] : nome === 'Puxada Pronada' ? [{ kg: 35, reps: 10, data: iso(daysAgo(6)) }, { kg: 35, reps: 10, data: iso(daysAgo(13)) }, { kg: 32, reps: 12, data: iso(daysAgo(27)) }] : [];
   demo.forEach(d => { d.sets = nome === 'Agachamento Smith' ? [{ n: 1, kg: d.kg - 6, reps: 12 }, { n: 2, kg: d.kg - 3, reps: 10 }, { n: 3, kg: d.kg, reps: d.reps }] : [1, 2, 3].map(n => ({ n, kg: d.kg, reps: d.reps })); });
-  return [...mine.reverse(), ...demo].slice(0, limit);
+  return demo;
 }
 export const escolheUltima = h => { const mx = Math.max(0, ...h.filter(x => !x.express).map(x => x.sets?.length || 0)), j = Math.max(0, h.findIndex(x => !x.sets || x.express || x.sets.length >= mx)); return h[j] ? { ...h[j], ant: h[j + 1]?.kg ?? null } : null; };
 export async function ultimaCarga(_, nome) { return escolheUltima(await historicoCarga(_, nome, 3)); }
@@ -66,7 +71,14 @@ export function guardarCarga(nome, kg, reps, sessao, drops, sets) { if (!kg) ret
 // Treino descartado: a carga que ele gravou no celular volta pra de antes (não fica "Última: 80 kg" de um treino que não existiu)
 export function desfazerCargas(sessao) { if (!sessao) return; const c = LS.get('cargas', {}); let mudou = false; for (const [n, v] of Object.entries(c)) if (v?.sessao === sessao) { mudou = true; if (v.prev) { const { prev, ...r } = v.prev; c[n] = r; } else delete c[n]; } if (mudou) LS.set('cargas', c); }
 export async function ultimasSeries(_, nome) { const u = escolheUltima(await historicoCarga(_, nome, 3)); if (!u?.sets?.length) return null; const por = {}; u.sets.forEach(x => { if (x.kg !== '' && x.kg != null) por[x.n] = +x.kg; }); return Object.keys(por).length ? por : null; } // demo: lê as séries salvas (antes fixo 22/25/28)
-export async function seriesDe(sid) { state.series.forEach((x, j) => { if (!x.id) x.id = 'sr' + j + '-' + x.sessao_id; }); return state.series.filter(x => x.sessao_id === sid).sort((a, b) => a.n - b.n).map(x => ({ ...x })); }
+export async function seriesDe(sid) { state.series.forEach((x, j) => { if (!x.id) x.id = 'sr' + j + '-' + x.sessao_id; }); const r = state.series.filter(x => x.sessao_id === sid).sort((a, b) => a.n - b.n).map(x => ({ ...x })); return r.length || !/^s\d+$/.test(sid) ? r : seriesExemplo(sid); }
+// Treinos de exemplo do demo (7 de 7) não abriam vazios: séries montadas do treino daquela letra (sem id: não dá pra corrigir)
+function seriesExemplo(sid) {
+  const s = state.sessoes.find(z => z.id === sid), tr = PLANO.treinos.find(x => 'Treino ' + x.letra === s?.titulo); if (!tr) return [];
+  const dia = String(s.finalizada_em).slice(0, 10), out = [];
+  tr.exercicios.filter(e => !/hiit|opcional|cardio/i.test(e.nome)).forEach(e => { const h = demoHist(e.nome).find(d => String(d.data).slice(0, 10) === dia), tempo = /\d\s*(s|seg|min)\b/i.test(e.reps || ''); for (let n = 1; n <= (e.series || 1); n++) out.push({ sessao_id: sid, exercicio_nome: e.nome, n, kg: h ? (h.sets[n - 1]?.kg ?? h.kg) : null, reps: tempo ? null : h ? (h.sets[n - 1]?.reps ?? h.reps) : (parseInt(String(e.reps).replace(/^.*?(\d+)\s*$/, '$1'), 10) || null) }); });
+  return out;
+}
 export async function editarSerie(id, patch) { const x = state.series.find(z => z.id === id); if (!x) throw new Error('série não encontrada'); Object.assign(x, patch); save(); }
 // Resposta dela pro Igor (igual ao rpc responder_igor: só depois que ele respondeu, até 1000 letras)
 export const podeResponderIgor = () => true;
@@ -83,7 +95,7 @@ export async function comunidade() {
   await wait(250); const h = n => iso(new Date(Date.now() - n * 60000));
   const feed = [['Marcela D.', 'Treino C', 18], ['Ludimila M.', 'Treino A', 45], ['Patrícia M.', 'Treino em casa · Base 1 · pernas e core', 95], ['Lorena S.', 'Treino B', 160], ['Fabiana R.', 'Treino D', 300], ['Camila T.', 'Treino A', 610], ['Júlia P.', 'Treino B', 1300]].map(([nome, titulo, m]) => ({ nome, titulo, finalizada_em: h(m) }));
   const meus = state.sessoes.filter(s => s.finalizada_em && String(s.finalizada_em).slice(0, 7) === iso(new Date()).slice(0, 7)).length;
-  const ranking = [['Marcela D.', 16], ['Ludimila M.', 15], ['Ana P.', meus, true], ['Patrícia M.', 11], ['Lorena S.', 9], ['Camila T.', 8], ['Fabiana R.', 6]].map(([nome, n, eu]) => ({ nome, n, eu: !!eu })).sort((a, b) => b.n - a.n);
+  const ranking = [['Marcela D.', 16], ['Ludimila M.', 15], ['Ana P.', meus, true], ['Patrícia M.', 11], ['Lorena S.', 9], ['Camila T.', 8], ['Fabiana R.', 6]].map(([nome, n, eu]) => ({ nome, n, eu: !!eu })).sort((a, b) => b.n - a.n).map((r, i) => ({ ...r, pos: i + 1 })); // igual ao banco (027): empate desempatado por quem chegou primeiro
   return { hoje: 5, mes: 214, time: 38, ativas_mes: 24, feed: feed.filter(f => Date.now() - new Date(f.finalizada_em) < 10 * 3600000), ranking };
 }
 export const strava = { async status() { return { conectado: !!LS.get('stv_demo'), atleta: 'Ana (demo)', configurado: true }; }, async url() { LS.set('stv_demo', true); return { url: location.pathname + '?strava=ok' }; }, async desconectar() { LS.del('stv_demo'); }, async enviar() { window.__stravaEnviado = (window.__stravaEnviado || 0) + 1; return { ok: true }; } };
@@ -143,7 +155,7 @@ export const assistente = {
       [/pular|pulo (um|o)|skip/, 'Pode pular, sim: no treino, toca em "Pular exercício", no fim da tela do exercício. Se for por aparelho ocupado, tem o "Aparelho ocupado? Trocar". O Igor vê o que ficou de fora no fim.'],
       [/anamnese|ficha/, 'Anamnese é a sua ficha: as respostas sobre saúde, rotina e objetivo que o Igor usa pra montar seu treino. Pra ver ou mudar, vai em Perfil › Minha ficha.'],
       [/(trocar|mudar|inverter).{0,20}ordem|(treino|fazer o) [b-d] .{0,25}(em vez|no lugar|antes)|pular o treino [a-d]/, 'Pode trocar a ordem, sim. Na aba Treino, toca na letra do treino que você quer fazer hoje (A, B, C ou D) e em Iniciar. O app segue a ordem a partir dele.'],
-      [/esqueci de marcar|n[aã]o marquei|marcar depois/, 'Sem problema: no fim do exercício, liga a chave "concluído" e escolhe "Fiz, marcar as séries". O que você digitou vai junto; o que ficou vazio entra com a sugestão, e dá pra corrigir depois.'],
+      [/esqueci de marcar|n[aã]o marquei|marcar depois/, 'Sem problema: volta no exercício (toca no número dele lá em cima) e toca no ✓ das séries que faltaram. Se você digitou e não marcou, no fim do treino eu pergunto se fez. Treino que já passou dá pra corrigir em Evolução › Meus treinos.'],
       [/n[aã]o apit|sem apito|apito n[aã]o|n[aã]o tocou|n[aã]o avisou/, 'No iPhone, com a tela apagada o celular não deixa o app apitar. No descanso, deixa a tela acesa (o app mantém ela acesa sozinho enquanto ele tá aberto). No Android, liga "Cronômetro na tela de bloqueio" no Perfil.'],
       [/cansei|posso parar|parar no meio|desist|n[aã]o aguento mais/, 'Pode parar, sim. Se for voltar, toca em "⏸ Pausar treino": fica tudo salvo. Se for encerrar, toca em "Encerrar treino" e registra o que fez. Treino pela metade com 10 min ou mais ganha pontos proporcionais (3 de 7 = +20); completo vale +50 e conta na meta. Pausando, você termina depois e ganha o completo.'],
       [/hyrox|esta[cç](ã|a)o|wall ?ball|ski ?erg|tren[oó]/, 'Hyrox é uma prova de 8 km de corrida com 8 "estações" (exercícios) entre cada 1 km. No app ele vem adaptado pra academia: o trenó vira leg press, o SkiErg vira puxada na polia em pé. Começa no Iniciante.'],
@@ -158,6 +170,9 @@ export const assistente = {
       [/(qual|quanto|que) peso|peso.{0,12}(come[cç]o|primeiro dia|1º dia|inicia)|carga inicial|how much weight|what weight|qu[eé] peso|cu[aá]nto peso|quel poids|combien de poids|多重|多少公斤|कितना वज़न/, 'No primeiro dia, escolhe um peso que dá pra fazer todas as repetições com folga (sobram umas 2 ou 3). Halter: anota o peso de um. Aparelho com anilha: a soma das anilhas. Máquina: o número da placa. Na próxima vez o app te mostra o que você fez e você sobe aos poucos.'],
       [/express|r[aá]pido|pouco tempo|sem tempo|quick|short on time|no time|poco tiempo|peu de temps|快速|时间少|कम समय/, 'Express é a versão de ~25 min do mesmo treino: mesmos exercícios, menos séries e descanso mais curto, sem o cardio do fim. Escolhe "⚡ Express" na tela do treino antes de Iniciar. Dia corrido? Melhor o Express do que pular.'],
       [/ponto|pr[eê]mio|\bpoints?\b|premio|puntos|prix|积分|奖|पॉइंट|इनाम/, 'Treino completo vale +50 (pela metade, com 10 min ou mais, ganha uma parte; treino presencial com o Igor, +50), o story do card +30 e as fotos do mês +80. Batendo o desafio do mês, +200. Seu saldo fica na aba Pontos; como trocar pelos prêmios, o Igor te explica.'],
+      [/\bdrop|drop.?set/, 'Drop set: faz a série até as repetições pedidas, tira uns 20-30% do peso e emenda mais algumas repetições, sem descansar. No app você anota o peso de cada queda e toca no ⏱ só depois da última.'],
+      [/reps?\s*\/\s*lado|cada lado|por lado|each side/, 'Reps/lado é o número de repetições de cada lado: se pede 12, faz 12 com a perna (ou braço) direita e 12 com a esquerda. Nos exercícios de tempo "cada lado", eu apito na metade pra você trocar.'],
+      [/(n[aã]o tenho|sem|esqueci (a|o)|cad[eê] (a|o)) (a |o |um |uma )?(mini ?band|el[aá]stico|caneleira|halter|kettle\w*|anilha|corda|banco)/, 'Sem o acessório, faz o mesmo movimento sem ele e capricha no devagar: 3 segundos pra descer e 1 segundo parada no fim. Fica puxado do mesmo jeito. Se quiser uma troca, toca em "⋯" › "Aparelho ocupado" que aparecem as opções.'],
       [/pir[aâ]mide|\bdrop|\b\d{1,2}\s*\/\s*\d{1,2}\b|pyramid|pirámide|pyramide|金字塔|पिरामिड/, 'Pirâmide (ex. 12/10/8): a cada série, menos repetições e um pouco mais de peso. Drop set: no fim da série você tira peso e continua direto, sem descanso. O app mostra a carga que você usou em cada série da última vez.'],
       [/(sub|aument|increas|augment).{0,20}(carga|peso|load|weight|charge)|quando (eu )?subo|subo a carga|加重|वज़न बढ़ा/, 'Sobe quando você bater o topo das repetições com boa técnica em todas as séries. Ex.: no Agachamento Smith (3 x 12/10/8) sua última foi 28 kg x 10. Fechou as reps com folga? Na próxima tenta 30 kg e volta pro começo da faixa.'],
       [/(muscula|cardio|aer[oó]bi|for[cç]a).{0,30}(primeiro|antes)|(primeiro|antes).{0,30}(muscula|cardio|aer[oó]bi)|(cardio|weights).{0,20}\bfirst\b|\bfirst\b.{0,20}(cardio|weights)|primero|d'abord|先.{0,6}有氧|पहले/, 'Musculação primeiro, cardio depois: assim você chega com energia nos exercícios de força. O cardio de 20 min no fim do treino fecha bem.'],
@@ -171,6 +186,8 @@ export const assistente = {
       [/resultado|result|résultat|效果|नतीजा|रिज़ल्ट/, 'Resultado vem da soma: fazer os treinos da semana, subir a carga aos poucos, comer e dormir bem. Olha em Evolução se a carga tá subindo e manda as fotos do mês. Se travou, conta pro Igor no recado do fim do treino que ele ajusta.']
     ];
     let achou = R.find(([rx]) => rx.test(t));
+    // Nome de um exercício do treino ("o que é cossaco?"): responde com a dica do Igor daquele exercício
+    if (!achou) { const sa = x => String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(), q = sa(t), ex = PLANO.treinos.flatMap(x => x.exercicios).find(e => e.dica && sa(e.nome).split(/\s+/).filter(w => w.length > 4 && !/(sentad|maquina|halter|barra)/.test(w)).some(w => q.includes(w))); if (ex) achou = [null, tr('{x}: {d}', { x: ex.nome, d: ex.dica }) + ' ' + tr('No treino, toca em ▶ Execução pra ver o movimento.')]; }
     const cuidado = [...(state.perfil?.saude || []), state.perfil?.gestacao ? 'gravidez' : ''].join(' ');
     if (achou && /cardio|hiit/.test(String(achou[0])) && /press|cora|card|diabet|gravid|gesta/i.test(cuidado)) achou = R.find(([rx]) => rx.test('pressão alta')); // marcou cuidado de saúde: freia o HIIT
     const saldo = /ponto|pr[eê]mio|\bpoints?\b|puntos|积分|पॉइंट/.test(t) && achou && /\+50/.test(achou[1]) ? tr('Você tem {n} pts agora.', { n: state.perfil?.pontos ?? 0 }) + ' ' : ''; // pergunta de pontos: diz o saldo dela primeiro

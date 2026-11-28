@@ -4,7 +4,7 @@ const sem = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowe
 const MAPA = [
   // 17/11: exercícios novos dos programas (mobilidade, casa, corrida, HIIT)
   [/^gato.?camelo/, 'gato-camelo'],
-  [/^mobilidade 90.?90/, 'mobilidade-90-90'],
+  [/^(mobilidade )?90.?90/, 'mobilidade-90-90'],
   [/^alongamento (do )?piriforme/, 'alongamento-piriforme'],
   [/^alongamento (de |do )?flexor(es)? de quadril/, 'alongamento-flexor-quadril'],
   [/^rotacao toracica/, 'rotacao-toracica'],
@@ -44,6 +44,7 @@ const MAPA = [
   [/^abdominal barra/, 'abdominal-barra'],
   [/^abdominal canivete$/, 'abdominal-canivete'],
   [/^abdominal infra solo/, 'abdominal-infra-solo'],
+  [/^(abdominal|abs) infra( no solo)?$/, 'abdominal-infra-solo'], // 28/11: "Abdominal infra" (Abdômen 10 min) e "Abs infra" abriam "vídeo em gravação"
   [/^abdominal maquina/, 'abdominal-maquina'],
   [/^abdominal remador/, 'abdominal-remador'],
   [/^prancha isometrica lateral baixa/, 'prancha-lateral-baixa'],
