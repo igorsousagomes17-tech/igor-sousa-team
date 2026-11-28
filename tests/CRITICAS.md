@@ -740,7 +740,7 @@ Base antes de mexer: fluxo-treino e regressao ok. Foco novo: carga/pirâmide e h
 - [x] "📎 Mandar vídeo/foto" só quando o Igor pede o vídeo DELA (não com "te mando o vídeo").
 - [x] Recado do Igor inteiro no 1º exercício e no exercício que ele cita; nos outros, uma linha "💬 Recado do Igor ›".
 - [x] Lista do treino: "7 exercícios + 1 opcional".
-- [x] Bi-set: Execução/Dúvida/Senti dor sempre logo embaixo do nome; dica "1ª vez nesse? anota o peso" em cima das séries (o "Anotar o peso?" depois do ✓ já existia).
+- [x] Bi-set: Execução/Dúvida/Senti dor sempre logo embaixo do nome. Série marcada sem kg: aviso na hora "Marcou sem o peso: anota o kg…" (1 vez por treino; o "Anotar o peso?" embaixo das séries já existia). A dica "1ª vez" continua embaixo (em cima, as 3 séries do Leg Press não cabiam na 1ª tela).
 - [x] "anamnese" → "ficha" (convite, Início, Evolução, Perfil "Minha ficha (saúde e objetivo)", passeio); passeio "Treino completo vale 50 pontos".
 - [x] Descanso: "▾ ver exercício" (antes "✎ anotar"); com letra grande o botão sai de cima do título e Pular fica sozinho com −15s/+15s juntos embaixo; aviso do bi-set vai pra baixo com o descanso aberto.
 - [x] Login: e-mail incompleto diz "Confere o e-mail" (não gasta tentativa); "Esqueci a senha" avisa embaixo do botão (não cobre o ‹ Voltar e o Aa).
